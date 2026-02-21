@@ -47,8 +47,28 @@
  *
  * The mainPage value must match a key in the PAGES object exactly.
  */
+import AccessCodeLogin from './pages/AccessCodeLogin';
+import Portal from './pages/Portal';
+import AdminDashboard from './pages/AdminDashboard';
+import AdminCompanies from './pages/AdminCompanies';
+import AdminAccessCodes from './pages/AdminAccessCodes';
+import AdminDispatches from './pages/AdminDispatches';
+import AdminTemplateNotes from './pages/AdminTemplateNotes';
+import __Layout from './Layout.jsx';
 
-export const pagesConfig = {
-	Pages: {}
+
+export const PAGES = {
+    "AccessCodeLogin": AccessCodeLogin,
+    "Portal": Portal,
+    "AdminDashboard": AdminDashboard,
+    "AdminCompanies": AdminCompanies,
+    "AdminAccessCodes": AdminAccessCodes,
+    "AdminDispatches": AdminDispatches,
+    "AdminTemplateNotes": AdminTemplateNotes,
 }
 
+export const pagesConfig = {
+    mainPage: "AccessCodeLogin",
+    Pages: PAGES,
+    Layout: __Layout,
+};

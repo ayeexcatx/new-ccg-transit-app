@@ -40,6 +40,11 @@ export default function AdminDispatches() {
     queryFn: () => base44.entities.Company.list(),
   });
 
+  const { data: accessCodes = [] } = useQuery({
+    queryKey: ['access-codes'],
+    queryFn: () => base44.entities.AccessCode.list(),
+  });
+
   const { data: confirmations = [] } = useQuery({
     queryKey: ['confirmations-admin'],
     queryFn: () => base44.entities.Confirmation.list('-confirmed_at', 500),
@@ -234,6 +239,7 @@ export default function AdminDispatches() {
           <DispatchForm
             dispatch={editing}
             companies={companies}
+            accessCodes={accessCodes}
             onSave={handleSave}
             onCancel={() => { setOpen(false); setEditing(null); }}
             saving={saveMutation.isPending}

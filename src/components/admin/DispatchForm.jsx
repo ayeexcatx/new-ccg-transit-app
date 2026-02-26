@@ -6,8 +6,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { X, Plus, Trash2 } from 'lucide-react';
+import { notifyDispatchChange } from '@/components/notifications/createNotifications';
 
-export default function DispatchForm({ dispatch, companies, onSave, onCancel, saving }) {
+export default function DispatchForm({ dispatch, companies, accessCodes, onSave, onCancel, saving }) {
   const [form, setForm] = useState({
     company_id: '', date: '', shift_time: 'Day', client_name: '', job_number: '',
     start_time: '', start_location: '', instructions: 'Deliver material to / from',
@@ -112,7 +113,18 @@ export default function DispatchForm({ dispatch, companies, onSave, onCancel, sa
       }
     }
 
+    // Notify on status changes
+    const oldStatus = dispatch?.status;
+    const newStatus = finalForm.status;
+    
     onSave(finalForm);
+    
+    // Send notifications after save
+    if (dispatch && oldStatus !== newStatus && accessCodes) {
+      setTimeout(() => {
+        notifyDispatchChange(finalForm, oldStatus, newStatus, companies, accessCodes);
+      }, 500);
+    }
   };
 
   return (

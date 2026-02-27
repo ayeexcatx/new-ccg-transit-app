@@ -37,27 +37,31 @@ export default function DispatchCard({
 
   const isOwner = session.code_type === 'CompanyOwner';
 
-  // Per-truck confirmation check: same dispatch + truck + confirmation_type
-  const confType = (() => {
-    if (dispatch.status === 'Amended') return 'Amended';
-    if (dispatch.status === 'Canceled') return 'Canceled';
-    if (dispatch.status === 'Dispatched') return 'Dispatched';
-    return 'Dispatched';
-  })();
+  // Current status drives the required confirmation type
+  const currentConfType = dispatch.status; // Confirmed/Dispatched/Amended/Canceled
 
-  const isTruckConfirmed = (truck) =>
+  const isTruckConfirmedForCurrent = (truck) =>
     confirmations.some(c =>
       c.dispatch_id === dispatch.id &&
       c.truck_number === truck &&
-      c.confirmation_type === confType
+      c.confirmation_type === currentConfType
     );
 
-  const getTruckConfirmation = (truck) =>
+  const getTruckCurrentConfirmation = (truck) =>
     confirmations.find(c =>
       c.dispatch_id === dispatch.id &&
       c.truck_number === truck &&
-      c.confirmation_type === confType
+      c.confirmation_type === currentConfType
     );
+
+  const getTruckPriorConfirmations = (truck) =>
+    confirmations
+      .filter(c =>
+        c.dispatch_id === dispatch.id &&
+        c.truck_number === truck &&
+        c.confirmation_type !== currentConfType
+      )
+      .sort((a, b) => new Date(b.confirmed_at || 0) - new Date(a.confirmed_at || 0));
 
   const handleConfirmTruck = (truck) => {
     onConfirm(dispatch, truck);

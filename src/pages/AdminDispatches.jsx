@@ -14,6 +14,8 @@ import {
 import { format } from 'date-fns';
 import DispatchForm from '../components/admin/DispatchForm';
 import DispatchCard from '../components/portal/DispatchCard';
+import { useSession } from '../components/session/SessionContext';
+import { Label } from '@/components/ui/label';
 
 const statusColors = {
   Confirmed: 'bg-blue-50 text-blue-700 border-blue-200',
@@ -24,9 +26,13 @@ const statusColors = {
 
 export default function AdminDispatches() {
   const queryClient = useQueryClient();
+  const { session } = useSession();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [previewDispatch, setPreviewDispatch] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteCode, setDeleteCode] = useState('');
+  const [deleteError, setDeleteError] = useState('');
   const [filters, setFilters] = useState({ status: 'all', company_id: 'all', truck: '', dateFrom: '', dateTo: '' });
   const [showFilters, setShowFilters] = useState(false);
 
@@ -108,6 +114,25 @@ export default function AdminDispatches() {
     };
     setEditing(copy);
     setOpen(true);
+  };
+
+  const openDelete = (d) => {
+    setDeleteTarget(d);
+    setDeleteCode('');
+    setDeleteError('');
+  };
+
+  const handleDeleteConfirm = () => {
+    // Find the current session's AccessCode record to compare the actual code value
+    const sessionCode = accessCodes.find(ac => ac.id === session?.id);
+    if (!sessionCode || sessionCode.code !== deleteCode || sessionCode.code_type !== 'Admin') {
+      setDeleteError('Invalid admin code. Please try again.');
+      return;
+    }
+    deleteMutation.mutate(deleteTarget.id);
+    setDeleteTarget(null);
+    setDeleteCode('');
+    setDeleteError('');
   };
 
   const handleSave = (formData) => {
@@ -220,7 +245,7 @@ export default function AdminDispatches() {
                     <Button variant="ghost" size="icon" onClick={() => openEdit(d)} className="h-8 w-8">
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(d.id)} className="h-8 w-8 text-red-500 hover:text-red-600">
+                    <Button variant="ghost" size="icon" onClick={() => openDelete(d)} className="h-8 w-8 text-red-500 hover:text-red-600">
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
@@ -244,6 +269,46 @@ export default function AdminDispatches() {
             onCancel={() => { setOpen(false); setEditing(null); }}
             saving={saveMutation.isPending}
           />
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deleteTarget} onOpenChange={() => { setDeleteTarget(null); setDeleteCode(''); setDeleteError(''); }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-red-600">Confirm Deletion</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-1">
+            <p className="text-sm text-slate-600">
+              This will permanently delete the dispatch for{' '}
+              <span className="font-semibold">{deleteTarget?.date} ({deleteTarget?.shift_time} shift)</span>.
+              Enter your admin access code to confirm.
+            </p>
+            <div className="space-y-1.5">
+              <Label htmlFor="admin-code">Admin Access Code</Label>
+              <Input
+                id="admin-code"
+                value={deleteCode}
+                onChange={e => { setDeleteCode(e.target.value); setDeleteError(''); }}
+                placeholder="Enter your access code"
+                className={deleteError ? 'border-red-400 focus-visible:ring-red-400' : ''}
+              />
+              {deleteError && <p className="text-xs text-red-500">{deleteError}</p>}
+            </div>
+            <div className="flex gap-2 pt-1">
+              <Button variant="outline" className="flex-1" onClick={() => { setDeleteTarget(null); setDeleteCode(''); setDeleteError(''); }}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                className="flex-1"
+                disabled={!deleteCode || deleteMutation.isPending}
+                onClick={handleDeleteConfirm}
+              >
+                {deleteMutation.isPending ? 'Deleting...' : 'Confirm Delete'}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 

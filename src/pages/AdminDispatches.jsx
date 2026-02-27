@@ -24,6 +24,105 @@ const statusColors = {
   Canceled: 'bg-red-50 text-red-700 border-red-200',
 };
 
+const STATUS_ORDER = ['Confirmed', 'Dispatched', 'Amended', 'Canceled'];
+
+function AdminConfirmationsPanel({ dispatch, confirmations }) {
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const trucks = dispatch.trucks_assigned || [];
+  const currentStatus = dispatch.status;
+
+  // Group confirmations by confirmation_type
+  const byType = {};
+  confirmations.forEach(c => {
+    if (!byType[c.confirmation_type]) byType[c.confirmation_type] = [];
+    byType[c.confirmation_type].push(c);
+  });
+
+  const priorStatuses = STATUS_ORDER.filter(s => s !== currentStatus && byType[s]);
+
+  return (
+    <div className="space-y-4">
+      {/* Current status section */}
+      <div>
+        <div className="flex items-center gap-2 mb-2">
+          <Badge className={`${statusColors[currentStatus]} border text-xs`}>{currentStatus}</Badge>
+          <span className="text-xs text-slate-500">current status</span>
+        </div>
+        <div className="space-y-1.5">
+          {trucks.map(truck => {
+            const conf = (byType[currentStatus] || []).find(c => c.truck_number === truck);
+            return (
+              <div key={truck} className="flex items-center justify-between bg-white border border-slate-200 rounded-lg px-3 py-2">
+                <div className="flex items-center gap-2">
+                  <Truck className="h-3.5 w-3.5 text-slate-400" />
+                  <span className="text-sm font-mono font-medium">{truck}</span>
+                </div>
+                {conf ? (
+                  <div className="flex items-center gap-1.5 text-emerald-600">
+                    <CheckCircle2 className="h-4 w-4" />
+                    <span className="text-xs font-medium">Confirmed</span>
+                    {conf.confirmed_at && (
+                      <span className="text-xs text-slate-400 ml-1">
+                        {format(new Date(conf.confirmed_at), 'MMM d, h:mm a')}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5 text-slate-400">
+                    <XCircle className="h-4 w-4" />
+                    <span className="text-xs">Not confirmed for {currentStatus}</span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          {trucks.length === 0 && (
+            <p className="text-xs text-slate-400 py-2">No trucks assigned</p>
+          )}
+        </div>
+      </div>
+
+      {/* Prior statuses collapsible */}
+      {priorStatuses.length > 0 && (
+        <div>
+          <button
+            onClick={() => setHistoryOpen(h => !h)}
+            className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-700 transition-colors"
+          >
+            <History className="h-3.5 w-3.5" />
+            {historyOpen ? 'Hide' : 'Show'} prior confirmations ({priorStatuses.join(', ')})
+            {historyOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+          </button>
+          {historyOpen && (
+            <div className="mt-2 space-y-3">
+              {priorStatuses.map(status => (
+                <div key={status}>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <Badge className={`${statusColors[status]} border text-xs`}>{status}</Badge>
+                    <span className="text-xs text-slate-400">prior status</span>
+                  </div>
+                  <div className="space-y-1">
+                    {(byType[status] || []).map((c, i) => (
+                      <div key={i} className="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 rounded px-3 py-1.5">
+                        <Truck className="h-3 w-3 text-slate-400" />
+                        <span className="font-mono font-medium">{c.truck_number}</span>
+                        <CheckCircle2 className="h-3 w-3 text-emerald-500 ml-1" />
+                        {c.confirmed_at && (
+                          <span className="text-slate-400">{format(new Date(c.confirmed_at), 'MMM d, yyyy h:mm a')}</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AdminDispatches() {
   const queryClient = useQueryClient();
   const { session } = useSession();

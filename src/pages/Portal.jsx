@@ -95,6 +95,14 @@ export default function Portal() {
     if (dispatch.status === 'Amended') confType = 'Amended';
     if (dispatch.status === 'Canceled') confType = 'Canceled';
 
+    // Prevent duplicate: same dispatch + truck + type
+    const alreadyConfirmed = confirmations.some(c =>
+      c.dispatch_id === dispatch.id &&
+      c.truck_number === truck &&
+      c.confirmation_type === confType
+    );
+    if (alreadyConfirmed) return;
+
     confirmMutation.mutate({
       dispatch_id: dispatch.id,
       access_code_id: session.id,

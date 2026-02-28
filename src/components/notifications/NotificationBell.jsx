@@ -15,6 +15,15 @@ import { Link, useNavigate } from 'react-router-dom';
 
 export default function NotificationBell({ session }) {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+
+  const handleNotificationClick = (n) => {
+    if (!n.read_flag) markAsReadMutation.mutate(n.id);
+    if (n.related_dispatch_id) {
+      const page = session.code_type === 'Admin' ? 'AdminDispatches' : 'Portal';
+      navigate(createPageUrl(`${page}?dispatchId=${n.related_dispatch_id}`));
+    }
+  };
 
   const { data: notifications = [] } = useQuery({
     queryKey: ['notifications', session?.id],
@@ -69,7 +78,7 @@ export default function NotificationBell({ session }) {
               <div
                 key={n.id}
                 className={`p-3 border-b hover:bg-slate-50 cursor-pointer ${!n.read_flag ? 'bg-blue-50/30' : ''}`}
-                onClick={() => !n.read_flag && markAsReadMutation.mutate(n.id)}
+                onClick={() => handleNotificationClick(n)}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">

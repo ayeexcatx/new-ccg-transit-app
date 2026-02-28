@@ -192,17 +192,19 @@ export default function Portal() {
       ) : (
         <div className="space-y-3">
           {currentList.map(d => (
-            <DispatchCard
-              key={d.id}
-              dispatch={d}
-              session={session}
-              confirmations={confirmations}
-              timeEntries={timeEntries}
-              templateNotes={sortedNotes}
-              onConfirm={handleConfirm}
-              onTimeEntry={handleTimeEntry}
-              companyName={companyMap[d.company_id]}
-            />
+            <div key={d.id} ref={el => dispatchRefs.current[d.id] = el}>
+              <DispatchCard
+                dispatch={d}
+                session={session}
+                confirmations={confirmations}
+                timeEntries={timeEntries}
+                templateNotes={sortedNotes}
+                onConfirm={handleConfirm}
+                onTimeEntry={handleTimeEntry}
+                companyName={companyMap[d.company_id]}
+                forceExpanded={expandedDispatchId === d.id}
+              />
+            </div>
           ))}
         </div>
       )}

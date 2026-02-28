@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom';
 export default function Notifications() {
   const { session } = useSession();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const { data: notifications = [], isLoading } = useQuery({
     queryKey: ['notifications', session?.id],

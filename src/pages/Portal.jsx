@@ -143,7 +143,11 @@ export default function Portal() {
     // Determine correct tab
     const isActive = activeDispatches.some(d => d.id === targetDispatchId);
     const isHistory = historyDispatches.some(d => d.id === targetDispatchId);
-    if (!isActive && !isHistory) return; // not visible in any tab
+    if (!isActive && !isHistory) {
+      // Dispatch is assigned to this user but falls outside 30-day history window
+      didAutoScroll.current = true;
+      return;
+    }
 
     const correctTab = isActive ? 'active' : 'history';
     if (tab !== correctTab) {

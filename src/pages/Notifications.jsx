@@ -92,7 +92,7 @@ export default function Notifications() {
             <Card 
               key={n.id} 
               className={`hover:shadow-sm transition-shadow cursor-pointer ${!n.read_flag ? 'border-blue-200 bg-blue-50/30' : ''}`}
-              onClick={() => !n.read_flag && markAsReadMutation.mutate(n.id)}
+              onClick={() => handleNotificationClick(n)}
             >
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-3">

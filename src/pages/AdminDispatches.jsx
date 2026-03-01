@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   Plus, Pencil, Trash2, Copy, FileText, Clock, MapPin,
-  Sun, Moon, Truck, Filter, ChevronDown, ChevronUp, Eye, CheckCircle2, XCircle, History
+  Sun, Moon, Truck, Filter, ChevronDown, ChevronUp, Eye, CheckCircle2, XCircle, History, Archive, ArchiveX
 } from 'lucide-react';
 import { format } from 'date-fns';
 import DispatchForm from '../components/admin/DispatchForm';

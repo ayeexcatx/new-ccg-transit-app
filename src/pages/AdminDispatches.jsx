@@ -377,6 +377,14 @@ export default function AdminDispatches() {
                     <Button variant="ghost" size="icon" onClick={() => copyShift(d)} className="h-8 w-8" title="Copy Shift">
                       <Copy className="h-3.5 w-3.5" />
                     </Button>
+                    <Button
+                      variant="ghost" size="icon"
+                      onClick={() => archiveMutation.mutate({ id: d.id, archive: !d.archived_flag })}
+                      className="h-8 w-8 text-slate-500 hover:text-amber-600"
+                      title={d.archived_flag ? 'Unarchive' : 'Archive'}
+                    >
+                      {d.archived_flag ? <ArchiveX className="h-3.5 w-3.5" /> : <Archive className="h-3.5 w-3.5" />}
+                    </Button>
                     <Button variant="ghost" size="icon" onClick={() => openEdit(d)} className="h-8 w-8">
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>

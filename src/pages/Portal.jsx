@@ -87,7 +87,7 @@ export default function Portal() {
 
   const upcomingDispatches = useMemo(() => {
     return filteredDispatches
-      .filter(d => d.status !== 'Canceled' && d.date && new Date(d.date) > today)
+      .filter(d => !d.archived_flag && d.status !== 'Canceled' && d.date && new Date(d.date) > today)
       .sort((a, b) => {
         const dateDiff = new Date(a.date) - new Date(b.date);
         if (dateDiff !== 0) return dateDiff;
@@ -99,7 +99,7 @@ export default function Portal() {
 
   const todayDispatches = useMemo(() => {
     return filteredDispatches
-      .filter(d => d.status !== 'Canceled' && d.date && isToday(new Date(d.date)))
+      .filter(d => !d.archived_flag && d.status !== 'Canceled' && d.date && isToday(new Date(d.date)))
       .sort((a, b) => {
         if (!a.start_time && !b.start_time) return 0;
         if (!a.start_time) return 1;
@@ -110,9 +110,17 @@ export default function Portal() {
 
   const historyDispatches = useMemo(() => {
     return filteredDispatches
-      .filter(d => d.status === 'Canceled' || (d.date && isBefore(new Date(d.date), today)))
+      .filter(d => {
+        if (d.archived_flag) return true;
+        if (d.status === 'Canceled') return true;
+        if (d.date && isBefore(new Date(d.date), today)) {
+          // past date: include if time entry exists for any of their trucks
+          return myTrucksForHistory(d, timeEntries, session);
+        }
+        return false;
+      })
       .sort((a, b) => new Date(b.date) - new Date(a.date));
-  }, [filteredDispatches, today]);
+  }, [filteredDispatches, today, timeEntries]);
 
   const companyMap = {};
   companies.forEach(c => { companyMap[c.id] = c.name; });

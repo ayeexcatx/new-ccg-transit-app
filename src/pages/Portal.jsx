@@ -11,7 +11,7 @@ import { notifyTruckConfirmation } from '../components/notifications/createNotif
 
 export default function Portal() {
   const { session } = useSession();
-  const [tab, setTab] = useState('active');
+  const [tab, setTab] = useState('today');
   const queryClient = useQueryClient();
   const dispatchRefs = useRef({});
   const [expandedDispatchId, setExpandedDispatchId] = useState(null);

@@ -181,6 +181,14 @@ export default function AdminDispatches() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['dispatches-admin'] }),
   });
 
+  const archiveMutation = useMutation({
+    mutationFn: ({ id, archive }) => base44.entities.Dispatch.update(id, archive
+      ? { archived_flag: true, archived_at: new Date().toISOString(), archived_reason: 'Admin archived' }
+      : { archived_flag: false, archived_at: null, archived_reason: null }
+    ),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['dispatches-admin'] }),
+  });
+
   const companyMap = {};
   companies.forEach(c => { companyMap[c.id] = c.name; });
 

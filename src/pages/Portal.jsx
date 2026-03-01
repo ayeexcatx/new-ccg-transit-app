@@ -168,6 +168,13 @@ export default function Portal() {
     // Notify admin of truck confirmation
     const companyName = companyMap[dispatch.company_id];
     notifyTruckConfirmation(dispatch, truck, companyName);
+
+    // Resolve owner notification if all trucks for this status are now confirmed
+    const updatedConfirmations = [
+      ...confirmations,
+      { dispatch_id: dispatch.id, truck_number: truck, confirmation_type: confType }
+    ];
+    resolveOwnerNotificationIfComplete(dispatch, updatedConfirmations, []);
   };
 
   const handleTimeEntry = (dispatch, truck, start, end) => {

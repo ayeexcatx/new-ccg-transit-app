@@ -49,28 +49,28 @@
  */
 import AccessCodeLogin from './pages/AccessCodeLogin';
 import AdminAccessCodes from './pages/AdminAccessCodes';
+import AdminAnnouncements from './pages/AdminAnnouncements';
 import AdminCompanies from './pages/AdminCompanies';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminDispatches from './pages/AdminDispatches';
 import AdminTemplateNotes from './pages/AdminTemplateNotes';
+import Home from './pages/Home';
 import Notifications from './pages/Notifications';
 import Portal from './pages/Portal';
-import Home from './pages/Home';
-import AdminAnnouncements from './pages/AdminAnnouncements';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
     "AccessCodeLogin": AccessCodeLogin,
     "AdminAccessCodes": AdminAccessCodes,
+    "AdminAnnouncements": AdminAnnouncements,
     "AdminCompanies": AdminCompanies,
     "AdminDashboard": AdminDashboard,
     "AdminDispatches": AdminDispatches,
     "AdminTemplateNotes": AdminTemplateNotes,
+    "Home": Home,
     "Notifications": Notifications,
     "Portal": Portal,
-    "Home": Home,
-    "AdminAnnouncements": AdminAnnouncements,
 }
 
 export const pagesConfig = {

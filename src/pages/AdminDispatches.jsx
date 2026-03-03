@@ -16,13 +16,7 @@ import DispatchForm from '../components/admin/DispatchForm';
 import DispatchCard from '../components/portal/DispatchCard';
 import { useSession } from '../components/session/SessionContext';
 import { Label } from '@/components/ui/label';
-
-const statusColors = {
-  Confirmed: 'bg-blue-50 text-blue-700 border-blue-200',
-  Dispatched: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  Amended: 'bg-amber-50 text-amber-700 border-amber-200',
-  Canceled: 'bg-red-50 text-red-700 border-red-200',
-};
+import { statusBadgeColors, statusBorderAccent } from '../components/portal/statusConfig';
 
 const STATUS_ORDER = ['Confirmed', 'Dispatched', 'Amended', 'Canceled'];
 

@@ -3,17 +3,11 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
   Clock, MapPin, Truck, Sun, Moon,
-  FileText, ChevronDown, ChevronUp
+  FileText, ChevronDown
 } from 'lucide-react';
 import { format } from 'date-fns';
 import DispatchDetailDrawer from './DispatchDetailDrawer';
-
-const statusColors = {
-  Confirmed: 'bg-blue-50 text-blue-700 border-blue-200',
-  Dispatched: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  Amended: 'bg-amber-50 text-amber-700 border-amber-200',
-  Canceled: 'bg-red-50 text-red-700 border-red-200',
-};
+import { statusBadgeColors, statusBorderAccent } from './statusConfig';
 
 const tollColors = {
   Authorized: 'bg-green-50 text-green-700',

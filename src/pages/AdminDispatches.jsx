@@ -317,7 +317,7 @@ export default function AdminDispatches() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-xl font-bold text-slate-900">Dispatches</h2>
-          <p className="text-sm text-slate-500">{filtered.length} dispatches</p>
+          <p className="text-sm text-slate-500">{currentList.length} dispatches</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setShowFilters(!showFilters)} className="text-xs">
@@ -359,17 +359,28 @@ export default function AdminDispatches() {
         </Card>
       )}
 
+      <Tabs value={tab} onValueChange={setTab}>
+        <TabsList className="bg-slate-100">
+          <TabsTrigger value="today" className="text-xs">Today ({todayDispatches.length})</TabsTrigger>
+          <TabsTrigger value="upcoming" className="text-xs">Upcoming ({upcomingDispatches.length})</TabsTrigger>
+          <TabsTrigger value="history" className="text-xs">History ({historyDispatches.length})</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
       {isLoading ? (
         <div className="flex justify-center py-12">
           <div className="animate-spin h-6 w-6 border-2 border-slate-300 border-t-slate-700 rounded-full" />
         </div>
-      ) : filtered.length === 0 ? (
+      ) : currentList.length === 0 ? (
         <div className="text-center py-16 text-slate-500 text-sm">No dispatches found</div>
       ) : (
         <div className="grid gap-3">
-          {filtered.map(d => (
+          {currentList.map(d => (
             <div key={d.id} ref={el => dispatchRefs.current[d.id] = el} className="rounded-lg transition-all duration-500">
-              <Card className={`hover:shadow-sm transition-shadow ${statusBorderAccent[d.status] || ''}`}>
+              <Card
+                className={`hover:shadow-md transition-shadow cursor-pointer ${statusBorderAccent[d.status] || ''}`}
+                onClick={() => setPreviewDispatch(d)}
+              >
               <CardContent className="p-4 sm:p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
@@ -399,7 +410,7 @@ export default function AdminDispatches() {
                       {d.start_time && (
                         <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{d.start_time}</span>
                       )}
-                      <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{d.start_location}</span>
+                      {d.start_location && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{d.start_location}</span>}
                     </div>
                     <div className="flex items-center gap-1 mt-2 flex-wrap">
                       <Truck className="h-3 w-3 text-slate-400" />
@@ -408,7 +419,7 @@ export default function AdminDispatches() {
                       ))}
                     </div>
                   </div>
-                  <div className="flex gap-1 shrink-0">
+                  <div className="flex gap-1 shrink-0" onClick={e => e.stopPropagation()}>
                     <Button variant="ghost" size="icon" onClick={() => setPreviewDispatch(d)} className="h-8 w-8" title="Preview">
                       <Eye className="h-3.5 w-3.5" />
                     </Button>

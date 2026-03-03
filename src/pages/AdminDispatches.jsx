@@ -195,8 +195,6 @@ export default function AdminDispatches() {
   const companyMap = {};
   companies.forEach(c => { companyMap[c.id] = c.name; });
 
-  const today = startOfDay(new Date());
-
   const filtered = useMemo(() => {
     return dispatches.filter(d => {
       if (filters.status !== 'all' && d.status !== filters.status) return false;

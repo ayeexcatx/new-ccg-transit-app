@@ -18,7 +18,7 @@ export default function NotificationBell({ session }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
-  const { data: notifications = [] } = useQuery({
+  const { data: rawNotifications = [] } = useQuery({
     queryKey: ['notifications', session?.id],
     queryFn: async () => {
       if (!session) return [];
@@ -32,6 +32,11 @@ export default function NotificationBell({ session }) {
     },
     enabled: !!session,
     refetchInterval: 30000,
+  });
+
+  const notifications = [...rawNotifications].sort((a, b) => {
+    if (a.read_flag !== b.read_flag) return a.read_flag ? 1 : -1;
+    return new Date(b.created_date) - new Date(a.created_date);
   });
 
   const { data: confirmations = [] } = useQuery({

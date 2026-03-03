@@ -250,8 +250,8 @@ export default function DispatchForm({ dispatch, companies, accessCodes, onSave,
         </div>
       </div>
 
-      {/* Additional Assignments - only for full dispatches */}
-      {!isConfirmed && !isCanceled && (
+      {/* Additional Assignments - only for non-confirmed dispatches */}
+      {!isConfirmed && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <Label>Additional Assignments</Label>

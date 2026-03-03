@@ -162,12 +162,30 @@ export default function Portal() {
     const companyName = companyMap[dispatch.company_id];
     notifyTruckConfirmation(dispatch, truck, companyName);
 
-    // Resolve owner notification if all trucks for this status are now confirmed
+    // Build updated confirmation list for resolution check
     const updatedConfirmations = [
       ...confirmations,
       { dispatch_id: dispatch.id, truck_number: truck, confirmation_type: confType }
     ];
+
+    // Resolve owner notification if all trucks for this status are now confirmed
     resolveOwnerNotificationIfComplete(dispatch, updatedConfirmations, []);
+
+    // Auto-archive Canceled dispatch once all trucks have confirmed cancellation
+    if (confType === 'Canceled') {
+      const allTrucks = dispatch.trucks_assigned || [];
+      const confirmedCanceledTrucks = updatedConfirmations
+        .filter(c => c.dispatch_id === dispatch.id && c.confirmation_type === 'Canceled')
+        .map(c => c.truck_number);
+      const allConfirmed = allTrucks.every(t => confirmedCanceledTrucks.includes(t));
+      if (allConfirmed && !dispatch.archived_flag) {
+        base44.entities.Dispatch.update(dispatch.id, {
+          archived_flag: true,
+          archived_at: new Date().toISOString(),
+          archived_reason: 'Cancellation confirmed',
+        }).then(() => queryClient.invalidateQueries({ queryKey: ['portal-dispatches', session?.company_id] }));
+      }
+    }
   };
 
   const handleTimeEntry = (dispatch, truck, start, end) => {

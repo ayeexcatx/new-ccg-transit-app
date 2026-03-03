@@ -157,45 +157,59 @@ export default function Home() {
       )}
 
       {/* Action Needed */}
-      {(unreadNotifications.length > 0 || pendingConfirmationsCount > 0) && (
+      {actionItems.length > 0 && (
         <section>
-          <h3 className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 text-red-500" />
-            Action Needed
-          </h3>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-red-500" />
+              Action Needed
+              <Badge className="bg-red-500 text-white text-xs px-1.5 py-0">{actionItems.length}</Badge>
+            </h3>
+            <Link to={createPageUrl('Notifications')} className="text-xs text-slate-400 hover:text-slate-600">
+              View all notifications
+            </Link>
+          </div>
           <Card className="border-red-100">
             <CardContent className="p-0 divide-y divide-slate-100">
-              {pendingConfirmationsCount > 0 && (
-                <Link to={createPageUrl('Portal')}>
-                  <div className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 cursor-pointer">
-                    <CheckCircle2 className="h-4 w-4 text-amber-500 shrink-0" />
-                    <p className="text-sm font-medium text-slate-800 flex-1">
-                      Pending confirmations: <span className="text-amber-600">{pendingConfirmationsCount}</span>
-                    </p>
-                    <ArrowRight className="h-4 w-4 text-slate-300 shrink-0" />
-                  </div>
-                </Link>
-              )}
-              {unreadNotifications.map(n => (
-                <div
-                  key={n.id}
-                  className="flex items-start gap-3 px-4 py-3 hover:bg-blue-50/40 cursor-pointer bg-blue-50/20"
-                  onClick={() => handleNotificationClick(n)}
-                >
-                  <Bell className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-900">{n.title}</p>
-                    <p className="text-xs text-slate-600 mt-0.5">{n.message}</p>
-                    {n.required_trucks?.length > 0 && (
-                      <div className="mt-1">
-                        <NotificationStatusBadge notification={n} confirmations={confirmations} />
+              {actionItems.map(({ notification: n, dispatch: d }) => {
+                const trucks = d ? (d.trucks_assigned || []).filter(t => allowedTrucks.includes(t)) : [];
+                const truckLabel = trucks.length <= 2 ? trucks.join(', ') : `${trucks.length} trucks`;
+                return (
+                  <div
+                    key={n.id}
+                    className="flex items-start gap-3 px-4 py-3 hover:bg-blue-50/40 cursor-pointer bg-blue-50/20"
+                    onClick={() => handleActionClick(n)}
+                  >
+                    <Bell className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                        {d && (
+                          <Badge className={`${statusColors[d.status]} border text-xs`}>{d.status}</Badge>
+                        )}
+                        {d?.date && (
+                          <span className="text-xs text-slate-500">
+                            {format(new Date(d.date), 'MMM d')}
+                            {d.shift_time === 'Day'
+                              ? <Sun className="h-3 w-3 text-amber-400 inline ml-1" />
+                              : <Moon className="h-3 w-3 text-slate-400 inline ml-1" />}
+                          </span>
+                        )}
                       </div>
-                    )}
-                    <p className="text-xs text-slate-400 mt-1">{format(new Date(n.created_date), 'MMM d, h:mm a')}</p>
+                      {d?.client_name && (
+                        <p className="text-sm font-medium text-slate-800 truncate">{d.client_name}</p>
+                      )}
+                      {trucks.length > 0 && (
+                        <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                          <Truck className="h-3 w-3" />
+                          {truckLabel}
+                        </p>
+                      )}
+                      <p className="text-xs font-medium text-blue-600 mt-1">Confirm receipt →</p>
+                    </div>
+                    <div className="h-2 w-2 rounded-full bg-blue-500 shrink-0 mt-1.5" />
                   </div>
-                  <div className="h-2 w-2 rounded-full bg-blue-500 shrink-0 mt-1.5" />
-                </div>
-              ))}
+                );
+              })}
             </CardContent>
           </Card>
         </section>

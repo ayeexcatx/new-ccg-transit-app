@@ -209,9 +209,26 @@ export default function DispatchDetailDrawer({
 
           {dispatch.status !== 'Confirmed' && (
             <>
-              {(dispatch.instructions || dispatch.notes) && (
+              {(dispatch.instructions || dispatch.notes || dispatch.toll_status || dispatch.start_time || dispatch.start_location) && (
                 <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-3">
                   <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Assignment 1</p>
+                  {dispatch.toll_status && (
+                    <Badge className={`${tollColors[dispatch.toll_status]} text-xs font-medium`}>
+                      Toll: {dispatch.toll_status}
+                    </Badge>
+                  )}
+                  {dispatch.start_time && (
+                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                      <Clock className="h-4 w-4 text-slate-400 shrink-0" />
+                      <span>{dispatch.start_time}</span>
+                    </div>
+                  )}
+                  {dispatch.start_location && (
+                    <div className="flex items-start gap-2 text-sm text-slate-600">
+                      <MapPin className="h-4 w-4 text-slate-400 shrink-0 mt-0.5" />
+                      <span className="whitespace-pre-wrap">{dispatch.start_location}</span>
+                    </div>
+                  )}
                   {dispatch.instructions && (
                     <div>
                       <p className="text-xs font-semibold text-slate-400 mb-1">Instructions</p>
@@ -235,6 +252,11 @@ export default function DispatchDetailDrawer({
                       <div key={i} className={`rounded-lg border border-slate-200 p-3 text-sm ${i % 2 === 0 ? 'bg-slate-50' : 'bg-blue-50/40'}`}>
                         <p className="text-xs font-semibold text-slate-500 mb-2">Assignment {i + 2}</p>
                         <div className="space-y-1.5">
+                          {a.toll_status && (
+                            <Badge className={`${tollColors[a.toll_status]} text-xs font-medium`}>
+                              Toll: {a.toll_status}
+                            </Badge>
+                          )}
                           {a.job_number && (
                             <div className="flex items-center gap-2 text-slate-600">
                               <FileText className="h-3.5 w-3.5 text-slate-400 shrink-0" />
@@ -254,7 +276,16 @@ export default function DispatchDetailDrawer({
                             </div>
                           )}
                           {a.instructions && (
-                            <p className="text-xs text-slate-500 whitespace-pre-wrap mt-1 pl-1">{a.instructions}</p>
+                            <div>
+                              <p className="text-xs font-semibold text-slate-400 mb-0.5">Instructions</p>
+                              <p className="text-sm text-slate-600 whitespace-pre-wrap">{a.instructions}</p>
+                            </div>
+                          )}
+                          {a.notes && (
+                            <div>
+                              <p className="text-xs font-semibold text-slate-400 mb-0.5">Notes</p>
+                              <p className="text-sm text-slate-600 whitespace-pre-wrap">{a.notes}</p>
+                            </div>
                           )}
                         </div>
                       </div>

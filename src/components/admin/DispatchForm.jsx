@@ -285,6 +285,21 @@ export default function DispatchForm({ dispatch, companies, accessCodes, onSave,
                 <Label className="text-xs">Instructions</Label>
                 <Textarea placeholder="Instructions" value={a.instructions} onChange={e => updateAssignment(i, 'instructions', e.target.value)} rows={2} />
               </div>
+              <div>
+                <Label className="text-xs">Notes</Label>
+                <Textarea placeholder="Notes" value={a.notes || ''} onChange={e => updateAssignment(i, 'notes', e.target.value)} rows={2} />
+              </div>
+              <div>
+                <Label className="text-xs">Toll Status</Label>
+                <Select value={a.toll_status || ''} onValueChange={v => updateAssignment(i, 'toll_status', v)}>
+                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Authorized">Authorized</SelectItem>
+                    <SelectItem value="Unauthorized">Unauthorized</SelectItem>
+                    <SelectItem value="Included in Rate">Included in Rate</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           ))}
         </div>

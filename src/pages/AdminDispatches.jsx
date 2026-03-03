@@ -155,6 +155,11 @@ export default function AdminDispatches() {
     queryFn: () => base44.entities.Confirmation.list('-confirmed_at', 500),
   });
 
+  const { data: timeEntries = [] } = useQuery({
+    queryKey: ['time-entries-admin'],
+    queryFn: () => base44.entities.TimeEntry.list('-created_date', 500),
+  });
+
   const { data: templateNotes = [] } = useQuery({
     queryKey: ['template-notes'],
     queryFn: () => base44.entities.DispatchTemplateNotes.filter({ active_flag: true }, 'priority', 50),

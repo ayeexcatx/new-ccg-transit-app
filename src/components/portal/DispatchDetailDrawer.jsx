@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   CheckCircle2, Clock, MapPin, Truck, Sun, Moon,
-  FileText, AlertTriangle
+  FileText, AlertTriangle, Save
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { statusBadgeColors } from './statusConfig';
@@ -16,19 +16,85 @@ const tollColors = {
   'Included in Rate': 'bg-purple-50 text-purple-700',
 };
 
+function TruckTimeRow({ truck, dispatch, timeEntries, onTimeEntry, readOnly }) {
+  const existing = timeEntries.find(te =>
+    te.dispatch_id === dispatch.id && te.truck_number === truck
+  );
+  const [start, setStart] = useState(existing?.start_time || '');
+  const [end, setEnd] = useState(existing?.end_time || '');
+  const [saved, setSaved] = useState(false);
+
+  const handleSave = () => {
+    onTimeEntry(dispatch, truck, start, end);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  if (readOnly) {
+    return (
+      <div className="flex items-center justify-between text-xs text-slate-600 bg-slate-50 rounded px-3 py-2">
+        <div className="flex items-center gap-2">
+          <Truck className="h-3 w-3 text-slate-400" />
+          <span className="font-mono font-medium">{truck}</span>
+        </div>
+        <span>
+          {existing ? (
+            <span className="text-slate-500">{existing.start_time || '—'} → {existing.end_time || '—'}</span>
+          ) : (
+            <span className="text-slate-400 italic">No time logged</span>
+          )}
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white border border-slate-200 rounded-lg p-3 space-y-2">
+      <div className="flex items-center gap-2">
+        <Truck className="h-3.5 w-3.5 text-slate-400" />
+        <span className="text-sm font-mono font-medium">{truck}</span>
+        {existing && (
+          <span className="text-xs text-slate-400 ml-auto">
+            Saved: {existing.start_time || '—'} → {existing.end_time || '—'}
+          </span>
+        )}
+      </div>
+      <div className="flex gap-2 items-center">
+        <div className="flex-1">
+          <p className="text-xs text-slate-500 mb-1">Check-in</p>
+          <Input type="time" value={start} onChange={e => setStart(e.target.value)} className="text-sm h-8" />
+        </div>
+        <div className="flex-1">
+          <p className="text-xs text-slate-500 mb-1">Check-out</p>
+          <Input type="time" value={end} onChange={e => setEnd(e.target.value)} className="text-sm h-8" />
+        </div>
+        <div className="pt-5">
+          <Button
+            size="sm"
+            onClick={handleSave}
+            disabled={!start && !end}
+            className={`h-8 text-xs ${saved ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-slate-900 hover:bg-slate-800'}`}
+          >
+            {saved ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+            {!saved && 'Save'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DispatchDetailDrawer({
   dispatch, session, confirmations, timeEntries, templateNotes,
   onConfirm, onTimeEntry, companyName, open, onClose
 }) {
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
-
   if (!dispatch) return null;
 
   const myTrucks = (session.allowed_trucks || []).filter(t =>
     (dispatch.trucks_assigned || []).includes(t)
   );
   const isOwner = session.code_type === 'CompanyOwner';
+  const isAdmin = session.code_type === 'Admin';
   const currentConfType = dispatch.status;
 
   const isTruckConfirmedForCurrent = (truck) =>
@@ -54,20 +120,8 @@ export default function DispatchDetailDrawer({
       )
       .sort((a, b) => new Date(b.confirmed_at || 0) - new Date(a.confirmed_at || 0));
 
-  const singleTruck = session.code_type === 'Truck' ? myTrucks[0] : null;
-  const existingEntry = timeEntries.find(te =>
-    te.dispatch_id === dispatch.id && te.truck_number === singleTruck
-  );
-
   const handleConfirmTruck = (truck) => {
     onConfirm(dispatch, truck, currentConfType);
-  };
-
-  const handleTimeEntry = (truck) => {
-    if (!truck) return;
-    onTimeEntry(dispatch, truck, startTime, endTime);
-    setStartTime('');
-    setEndTime('');
   };
 
   return (

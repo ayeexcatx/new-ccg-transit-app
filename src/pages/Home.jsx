@@ -5,7 +5,7 @@ import { useSession } from '../components/session/SessionContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Bell, Clock, MapPin, Sun, Moon, ArrowRight, CheckCircle2, AlertCircle, Megaphone } from 'lucide-react';
+import { Bell, Clock, MapPin, Sun, Moon, ArrowRight, AlertCircle, Megaphone, Truck } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { getDispatchBucket } from '../components/portal/dispatchBuckets';
 import { createPageUrl } from '@/utils';

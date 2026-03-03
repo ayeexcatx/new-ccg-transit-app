@@ -7,7 +7,7 @@ import {
   CheckCircle2, Clock, MapPin, Truck, Sun, Moon,
   FileText, AlertTriangle, Save, History
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { statusBadgeColors } from './statusConfig';
 
 const tollColors = {
@@ -131,6 +131,11 @@ export default function DispatchDetailDrawer({
     onConfirm(dispatch, truck, currentConfType);
   };
 
+  // Safe date display: use parseISO to avoid timezone shift on YYYY-MM-DD strings
+  const displayDate = dispatch.date
+    ? format(parseISO(dispatch.date), 'MMM d, yyyy')
+    : '';
+
   return (
     <Sheet open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
       <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto p-0">
@@ -146,7 +151,7 @@ export default function DispatchDetailDrawer({
                 {dispatch.shift_time}
               </span>
               <span className="ml-auto text-xs text-slate-500 font-normal">
-                {dispatch.date && format(new Date(dispatch.date), 'MMM d, yyyy')}
+                {displayDate}
               </span>
             </SheetTitle>
           </SheetHeader>
@@ -301,7 +306,7 @@ export default function DispatchDetailDrawer({
           )}
 
           {/* Actions */}
-          {dispatch.status !== 'Canceled' && (isOwner || isAdmin) && (
+          {(isOwner || isAdmin) && (
             <div className="space-y-4 pt-2 border-t border-slate-100">
 
               {/* CompanyOwner confirm */}
@@ -364,8 +369,8 @@ export default function DispatchDetailDrawer({
                 </div>
               )}
 
-              {/* Time Log — CompanyOwner (editable) */}
-              {isOwner && myTrucks.length > 0 && (
+              {/* Time Log — CompanyOwner (editable) — only for non-canceled */}
+              {isOwner && myTrucks.length > 0 && dispatch.status !== 'Canceled' && (
                 <div>
                   <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Time Log</p>
                   <div className="space-y-2">

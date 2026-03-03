@@ -28,6 +28,7 @@ const DispatchCard = React.forwardRef(function DispatchCard({
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   React.useEffect(() => {
+
     if (forceOpen) setDrawerOpen(true);
   }, [forceOpen]);
 

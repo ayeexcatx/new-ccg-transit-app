@@ -188,7 +188,7 @@ export default function Portal() {
 
   // Detect if targeted dispatch is not found/visible
   const dispatchNotFound = targetDispatchId && dispatches.length > 0 &&
-    !dispatches.find(d => d.id === targetDispatchId);
+    !filteredDispatches.find(d => d.id === targetDispatchId);
 
   // Auto-navigate to target dispatch when data is loaded
   useEffect(() => {

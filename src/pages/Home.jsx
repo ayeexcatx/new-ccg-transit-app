@@ -62,6 +62,13 @@ export default function Home() {
   // Shared notifications hook — same query key as bell + notifications page
   const { notifications, unreadCount, markRead } = useOwnerNotifications(session);
 
+  const { data: confirmations = [] } = useQuery({
+    queryKey: ['confirmations-home'],
+    queryFn: () => base44.entities.Confirmation.list('-confirmed_at', 500),
+    enabled: session?.code_type === 'CompanyOwner',
+    refetchInterval: 30000,
+  });
+
   const { data: dispatches = [] } = useQuery({
     queryKey: ['portal-dispatches', session?.company_id],
     queryFn: () => base44.entities.Dispatch.filter({ company_id: session.company_id }, '-date', 200),

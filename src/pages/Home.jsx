@@ -12,6 +12,8 @@ import { createPageUrl } from '@/utils';
 import { Link, useNavigate } from 'react-router-dom';
 import { useOwnerNotifications } from '../components/notifications/useOwnerNotifications';
 
+const dateOnly = (v) => (typeof v === 'string' ? v.slice(0, 10) : v);
+
 const statusColors = {
   Confirmed: 'bg-blue-50 text-blue-700 border-blue-200',
   Dispatched: 'bg-emerald-50 text-emerald-700 border-emerald-200',

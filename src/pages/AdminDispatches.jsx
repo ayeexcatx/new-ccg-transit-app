@@ -546,6 +546,7 @@ export default function AdminDispatches() {
 
       {/* Dispatch Detail Drawer */}
       <DispatchDetailDrawer
+        key={drawerMountKey}
         open={!!previewDispatch}
         onClose={() => setPreviewDispatch(null)}
         dispatch={previewDispatch}

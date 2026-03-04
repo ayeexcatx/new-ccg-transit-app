@@ -197,9 +197,14 @@ export default function AdminDispatches() {
   });
 
   const saveMutation = useMutation({
-    mutationFn: (data) => editing
-      ? base44.entities.Dispatch.update(editing.id, data)
-      : base44.entities.Dispatch.create(data),
+    mutationFn: async (data) => {
+      if (editing && !editing._isCopy) {
+        await base44.entities.Dispatch.update(editing.id, data);
+        return base44.entities.Dispatch.filter({ id: editing.id }, '-created_date', 1).then(r => r[0]);
+      } else {
+        return base44.entities.Dispatch.create(data);
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dispatches-admin'] });
       setOpen(false);

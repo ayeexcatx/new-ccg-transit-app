@@ -7,11 +7,30 @@ import { base44 } from '@/api/base44Client';
  */
 export async function notifyDispatchChange(dispatch, oldStatus, newStatus, companies, accessCodes) {
   try {
-    const company = companies.find(c => c.id === dispatch.company_id);
+    if (!dispatch?.id) return;
+
+    // Fetch company if not provided
+    let company = companies ? companies.find(c => c.id === dispatch.company_id) : null;
+    if (!company) {
+      const fetched = await base44.entities.Company.filter({ id: dispatch.company_id }, '-created_date', 1);
+      company = fetched?.[0];
+    }
     if (!company) return;
 
+    // Fetch CompanyOwner access codes if not provided
+    let ownerCodes = accessCodes
+      ? accessCodes.filter(ac => ac.active_flag && ac.code_type === 'CompanyOwner' && ac.company_id === company.id)
+      : null;
+    if (!ownerCodes || ownerCodes.length === 0) {
+      ownerCodes = await base44.entities.AccessCode.filter({
+        company_id: dispatch.company_id,
+        active_flag: true,
+        code_type: 'CompanyOwner',
+      });
+    }
+
     // CompanyOwner codes whose allowed_trucks intersect dispatch
-    const affectedOwnerCodes = accessCodes.filter(ac => {
+    const affectedOwnerCodes = ownerCodes.filter(ac => {
       if (!ac.active_flag) return false;
       if (ac.code_type !== 'CompanyOwner') return false;
       if (ac.company_id !== company.id) return false;
@@ -21,7 +40,7 @@ export async function notifyDispatchChange(dispatch, oldStatus, newStatus, compa
       return intersection.length > 0;
     });
 
-    if (affectedOwnerCodes.length === 0) return;
+    if (!affectedOwnerCodes || affectedOwnerCodes.length === 0) return;
 
     const statusLabels = {
       Confirmed: 'Confirmed (details to follow)',

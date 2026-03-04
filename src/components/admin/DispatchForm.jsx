@@ -72,7 +72,7 @@ export default function DispatchForm({ dispatch, companies, accessCodes, onSave,
     setForm({ ...form, additional_assignments: form.additional_assignments.filter((_, i) => i !== idx) });
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     // Base validation
     if (!form.company_id || !form.date || !form.shift_time || form.trucks_assigned.length === 0) {
       alert('Please fill in Company, Date, Shift Time, and assign at least one truck');
@@ -119,14 +119,8 @@ export default function DispatchForm({ dispatch, companies, accessCodes, onSave,
     const oldStatus = dispatch && !dispatch._isCopy ? dispatch.status : null;
     const newStatus = finalForm.status;
 
-    onSave(finalForm);
-
-    // Always notify on creation or whenever status is set (dedup is handled inside notifyDispatchChange)
-    if (accessCodes) {
-      setTimeout(() => {
-        notifyDispatchChange(finalForm, oldStatus, newStatus, companies, accessCodes);
-      }, 500);
-    }
+    const savedDispatch = await onSave(finalForm);
+    notifyDispatchChange(savedDispatch || finalForm, oldStatus, newStatus, companies, accessCodes);
   };
 
   return (

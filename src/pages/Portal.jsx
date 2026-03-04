@@ -20,17 +20,14 @@ export default function Portal() {
   const { session } = useSession();
   const [tab, setTab] = useState('today');
   const queryClient = useQueryClient();
+  const location = useLocation();
   const dispatchRefs = useRef({});
   const [drawerDispatchId, setDrawerDispatchId] = useState(null);
-  const [drawerKey, setDrawerKey] = useState(null);
+  const [drawerMountKey, setDrawerMountKey] = useState('');
+  const pendingOpenIdRef = useRef(null);
 
-  const urlParams = new URLSearchParams(window.location.search);
+  const urlParams = new URLSearchParams(location.search);
   const targetDispatchId = urlParams.get('dispatchId');
-
-  // Reset drawerKey whenever targetDispatchId changes so DispatchCard remounts
-  useEffect(() => {
-    setDrawerKey(targetDispatchId);
-  }, [targetDispatchId]);
 
   const { data: dispatches = [] } = useQuery({
     queryKey: ['portal-dispatches', session?.company_id],

@@ -134,7 +134,7 @@ export default function AdminDispatches() {
   const [showFilters, setShowFilters] = useState(false);
   const [tab, setTab] = useState('today');
   const dispatchRefs = useRef({});
-  const didAutoScroll = useRef(false);
+  const lastOpenedIdRef = useRef(null);
 
   const urlParams = new URLSearchParams(window.location.search);
   const targetDispatchId = urlParams.get('dispatchId');

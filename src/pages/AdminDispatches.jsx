@@ -328,12 +328,13 @@ export default function AdminDispatches() {
   }, [targetDispatchId, dispatches]);
 
   const handleSave = (formData) => {
-    if (editing && !editing._isCopy) {
-      saveMutation.mutate(formData);
-    } else {
-      setEditing(null);
-      saveMutation.mutate(formData);
-    }
+    return new Promise((resolve, reject) => {
+      saveMutation.mutate(formData, {
+        onSuccess: (saved) => resolve(saved),
+        onError: reject,
+      });
+      if (!editing || editing._isCopy) setEditing(null);
+    });
   };
 
   return (

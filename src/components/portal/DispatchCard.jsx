@@ -5,7 +5,7 @@ import {
   Clock, MapPin, Truck, Sun, Moon,
   FileText, ChevronDown
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import DispatchDetailDrawer from './DispatchDetailDrawer';
 import { statusBadgeColors, statusBorderAccent } from './statusConfig';
 

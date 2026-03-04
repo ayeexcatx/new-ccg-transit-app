@@ -196,7 +196,7 @@ export default function Portal() {
   const sortedNotes = [...templateNotes].sort((a, b) => (a.priority || 0) - (b.priority || 0));
 
   const dispatchNotFound = targetDispatchId && dispatches.length > 0 &&
-    !filteredDispatches.find(d => d.id === targetDispatchId);
+    !dispatches.find(d => d.id === targetDispatchId);
 
   useEffect(() => {
     if (!targetDispatchId || didAutoOpen.current || dispatches.length === 0) return;

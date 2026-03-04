@@ -13,6 +13,7 @@ import { useOwnerNotifications } from './useOwnerNotifications';
 
 export default function NotificationBell({ session }) {
   const navigate = useNavigate();
+  const [open, setOpen] = React.useState(false);
   const { notifications, unreadCount, markRead } = useOwnerNotifications(session);
 
   const { data: confirmations = [] } = useQuery({
@@ -23,16 +24,19 @@ export default function NotificationBell({ session }) {
   });
 
   const handleNotificationClick = (n) => {
+    if (!session) return;
     if (n.related_dispatch_id) {
       const targetPage = session.code_type === 'Admin' ? 'AdminDispatches' : 'Portal';
-      navigate(createPageUrl(`${targetPage}?dispatchId=${n.related_dispatch_id}`));
+      setOpen(false);
+      setTimeout(() => navigate(createPageUrl(`${targetPage}?dispatchId=${n.related_dispatch_id}`)), 0);
     } else {
+      if (!n.read_flag) markRead(n.id);
       navigate(createPageUrl('Notifications'));
     }
   };
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-4 w-4" />

@@ -163,7 +163,7 @@ export default function DispatchDetailDrawer({
           {dispatch.status === 'Scheduled' ? (
             <div>
               <h2 className="font-semibold text-slate-900 text-lg">Scheduled Dispatch</h2>
-              <p className="text-sm text-blue-600 mt-1 italic">Confirmation only — details to follow</p>
+              <p className="text-sm text-blue-600 mt-1 italic">Your truck has been scheduled — details will follow</p>
             </div>
           ) : (
             <div className="space-y-3">

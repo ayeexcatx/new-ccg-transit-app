@@ -12,7 +12,7 @@ export default function DispatchForm({ dispatch, companies, accessCodes, onSave,
     company_id: '', date: '', shift_time: 'Day', client_name: '', job_number: '',
     start_time: '', start_location: '', instructions: 'Deliver material to / from',
     notes: '', toll_status: '', trucks_assigned: [],
-    status: 'Schedule', additional_assignments: [],
+    status: 'Scheduled', additional_assignments: [],
     amendment_history: [], canceled_reason: ''
   });
 
@@ -30,7 +30,7 @@ export default function DispatchForm({ dispatch, companies, accessCodes, onSave,
         notes: dispatch.notes || '',
         toll_status: dispatch.toll_status || '',
         trucks_assigned: dispatch.trucks_assigned || [],
-        status: dispatch.status || 'Schedule',
+        status: dispatch.status || 'Scheduled',
         additional_assignments: dispatch.additional_assignments || [],
         amendment_history: dispatch.amendment_history || [],
         canceled_reason: dispatch.canceled_reason || ''
@@ -41,9 +41,9 @@ export default function DispatchForm({ dispatch, companies, accessCodes, onSave,
   const selectedCompany = companies.find((c) => c.id === form.company_id);
   const availableTrucks = selectedCompany?.trucks || [];
 
-  const isConfirmed = form.status === 'Schedule';
-  const isFullDispatch = form.status === 'Dispatch' || form.status === 'Amend';
-  const isCanceled = form.status === 'Cancel';
+  const isConfirmed = form.status === 'Scheduled';
+  const isFullDispatch = form.status === 'Dispatch' || form.status === 'Amended';
+  const isCanceled = form.status === 'Cancelled';
 
   const toggleTruck = (t) => {
     setForm((prev) => ({
@@ -80,12 +80,12 @@ export default function DispatchForm({ dispatch, companies, accessCodes, onSave,
 
     // Status-specific validation
     if (isFullDispatch && !form.start_location) {
-      alert('Start Location is required for Dispatch/Amend status');
+      alert('Start Location is required for Dispatch/Amended status');
       return;
     }
 
     if (isCanceled && !form.canceled_reason) {
-      alert('Cancellation reason is required for Cancel status');
+      alert('Cancellation reason is required for Cancelled status');
       return;
     }
 
@@ -97,7 +97,7 @@ export default function DispatchForm({ dispatch, companies, accessCodes, onSave,
 
     // Track amendments
     let finalForm = { ...form };
-    if (dispatch && form.status === 'Amend' && dispatch.status !== 'Amend') {
+    if (dispatch && form.status === 'Amended' && dispatch.status !== 'Amended') {
       const changes = [];
       if (dispatch.start_location !== form.start_location) changes.push('location');
       if (dispatch.start_time !== form.start_time) changes.push('time');
@@ -141,10 +141,10 @@ export default function DispatchForm({ dispatch, companies, accessCodes, onSave,
           <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="Schedule">Schedule (pending dispatch)</SelectItem>
+              <SelectItem value="Scheduled">Scheduled (pending dispatch)</SelectItem>
               <SelectItem value="Dispatch">Dispatch (full details)</SelectItem>
-              <SelectItem value="Amend">Amend</SelectItem>
-              <SelectItem value="Cancel">Cancel</SelectItem>
+              <SelectItem value="Amended">Amended</SelectItem>
+              <SelectItem value="Cancelled">Cancelled</SelectItem>
             </SelectContent>
           </Select>
         </div>

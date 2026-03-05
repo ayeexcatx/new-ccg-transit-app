@@ -125,6 +125,7 @@ export default function DispatchDetailDrawer({
   const isOwner = session.code_type === 'CompanyOwner';
   const isAdmin = session.code_type === 'Admin';
   const currentConfType = dispatch.status;
+  const hasAdditional = Array.isArray(dispatch.additional_assignments) && dispatch.additional_assignments.length > 0;
 
   const isTruckConfirmedForCurrent = (truck) =>
     confirmations.some(c =>
@@ -192,18 +193,19 @@ export default function DispatchDetailDrawer({
               {dispatch.client_name && (
                 <h2 className="font-semibold text-slate-900 text-lg">{dispatch.client_name}</h2>
               )}
+              {!hasAdditional && (
+                <div className="grid grid-cols-1 gap-3 text-sm">
+                  {dispatch.job_number && (
+                    <div className="flex items-center gap-2 text-slate-600">
+                      <FileText className="h-4 w-4 text-slate-400 shrink-0" />
+                      <span>Job #{dispatch.job_number}</span>
+                    </div>
+                  )}
+                </div>
+              )}
               {companyName && (
                 <p className="text-xs text-slate-400">{companyName}</p>
               )}
-
-              <div className="grid grid-cols-1 gap-3 text-sm">
-                {dispatch.job_number && (
-                  <div className="flex items-center gap-2 text-slate-600">
-                    <FileText className="h-4 w-4 text-slate-400 shrink-0" />
-                    <span>Job #{dispatch.job_number}</span>
-                  </div>
-                )}
-              </div>
 
               {/* Trucks */}
               <div className="flex items-center gap-1.5 flex-wrap">
@@ -219,9 +221,15 @@ export default function DispatchDetailDrawer({
 
           {dispatch.status !== 'Scheduled' && (
             <>
-              {(dispatch.instructions || dispatch.notes || dispatch.toll_status || dispatch.start_time || dispatch.start_location) && (
+              {(hasAdditional || dispatch.instructions || dispatch.notes || dispatch.toll_status || dispatch.start_time || dispatch.start_location) && (
                 <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-3">
                   <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Assignment 1</p>
+                  {hasAdditional && (
+                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                      <FileText className="h-4 w-4 text-slate-400 shrink-0" />
+                      <span>Job Number{dispatch.job_number ? `: ${dispatch.job_number}` : ''}</span>
+                    </div>
+                  )}
                   {dispatch.start_time && (
                     <div className="flex items-center gap-2 text-sm text-slate-600">
                       <Clock className="h-4 w-4 text-slate-400 shrink-0" />
@@ -265,7 +273,7 @@ export default function DispatchDetailDrawer({
                           {a.job_number && (
                             <div className="flex items-center gap-2 text-slate-600">
                               <FileText className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                              <span>Job #{a.job_number}</span>
+                              <span>Job Number: {a.job_number}</span>
                             </div>
                           )}
                           {a.start_time && (

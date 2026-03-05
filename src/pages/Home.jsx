@@ -23,6 +23,8 @@ const statusColors = {
   Cancelled: 'bg-red-50 text-red-700 border-red-200',
 };
 
+const formatDispatchDate = (dateValue) => (dateValue ? format(parseISO(dateValue), 'EEE, MMM d, yyyy') : '');
+
 const formatDispatchTime = (startTime) => {
   if (!startTime) return '';
 
@@ -61,6 +63,20 @@ function MiniDispatchCard({ dispatch }) {
             : <Moon className="h-4 w-4 text-slate-400" />}
         </div>
         <div className="flex-1 min-w-0">
+          <div className="grid grid-cols-3 items-center text-xs text-slate-500 mb-1 gap-2">
+            <div className="flex items-center">
+              <Badge className={`${statusColors[dispatch.status]} border text-xs`}>{dispatch.status}</Badge>
+            </div>
+            <div className="text-center truncate">{formatDispatchDate(dispatch.date)}</div>
+            <div className="flex items-center justify-end gap-1 min-w-0">
+              {dispatch.start_time && (
+                <>
+                  <Clock className="h-3 w-3" />
+                  <span className="truncate">{formatDispatchTime(dispatch.start_time)}</span>
+                </>
+              )}
+            </div>
+          </div>
           <div className="flex items-center gap-2 flex-wrap">
             <Badge className={`${statusColors[dispatch.status]} border text-xs`}>{dispatch.status}</Badge>
           </div>

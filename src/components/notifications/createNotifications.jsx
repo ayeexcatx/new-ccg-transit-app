@@ -105,11 +105,13 @@ export async function notifyDispatchChange(dispatch, oldStatus, newStatus, compa
       const isScheduledDetails = statusText === 'Scheduled (details to follow)' || statusText === 'Confirmed (details to follow)';
       const dateTimeText = (!isScheduledDetails && timeText) ? `${dateText} at ${timeText}` : dateText;
 
-      const message = [
-        `${dateTimeText} · ${dispatch.shift_time} · ${statusText}`,
-        dispatch.client_name ? dispatch.client_name : null,
+      const secondLineParts = [
+        dispatch.shift_time,
+        statusText,
         truckSummary,
-      ].filter(Boolean).join(' | ');
+      ].filter(Boolean);
+
+      const message = `${dateTimeText}\n${secondLineParts.join(' • ')}`;
 
       await base44.entities.Notification.create({
         recipient_type: 'AccessCode',

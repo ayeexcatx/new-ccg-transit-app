@@ -126,6 +126,8 @@ export default function Home() {
     queryKey: ['portal-dispatches', session?.company_id],
     queryFn: () => base44.entities.Dispatch.filter({ company_id: session.company_id }, '-date', 200),
     enabled: !!session?.company_id,
+    refetchInterval: 30000,
+    refetchOnWindowFocus: true,
   });
 
   const { data: allAnnouncements = [] } = useQuery({
@@ -235,6 +237,10 @@ export default function Home() {
                 <p className="text-sm text-slate-400 text-center py-4">No actions needed</p>
               ) : (
                 actionItems.map(({ notification: n, dispatch: d }) => {
+                  const liveRequiredTrucks = d
+                    ? (d.trucks_assigned || []).filter(t => allowedTrucks.includes(t))
+                    : undefined;
+
                   return (
                     <div
                       key={n.id}
@@ -245,9 +251,13 @@ export default function Home() {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-slate-800 truncate">{n.title}</p>
                         <p className="text-xs text-slate-600 mt-0.5 line-clamp-2 whitespace-pre-line">{formatNotificationDetailsMessage(n.message)}</p>
-                        {n.required_trucks?.length > 0 && (
+                        {(liveRequiredTrucks ?? n.required_trucks)?.length > 0 && (
                           <div className="mt-1">
-                            <NotificationStatusBadge notification={n} confirmations={confirmations} />
+                            <NotificationStatusBadge
+                              notification={n}
+                              confirmations={confirmations}
+                              requiredTrucks={liveRequiredTrucks}
+                            />
                           </div>
                         )}
                       </div>

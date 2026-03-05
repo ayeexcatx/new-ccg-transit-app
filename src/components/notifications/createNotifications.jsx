@@ -58,15 +58,11 @@ export async function notifyDispatchChange(dispatch, oldStatus, newStatus, compa
       });
     }
 
-    // CompanyOwner codes whose allowed_trucks intersect dispatch
+    // CompanyOwner codes for this company
     const affectedOwnerCodes = ownerCodes.filter(ac => {
       if (!ac.active_flag) return false;
       if (ac.code_type !== 'CompanyOwner') return false;
-      if (ac.company_id !== company.id) return false;
-      const intersection = (dispatch.trucks_assigned || []).filter(t =>
-        (ac.allowed_trucks || []).includes(t)
-      );
-      return intersection.length > 0;
+      return ac.company_id === company.id;
     });
 
     if (!affectedOwnerCodes || affectedOwnerCodes.length === 0) return;
@@ -82,18 +78,15 @@ export async function notifyDispatchChange(dispatch, oldStatus, newStatus, compa
 
     for (const ac of affectedOwnerCodes) {
       const dedupKey = `${dispatch.id}:${newStatus}:${ac.id}`;
+      const relevantTrucks = (dispatch.trucks_assigned || []).filter(t =>
+        (ac.allowed_trucks || []).includes(t)
+      );
 
       // Check for existing notification with this dedup key for this recipient
       const existing = await base44.entities.Notification.filter({
         recipient_access_code_id: ac.id,
         dispatch_status_key: dedupKey,
       }, '-created_date', 1);
-
-      if (existing && existing.length > 0) continue;
-
-      const relevantTrucks = (dispatch.trucks_assigned || []).filter(t =>
-        (ac.allowed_trucks || []).includes(t)
-      );
 
       // Build truck summary: show list if ≤3, otherwise count
       const truckSummary = relevantTrucks.length <= 3
@@ -112,6 +105,29 @@ export async function notifyDispatchChange(dispatch, oldStatus, newStatus, compa
       ].filter(Boolean);
 
       const message = `${dateTimeText}\n${secondLineParts.join(' • ')}`;
+
+      if (existing && existing.length > 0) {
+        const existingNotif = existing[0];
+
+        const confirmations = await base44.entities.Confirmation.filter({
+          dispatch_id: dispatch.id,
+          confirmation_type: newStatus,
+          access_code_id: ac.id,
+        }, '-confirmed_at', 200);
+
+        const confirmedTrucks = confirmations.map(c => c.truck_number);
+        const allConfirmed = relevantTrucks.length > 0 && relevantTrucks.every(t => confirmedTrucks.includes(t));
+
+        await base44.entities.Notification.update(existingNotif.id, {
+          title: titlePrefix,
+          message,
+          required_trucks: relevantTrucks,
+          read_flag: allConfirmed ? true : false,
+        });
+        continue;
+      }
+
+      if (relevantTrucks.length === 0) continue;
 
       await base44.entities.Notification.create({
         recipient_type: 'AccessCode',

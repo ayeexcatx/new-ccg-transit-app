@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  Plus, Pencil, Trash2, Copy, FileText, Clock, MapPin,
+  Plus, Pencil, Trash2, Copy, FileText, MapPin,
   Sun, Moon, Truck, Filter, ChevronDown, ChevronUp, Eye, CheckCircle2, XCircle, History, Archive, ArchiveX
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
@@ -22,6 +22,26 @@ import { Label } from '@/components/ui/label';
 import { statusBadgeColors, statusBorderAccent } from '../components/portal/statusConfig';
 
 const STATUS_ORDER = ['Scheduled', 'Dispatch', 'Amended', 'Cancelled'];
+
+const formatDispatchTime = (startTime) => {
+  if (!startTime) return '';
+
+  const time = String(startTime).trim();
+  if (!time) return '';
+  if (/\b(?:AM|PM)\b/i.test(time)) return time.toUpperCase();
+
+  const match = time.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (!match) return time;
+
+  const hours24 = Number(match[1]);
+  const minutes = match[2];
+
+  if (Number.isNaN(hours24) || hours24 < 0 || hours24 > 23) return time;
+
+  const meridiem = hours24 >= 12 ? 'PM' : 'AM';
+  const hours12 = hours24 % 12 || 12;
+  return `${hours12}:${minutes} ${meridiem}`;
+};
 
 function AdminConfirmationsPanel({ dispatch, confirmations }) {
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -414,7 +434,16 @@ export default function AdminDispatches() {
         <div className="text-center py-16 text-slate-500 text-sm">No dispatches found</div>
       ) : (
         <div className="grid gap-3">
-          {currentList.map(d => (
+          {currentList.map(d => {
+            const assignmentList = Array.isArray(d.assignments)
+              ? d.assignments
+              : Array.isArray(d.additional_assignments)
+                ? d.additional_assignments
+                : [];
+            const firstAssignmentStartTime = assignmentList[0]?.start_time || assignmentList[0]?.startTime;
+            const firstLineTimeText = formatDispatchTime(firstAssignmentStartTime || d.start_time);
+
+            return (
             <div key={d.id} ref={el => dispatchRefs.current[d.id] = el} className="rounded-lg transition-all duration-500">
               <Card
                 className={`hover:shadow-md transition-shadow cursor-pointer ${statusBorderAccent[d.status] || ''}`}
@@ -436,6 +465,7 @@ export default function AdminDispatches() {
                       </span>
                       <span className="text-xs text-slate-500">
                         {d.date && format(parseISO(d.date), 'EEEE, MMM d, yyyy')}
+                        {firstLineTimeText ? ` • ${firstLineTimeText}` : ''}
                       </span>
                     </div>
                     <div className="flex items-center gap-3 text-sm text-slate-700 flex-wrap">
@@ -445,9 +475,6 @@ export default function AdminDispatches() {
                     <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 flex-wrap">
                       {d.job_number && (
                         <span className="flex items-center gap-1"><FileText className="h-3 w-3" />#{d.job_number}</span>
-                      )}
-                      {d.start_time && (
-                        <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{d.start_time}</span>
                       )}
                       {d.start_location && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{d.start_location}</span>}
                     </div>
@@ -484,7 +511,8 @@ export default function AdminDispatches() {
               </CardContent>
               </Card>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

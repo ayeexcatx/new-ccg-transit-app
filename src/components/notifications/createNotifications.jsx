@@ -1,4 +1,33 @@
 import { base44 } from '@/api/base44Client';
+import { format, parseISO } from 'date-fns';
+
+function formatStartTimeToAmPm(startTime) {
+  if (!startTime) return '';
+
+  const time = String(startTime).trim();
+  if (!time) return '';
+
+  const amPmMatch = time.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*([AaPp][Mm])$/);
+  if (amPmMatch) {
+    const [, hourRaw, minute, periodRaw] = amPmMatch;
+    let hour = Number(hourRaw);
+    if (!Number.isFinite(hour) || hour < 1) hour = 12;
+    if (hour > 12) hour = hour % 12 || 12;
+    return `${hour}:${minute} ${periodRaw.toUpperCase()}`;
+  }
+
+  const hhMmMatch = time.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (!hhMmMatch) return '';
+
+  let hour24 = Number(hhMmMatch[1]);
+  const minute = hhMmMatch[2];
+  if (!Number.isFinite(hour24) || hour24 < 0 || hour24 > 23) return '';
+
+  const period = hour24 >= 12 ? 'PM' : 'AM';
+  let hour12 = hour24 % 12;
+  if (hour12 === 0) hour12 = 12;
+  return `${hour12}:${minute} ${period}`;
+}
 
 /**
  * Create (or deduplicate) owner notifications for a dispatch status change.
@@ -71,8 +100,13 @@ export async function notifyDispatchChange(dispatch, oldStatus, newStatus, compa
         ? `Trucks: ${relevantTrucks.join(', ')}`
         : `${relevantTrucks.length} trucks assigned`;
 
+      const dateText = format(parseISO(dispatch.date), 'EEE MM-dd-yyyy').toUpperCase();
+      const timeText = formatStartTimeToAmPm(dispatch.start_time);
+      const isScheduledDetails = statusText === 'Scheduled (details to follow)' || statusText === 'Confirmed (details to follow)';
+      const dateTimeText = (!isScheduledDetails && timeText) ? `${dateText} at ${timeText}` : dateText;
+
       const message = [
-        `${dispatch.date} · ${dispatch.shift_time} · ${statusText}`,
+        `${dateTimeText} · ${dispatch.shift_time} shift · ${statusText}`,
         dispatch.client_name ? dispatch.client_name : null,
         truckSummary,
       ].filter(Boolean).join(' | ');
@@ -141,10 +175,22 @@ export async function resolveOwnerNotificationIfComplete(dispatch, confirmations
  */
 export async function notifyTruckConfirmation(dispatch, truckNumber, companyName) {
   try {
+    const statusLabels = {
+      Scheduled: 'Scheduled (details to follow)',
+      Dispatch: 'Dispatch',
+      Amended: 'Amended',
+      Cancelled: 'Cancelled',
+    };
+    const statusText = statusLabels[dispatch.status] || dispatch.status;
+    const dateText = format(parseISO(dispatch.date), 'EEE MM-dd-yyyy').toUpperCase();
+    const timeText = formatStartTimeToAmPm(dispatch.start_time);
+    const isScheduledDetails = statusText === 'Scheduled (details to follow)' || statusText === 'Confirmed (details to follow)';
+    const dateTimeText = (!isScheduledDetails && timeText) ? `${dateText} at ${timeText}` : dateText;
+
     await base44.entities.Notification.create({
       recipient_type: 'Admin',
       title: `Truck ${truckNumber} Confirmed`,
-      message: `${dispatch.date} · ${dispatch.shift_time} · ${dispatch.status}${companyName ? ` | ${companyName}` : ''}${dispatch.client_name ? ` | ${dispatch.client_name}` : ''}`,
+      message: `${dateTimeText} · ${dispatch.shift_time} shift · ${statusText}${companyName ? ` | ${companyName}` : ''}${dispatch.client_name ? ` | ${dispatch.client_name}` : ''}`,
       related_dispatch_id: dispatch.id,
       read_flag: false,
       // Group key so all truck confirmations for the same dispatch+status can be bulk-resolved

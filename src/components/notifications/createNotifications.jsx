@@ -106,7 +106,7 @@ export async function notifyDispatchChange(dispatch, oldStatus, newStatus, compa
       const dateTimeText = (!isScheduledDetails && timeText) ? `${dateText} at ${timeText}` : dateText;
 
       const message = [
-        `${dateTimeText} · ${dispatch.shift_time} shift · ${statusText}`,
+        `${dateTimeText} · ${dispatch.shift_time} · ${statusText}`,
         dispatch.client_name ? dispatch.client_name : null,
         truckSummary,
       ].filter(Boolean).join(' | ');
@@ -190,7 +190,7 @@ export async function notifyTruckConfirmation(dispatch, truckNumber, companyName
     await base44.entities.Notification.create({
       recipient_type: 'Admin',
       title: `Truck ${truckNumber} Confirmed`,
-      message: `${dateTimeText} · ${dispatch.shift_time} shift · ${statusText}${companyName ? ` | ${companyName}` : ''}${dispatch.client_name ? ` | ${dispatch.client_name}` : ''}`,
+      message: `${dateTimeText} · ${dispatch.shift_time} · ${statusText}${companyName ? ` | ${companyName}` : ''}${dispatch.client_name ? ` | ${dispatch.client_name}` : ''}`,
       related_dispatch_id: dispatch.id,
       read_flag: false,
       // Group key so all truck confirmations for the same dispatch+status can be bulk-resolved

@@ -5,7 +5,7 @@ import { useSession } from '../components/session/SessionContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Bell, Clock, MapPin, Sun, Moon, ArrowRight, AlertCircle, Megaphone } from 'lucide-react';
+import { Bell, Clock, Sun, Moon, ArrowRight, AlertCircle, Megaphone } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { getDispatchBucket } from '../components/portal/dispatchBuckets';
 import { createPageUrl } from '@/utils';
@@ -53,7 +53,9 @@ const formatDispatchTime = (startTime) => {
   return `${hour12}:${minute} ${period}`;
 };
 
-function MiniDispatchCard({ dispatch }) {
+function MiniDispatchCard({ dispatch, companyName }) {
+  const truckNumbers = dispatch.trucks_assigned || [];
+
   return (
     <Link to={createPageUrl(`Portal?dispatchId=${dispatch.id}`)}>
       <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 border border-transparent hover:border-slate-200 transition-all cursor-pointer">
@@ -77,12 +79,24 @@ function MiniDispatchCard({ dispatch }) {
               )}
             </div>
           </div>
-          <p className="text-sm font-medium text-slate-700 truncate">{dispatch.client_name || 'Dispatch'}</p>
-          <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500 flex-wrap">
-            {dispatch.start_location && (
-              <span className="flex items-center gap-1 truncate max-w-[160px]">
-                <MapPin className="h-3 w-3 shrink-0" />{dispatch.start_location}
-              </span>
+          <div className="mt-0.5 space-y-0.5 min-w-0">
+            {dispatch.client_name && (
+              <p className="text-sm font-medium text-slate-700 truncate">{dispatch.client_name}</p>
+            )}
+            {dispatch.job_number && (
+              <p className="text-xs text-slate-600 truncate">Job #{dispatch.job_number}</p>
+            )}
+            {companyName && (
+              <p className="text-xs text-slate-600 truncate">{companyName}</p>
+            )}
+            {truckNumbers.length > 0 && (
+              <div className="flex items-center gap-1 flex-wrap pt-0.5">
+                {truckNumbers.map((truck) => (
+                  <Badge key={truck} variant="outline" className="text-[10px] font-mono px-1.5 py-0 h-5">
+                    {truck}
+                  </Badge>
+                ))}
+              </div>
             )}
           </div>
         </div>
@@ -260,7 +274,7 @@ export default function Home() {
             {todayDispatches.length === 0 ? (
               <p className="text-sm text-slate-400 text-center py-4">No dispatches today</p>
             ) : (
-              todayDispatches.map(d => <MiniDispatchCard key={d.id} dispatch={d} />)
+              todayDispatches.map(d => <MiniDispatchCard key={d.id} dispatch={d} companyName={d.company_name} />)
             )}
           </CardContent>
         </Card>
@@ -280,7 +294,7 @@ export default function Home() {
             {upcomingDispatches.length === 0 ? (
               <p className="text-sm text-slate-400 text-center py-4">No upcoming dispatches</p>
             ) : (
-              upcomingDispatches.map(d => <MiniDispatchCard key={d.id} dispatch={d} />)
+              upcomingDispatches.map(d => <MiniDispatchCard key={d.id} dispatch={d} companyName={d.company_name} />)
             )}
           </CardContent>
         </Card>

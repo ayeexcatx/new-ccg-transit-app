@@ -47,6 +47,7 @@ export function useOwnerNotifications(session) {
   const refresh = () => queryClient.invalidateQueries({ queryKey });
 
   const markRead = (id) => markReadMutation.mutate(id);
+  const markReadAsync = (id) => markReadMutation.mutateAsync(id);
   const markAllRead = () => markAllReadMutation.mutate();
 
   return {
@@ -55,6 +56,7 @@ export function useOwnerNotifications(session) {
     isLoading,
     refresh,
     markRead,
+    markReadAsync,
     markAllRead,
     markAllReadPending: markAllReadMutation.isPending,
   };

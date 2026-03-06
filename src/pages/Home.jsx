@@ -113,7 +113,7 @@ export default function Home() {
   const allowedTrucks = session?.allowed_trucks || [];
 
   // Shared notifications hook — same query key as bell + notifications page
-  const { notifications, unreadCount, markRead } = useOwnerNotifications(session);
+  const { notifications, unreadCount, markReadAsync } = useOwnerNotifications(session);
 
   const { data: confirmations = [] } = useQuery({
     queryKey: ['confirmations-home'],
@@ -179,7 +179,14 @@ export default function Home() {
     }));
   }, [notifications, dispatches]);
 
-  const handleActionClick = (n) => {
+  const isInformationalUpdateNotification = (notification) =>
+    notification?.notification_category === 'dispatch_update_info' || notification?.notification_type === 'informational';
+
+  const handleActionClick = async (n) => {
+    if (isInformationalUpdateNotification(n) && !n.read_flag) {
+      await markReadAsync(n.id);
+    }
+
     if (n.related_dispatch_id) {
       navigate(createPageUrl(`Portal?dispatchId=${n.related_dispatch_id}`));
     } else {

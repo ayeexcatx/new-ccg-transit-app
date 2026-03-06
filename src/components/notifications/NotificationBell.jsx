@@ -15,7 +15,7 @@ import { formatNotificationDetailsMessage } from './formatNotificationDetailsMes
 export default function NotificationBell({ session }) {
   const navigate = useNavigate();
   const [open, setOpen] = React.useState(false);
-  const { notifications, unreadCount, markRead } = useOwnerNotifications(session);
+  const { notifications, unreadCount, markReadAsync } = useOwnerNotifications(session);
 
   const { data: confirmations = [] } = useQuery({
     queryKey: ['confirmations-bell'],
@@ -24,14 +24,21 @@ export default function NotificationBell({ session }) {
     refetchInterval: 30000,
   });
 
-  const handleNotificationClick = (n) => {
+  const isInformationalUpdateNotification = (notification) =>
+    notification?.notification_category === 'dispatch_update_info' || notification?.notification_type === 'informational';
+
+  const handleNotificationClick = async (n) => {
     if (!session) return;
+
+    if (n.related_dispatch_id && isInformationalUpdateNotification(n) && !n.read_flag) {
+      await markReadAsync(n.id);
+    }
+
     if (n.related_dispatch_id) {
       const targetPage = session.code_type === 'Admin' ? 'AdminDispatches' : 'Portal';
       setOpen(false);
       setTimeout(() => navigate(createPageUrl(`${targetPage}?dispatchId=${n.related_dispatch_id}`)), 0);
     } else {
-      if (!n.read_flag) markRead(n.id);
       navigate(createPageUrl('Notifications'));
     }
   };

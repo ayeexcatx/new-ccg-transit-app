@@ -245,11 +245,26 @@ export default function Home() {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-slate-800 truncate">{n.title}</p>
                         <p className="text-xs text-slate-600 mt-0.5 line-clamp-2 whitespace-pre-line">{formatNotificationDetailsMessage(n.message)}</p>
-                        {n.required_trucks?.length > 0 && (
-                          <div className="mt-1">
-                            <NotificationStatusBadge notification={n} confirmations={confirmations} />
+                        {d && (
+                          <div className="mt-1 flex items-center gap-1 flex-wrap">
+                            <Truck className="h-3 w-3 text-slate-500" />
+                            {(d.trucks_assigned || [])
+                              .filter((truck) => allowedTrucks.includes(truck))
+                              .map((truck) => (
+                                <Badge key={`${n.id}-${truck}`} variant="outline" className="text-[10px] font-mono px-1.5 py-0 h-5">
+                                  {truck}
+                                </Badge>
+                              ))}
                           </div>
                         )}
+                        <div className="mt-1">
+                          <NotificationStatusBadge
+                            notification={n}
+                            confirmations={confirmations}
+                            dispatch={d}
+                            ownerAllowedTrucks={allowedTrucks}
+                          />
+                        </div>
                       </div>
                       <div className="h-2 w-2 rounded-full bg-blue-500 shrink-0 mt-1.5" />
                     </div>

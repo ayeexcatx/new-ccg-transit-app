@@ -29,6 +29,38 @@ function formatStartTimeToAmPm(startTime) {
   return `${hour12}:${minute} ${period}`;
 }
 
+const statusLabels = {
+  Scheduled: 'Scheduled (details to follow)',
+  Dispatch: 'Dispatch',
+  Amended: 'Amended',
+  Cancelled: 'Cancelled',
+};
+
+function getRelevantTrucks(dispatch, accessCode) {
+  return (dispatch?.trucks_assigned || []).filter(t =>
+    (accessCode?.allowed_trucks || []).includes(t)
+  );
+}
+
+function buildOwnerDispatchMessage(dispatch, statusText, relevantTrucks) {
+  const truckSummary = relevantTrucks.length <= 3
+    ? `Trucks: ${relevantTrucks.join(', ')}`
+    : `${relevantTrucks.length} trucks assigned`;
+
+  const dateText = format(parseISO(dispatch.date), 'EEE MM-dd-yyyy').toUpperCase();
+  const timeText = formatStartTimeToAmPm(dispatch.start_time);
+  const isScheduledDetails = statusText === 'Scheduled (details to follow)' || statusText === 'Confirmed (details to follow)';
+  const dateTimeText = (!isScheduledDetails && timeText) ? `${dateText} at ${timeText}` : dateText;
+
+  const secondLineParts = [
+    dispatch.shift_time,
+    statusText,
+    truckSummary,
+  ].filter(Boolean);
+
+  return `${dateTimeText}\n${secondLineParts.join(' • ')}`;
+}
+
 /**
  * Create (or deduplicate) owner notifications for a dispatch status change.
  * One notification per CompanyOwner code per (dispatch, status).
@@ -71,12 +103,6 @@ export async function notifyDispatchChange(dispatch, oldStatus, newStatus, compa
 
     if (!affectedOwnerCodes || affectedOwnerCodes.length === 0) return;
 
-    const statusLabels = {
-      Scheduled: 'Scheduled (details to follow)',
-      Dispatch: 'Dispatch',
-      Amended: 'Amended',
-      Cancelled: 'Cancelled',
-    };
     const statusText = statusLabels[newStatus] || newStatus;
     const titlePrefix = `Status: ${statusText}`;
 
@@ -91,27 +117,8 @@ export async function notifyDispatchChange(dispatch, oldStatus, newStatus, compa
 
       if (existing && existing.length > 0) continue;
 
-      const relevantTrucks = (dispatch.trucks_assigned || []).filter(t =>
-        (ac.allowed_trucks || []).includes(t)
-      );
-
-      // Build truck summary: show list if ≤3, otherwise count
-      const truckSummary = relevantTrucks.length <= 3
-        ? `Trucks: ${relevantTrucks.join(', ')}`
-        : `${relevantTrucks.length} trucks assigned`;
-
-      const dateText = format(parseISO(dispatch.date), 'EEE MM-dd-yyyy').toUpperCase();
-      const timeText = formatStartTimeToAmPm(dispatch.start_time);
-      const isScheduledDetails = statusText === 'Scheduled (details to follow)' || statusText === 'Confirmed (details to follow)';
-      const dateTimeText = (!isScheduledDetails && timeText) ? `${dateText} at ${timeText}` : dateText;
-
-      const secondLineParts = [
-        dispatch.shift_time,
-        statusText,
-        truckSummary,
-      ].filter(Boolean);
-
-      const message = `${dateTimeText}\n${secondLineParts.join(' • ')}`;
+      const relevantTrucks = getRelevantTrucks(dispatch, ac);
+      const message = buildOwnerDispatchMessage(dispatch, statusText, relevantTrucks);
 
       await base44.entities.Notification.create({
         recipient_type: 'AccessCode',
@@ -128,6 +135,81 @@ export async function notifyDispatchChange(dispatch, oldStatus, newStatus, compa
     }
   } catch (err) {
     console.error('Error creating dispatch notifications:', err);
+  }
+}
+
+/**
+ * Reconcile existing owner notifications for a dispatch after dispatch edits.
+ * Keeps confirmation history intact while refreshing required_trucks/message/read state.
+ */
+export async function reconcileOwnerNotificationsForDispatch(dispatch, accessCodes) {
+  try {
+    if (!dispatch?.id) return;
+
+    const ownerNotifications = await base44.entities.Notification.filter({
+      recipient_type: 'AccessCode',
+      related_dispatch_id: dispatch.id,
+    }, '-created_date', 500);
+
+    if (!ownerNotifications?.length) return;
+
+    let ownerCodes = accessCodes;
+    if (!ownerCodes || ownerCodes.length === 0) {
+      ownerCodes = await base44.entities.AccessCode.filter({
+        company_id: dispatch.company_id,
+        active_flag: true,
+        code_type: 'CompanyOwner',
+      });
+    }
+
+    const ownerCodeMap = new Map((ownerCodes || []).map(ac => [ac.id, ac]));
+
+    const missingOwnerIds = ownerNotifications
+      .map(n => n.recipient_access_code_id || n.recipient_id)
+      .filter(id => id && !ownerCodeMap.has(id));
+
+    if (missingOwnerIds.length > 0) {
+      await Promise.all([...new Set(missingOwnerIds)].map(async (id) => {
+        const result = await base44.entities.AccessCode.filter({ id }, '-created_date', 1);
+        if (result?.[0]) ownerCodeMap.set(id, result[0]);
+      }));
+    }
+
+    const statusSet = new Set();
+    ownerNotifications.forEach(n => {
+      const parts = String(n.dispatch_status_key || '').split(':');
+      if (parts.length >= 2 && parts[1]) statusSet.add(parts[1]);
+    });
+
+    const confirmationsByStatus = {};
+    await Promise.all([...statusSet].map(async (status) => {
+      confirmationsByStatus[status] = await base44.entities.Confirmation.filter({
+        dispatch_id: dispatch.id,
+        confirmation_type: status,
+      }, '-confirmed_at', 500);
+    }));
+
+    for (const notification of ownerNotifications) {
+      const status = String(notification.dispatch_status_key || '').split(':')[1];
+      if (!status) continue;
+
+      const ownerCode = ownerCodeMap.get(notification.recipient_access_code_id || notification.recipient_id);
+      if (!ownerCode) continue;
+
+      const relevantTrucks = getRelevantTrucks(dispatch, ownerCode);
+      const statusText = statusLabels[status] || status;
+      const message = buildOwnerDispatchMessage(dispatch, statusText, relevantTrucks);
+      const confirmedTrucks = (confirmationsByStatus[status] || []).map(c => c.truck_number);
+      const allConfirmed = relevantTrucks.every(t => confirmedTrucks.includes(t));
+
+      await base44.entities.Notification.update(notification.id, {
+        required_trucks: relevantTrucks,
+        message,
+        read_flag: allConfirmed,
+      });
+    }
+  } catch (error) {
+    console.error('Error reconciling owner notifications for dispatch:', error);
   }
 }
 
@@ -177,12 +259,6 @@ export async function resolveOwnerNotificationIfComplete(dispatch, confirmations
  */
 export async function notifyTruckConfirmation(dispatch, truckNumber, companyName) {
   try {
-    const statusLabels = {
-      Scheduled: 'Scheduled (details to follow)',
-      Dispatch: 'Dispatch',
-      Amended: 'Amended',
-      Cancelled: 'Cancelled',
-    };
     const statusText = statusLabels[dispatch.status] || dispatch.status;
     const dateText = format(parseISO(dispatch.date), 'EEE MM-dd-yyyy').toUpperCase();
     const timeText = formatStartTimeToAmPm(dispatch.start_time);

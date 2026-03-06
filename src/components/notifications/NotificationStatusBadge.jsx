@@ -1,22 +1,33 @@
 import React from 'react';
-import { Badge } from '@/components/ui/badge';
 import { Clock, CheckCircle2 } from 'lucide-react';
 
 /**
  * Shows "Pending confirmations: X/Y trucks" for owner notifications,
  * or nothing for resolved / non-owner notifications.
+ *
+ * If dispatch is provided, prefers live dispatch trucks intersected with ownerAllowedTrucks.
  */
-export default function NotificationStatusBadge({ notification, confirmations = [] }) {
-  const required = notification.required_trucks;
-  if (!required || required.length === 0) return null;
-
-  // Parse the status from dedup key: "{dispatch_id}:{status}"
+export default function NotificationStatusBadge({
+  notification,
+  confirmations = [],
+  dispatch = null,
+  ownerAllowedTrucks = [],
+}) {
   const dispatchId = notification.related_dispatch_id;
   const dedupKey = notification.dispatch_status_key || '';
   const parts = dedupKey.split(':');
   const status = parts.length >= 2 ? parts[1] : '';
 
   if (!dispatchId || !status) return null;
+
+  const requiredFromDispatch = dispatch
+    ? (dispatch.trucks_assigned || []).filter((truck) =>
+      (ownerAllowedTrucks || []).includes(truck)
+    )
+    : null;
+
+  const required = requiredFromDispatch || notification.required_trucks || [];
+  if (!required.length) return null;
 
   const confirmed = required.filter(truck =>
     confirmations.some(c =>
@@ -28,7 +39,7 @@ export default function NotificationStatusBadge({ notification, confirmations = 
 
   const total = required.length;
   const done = confirmed.length;
-  const isResolved = (total > 0 && done === total);
+  const isResolved = total > 0 && done === total;
 
   if (isResolved) {
     return (

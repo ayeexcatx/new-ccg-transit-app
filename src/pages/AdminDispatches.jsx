@@ -230,6 +230,9 @@ export default function AdminDispatches() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dispatches-admin'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['portal-dispatches'] });
+      queryClient.invalidateQueries({ predicate: (query) => String(query.queryKey?.[0] || '').startsWith('confirmations') });
       setOpen(false);
       setEditing(null);
     },

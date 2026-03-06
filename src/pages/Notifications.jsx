@@ -25,6 +25,16 @@ export default function Notifications() {
     refetchInterval: 30000,
   });
 
+
+  const { data: dispatches = [] } = useQuery({
+    queryKey: ['portal-dispatches', session?.company_id],
+    queryFn: () => base44.entities.Dispatch.filter({ company_id: session.company_id }, '-date', 200),
+    enabled: !!session?.company_id,
+  });
+
+  const dispatchMap = Object.fromEntries(dispatches.map(d => [d.id, d]));
+  const allowedTrucks = session?.allowed_trucks || [];
+
   const handleNotificationClick = (n) => {
     if (n.related_dispatch_id) {
       const targetPage = session?.code_type === 'Admin' ? 'AdminDispatches' : 'Portal';
@@ -87,11 +97,14 @@ export default function Notifications() {
                       )}
                     </div>
                     <p className="text-sm text-slate-600 whitespace-pre-line">{formatNotificationDetailsMessage(n.message)}</p>
-                    {n.required_trucks?.length > 0 && (
-                      <div className="mt-1.5">
-                        <NotificationStatusBadge notification={n} confirmations={confirmations} />
-                      </div>
-                    )}
+                    <div className="mt-1.5">
+                      <NotificationStatusBadge
+                        notification={n}
+                        confirmations={confirmations}
+                        dispatch={dispatchMap[n.related_dispatch_id] || null}
+                        ownerAllowedTrucks={allowedTrucks}
+                      />
+                    </div>
                     <p className="text-xs text-slate-400 mt-2">
                       {format(new Date(n.created_date), 'MMM d, yyyy h:mm a')}
                     </p>

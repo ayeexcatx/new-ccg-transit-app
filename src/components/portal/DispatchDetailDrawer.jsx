@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-  CheckCircle2, Clock, MapPin, Truck, Sun, Moon,
+  CheckCircle2, Clock, Truck, Sun, Moon,
   FileText, AlertTriangle, Save, History
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
@@ -237,14 +237,14 @@ export default function DispatchDetailDrawer({
                     </div>
                   )}
                   {dispatch.start_location && (
-                    <div className="flex items-start gap-2 text-sm text-slate-600">
-                      <MapPin className="h-4 w-4 text-slate-400 shrink-0 mt-0.5" />
-                      <span className="whitespace-pre-wrap">{dispatch.start_location}</span>
+                    <div>
+                      <p className="text-xs font-semibold text-slate-400 mb-1">Start Location:</p>
+                      <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{dispatch.start_location}</p>
                     </div>
                   )}
                   {dispatch.instructions && (
                     <div>
-                      <p className="text-xs font-semibold text-slate-400 mb-1">Instructions</p>
+                      <p className="text-xs font-semibold text-slate-400 mb-1">Instructions:</p>
                       <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{dispatch.instructions}</p>
                     </div>
                   )}
@@ -283,14 +283,14 @@ export default function DispatchDetailDrawer({
                             </div>
                           )}
                           {a.start_location && (
-                            <div className="flex items-start gap-2 text-slate-600">
-                              <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0 mt-0.5" />
-                              <span className="whitespace-pre-wrap">{a.start_location}</span>
+                            <div>
+                              <p className="text-xs font-semibold text-slate-400 mb-0.5">Start Location:</p>
+                              <p className="text-sm text-slate-600 whitespace-pre-wrap">{a.start_location}</p>
                             </div>
                           )}
                           {a.instructions && (
                             <div>
-                              <p className="text-xs font-semibold text-slate-400 mb-0.5">Instructions</p>
+                              <p className="text-xs font-semibold text-slate-400 mb-0.5">Instructions:</p>
                               <p className="text-sm text-slate-600 whitespace-pre-wrap">{a.instructions}</p>
                             </div>
                           )}

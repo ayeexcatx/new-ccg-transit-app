@@ -25,7 +25,8 @@ export default function NotificationBell({ session }) {
   });
 
   const isInformationalUpdateNotification = (notification) =>
-    notification?.notification_category === 'dispatch_update_info' || notification?.notification_type === 'informational';
+    notification?.notification_category === 'dispatch_update_info' ||
+    notification?.notification_type === 'informational';
 
   const handleNotificationClick = async (n) => {
     if (!session) return;

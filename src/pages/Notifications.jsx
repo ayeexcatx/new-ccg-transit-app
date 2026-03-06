@@ -34,11 +34,14 @@ export default function Notifications() {
 
   const dispatchMap = Object.fromEntries(dispatches.map(d => [d.id, d]));
   const allowedTrucks = session?.allowed_trucks || [];
-
+  
   const isInformationalUpdateNotification = (notification) =>
-    notification?.notification_category === 'dispatch_update_info' || notification?.notification_type === 'informational';
+    notification?.notification_category === 'dispatch_update_info' ||
+    notification?.notification_type === 'informational';
 
   const handleNotificationClick = async (n) => {
+    if (!session) return;
+
     if (n.related_dispatch_id && isInformationalUpdateNotification(n) && !n.read_flag) {
       await markReadAsync(n.id);
     }

@@ -180,10 +180,13 @@ export default function Home() {
   }, [notifications, dispatches]);
 
   const isInformationalUpdateNotification = (notification) =>
-    notification?.notification_category === 'dispatch_update_info' || notification?.notification_type === 'informational';
+    notification?.notification_category === 'dispatch_update_info' ||
+    notification?.notification_type === 'informational';
 
-  const handleActionClick = async (n) => {
-    if (isInformationalUpdateNotification(n) && !n.read_flag) {
+  const handleNotificationClick = async (n) => {
+    if (!session) return;
+
+    if (n.related_dispatch_id && isInformationalUpdateNotification(n) && !n.read_flag) {
       await markReadAsync(n.id);
     }
 

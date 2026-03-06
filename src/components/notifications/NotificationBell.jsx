@@ -44,16 +44,6 @@ export default function NotificationBell({ session }) {
     }
   };
 
-  const handleNotificationClick = async (n) => {
-    if (!session) return;
-
-    if (n.related_dispatch_id && isInformationalUpdateNotification(n) && !n.read_flag) {
-      await markReadAsync(n.id);
-    }
-
-    navigateFromNotification(n);
-  };
-
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>

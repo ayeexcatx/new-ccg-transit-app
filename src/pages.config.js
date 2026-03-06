@@ -54,9 +54,9 @@ import AdminCompanies from './pages/AdminCompanies';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminDispatches from './pages/AdminDispatches';
 import AdminTemplateNotes from './pages/AdminTemplateNotes';
+import Portal from './pages/Portal';
 import Home from './pages/Home';
 import Notifications from './pages/Notifications';
-import Portal from './pages/Portal';
 import __Layout from './Layout.jsx';
 
 
@@ -68,9 +68,9 @@ export const PAGES = {
     "AdminDashboard": AdminDashboard,
     "AdminDispatches": AdminDispatches,
     "AdminTemplateNotes": AdminTemplateNotes,
+    "Portal": Portal,
     "Home": Home,
     "Notifications": Notifications,
-    "Portal": Portal,
 }
 
 export const pagesConfig = {

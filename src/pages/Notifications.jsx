@@ -52,14 +52,6 @@ export default function Notifications() {
     }
   };
 
-  const handleNotificationClick = async (n) => {
-    if (n.related_dispatch_id && isInformationalUpdateNotification(n) && !n.read_flag) {
-      await markReadAsync(n.id);
-    }
-
-    navigateFromNotification(n);
-  };
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">

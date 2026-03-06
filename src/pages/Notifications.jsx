@@ -41,47 +41,10 @@ export default function Notifications() {
   const handleNotificationClick = async (n) => {
     if (!session) return;
 
-    console.log('[Notifications] handleNotificationClick start', {
-      id: n?.id,
-      related_dispatch_id: n?.related_dispatch_id,
-      read_flag: n?.read_flag,
-      notification_category: n?.notification_category,
-      notification_type: n?.notification_type,
-    });
-
     if (n.related_dispatch_id && isInformationalUpdateNotification(n) && !n.read_flag) {
-      console.log('[Notifications] informational notification detected', {
-        id: n?.id,
-        related_dispatch_id: n?.related_dispatch_id,
-        read_flag: n?.read_flag,
-        notification_category: n?.notification_category,
-        notification_type: n?.notification_type,
-      });
       try {
-        console.log('[Notifications] before markReadAsync', {
-          id: n?.id,
-          related_dispatch_id: n?.related_dispatch_id,
-          read_flag: n?.read_flag,
-          notification_category: n?.notification_category,
-          notification_type: n?.notification_type,
-        });
         await markReadAsync(n.id);
-        console.log('[Notifications] after markReadAsync success', {
-          id: n?.id,
-          related_dispatch_id: n?.related_dispatch_id,
-          read_flag: n?.read_flag,
-          notification_category: n?.notification_category,
-          notification_type: n?.notification_type,
-        });
-      } catch (error) {
-        console.log('[Notifications] markReadAsync failed', {
-          id: n?.id,
-          related_dispatch_id: n?.related_dispatch_id,
-          read_flag: n?.read_flag,
-          notification_category: n?.notification_category,
-          notification_type: n?.notification_type,
-          error,
-        });
+      } catch {
         return;
       }
     }

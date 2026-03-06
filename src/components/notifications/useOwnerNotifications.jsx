@@ -33,21 +33,9 @@ export function useOwnerNotifications(session) {
 
   const markReadMutation = useMutation({
     mutationFn: (id) => {
-      console.log('[notifications] markRead mutationFn start', { id });
       return base44.entities.Notification.update(id, { read_flag: true });
     },
-    onError: (error, id) => {
-      console.log('[notifications] markRead onError', {
-        id,
-        error,
-      });
-    },
-    onSettled: (data, error, id) => {
-      console.log('[notifications] markRead onSettled', {
-        id,
-        data,
-        error,
-      });
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey });
     },
   });

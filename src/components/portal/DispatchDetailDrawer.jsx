@@ -130,8 +130,8 @@ export default function DispatchDetailDrawer({
   );
   const isOwner = session.code_type === 'CompanyOwner';
   const isAdmin = session.code_type === 'Admin';
-  const currentConfType = dispatch.status;
-  const hasAdditional = Array.isArray(dispatch.additional_assignments) && dispatch.additional_assignments.length > 0;
+  const currentConfType = safeDispatch.status;
+  const hasAdditional = Array.isArray(safeDispatch.additional_assignments) && safeDispatch.additional_assignments.length > 0;
 
   const normalizedTemplateNotes = (templateNotes || []).map(normalizeTemplateNote);
   const boxNotes = normalizedTemplateNotes.filter(n => n.note_type === NOTE_TYPES.BOX);

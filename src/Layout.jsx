@@ -43,9 +43,9 @@ function LayoutInner({ children, currentPageName }) {
   const isActive = (pageName) => location.pathname === createPageUrl(pageName);
 
   return (
-    <div className="bg-zinc-50 min-h-screen">
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
-        <div className="bg-yellow-300 mx-auto px-4 max-w-7xl sm:px-6 h-16 flex items-center justify-between">
+    <div className="bg-slate-50 min-h-screen">
+      <header className="bg-white/95 backdrop-blur border-b border-slate-200 sticky top-0 z-50">
+        <div className="mx-auto px-4 max-w-7xl sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-lg bg-slate-900 flex items-center justify-center">
               <Truck className="h-5 w-5 text-white" />
@@ -61,7 +61,7 @@ function LayoutInner({ children, currentPageName }) {
             </div>
           </div>
 
-          <div className="bg-yellow-300 flex items-center gap-2">
+          <div className="flex items-center gap-2">
             {isAdmin &&
             <nav className="hidden md:flex items-center gap-1 mr-4">
                 <Link to={createPageUrl('AdminDashboard')}>
@@ -163,7 +163,7 @@ function LayoutInner({ children, currentPageName }) {
         }
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
         {children}
       </main>
     </div>);

@@ -8,7 +8,7 @@ import {
   FileText, AlertTriangle, Save, History, ArrowLeft
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
-import { statusBadgeColors } from './statusConfig';
+import { statusBadgeBase, statusBadgeColors } from './statusConfig';
 import { NOTE_TYPES, normalizeTemplateNote, renderSimpleMarkupToHtml } from '@/lib/templateNotes';
 
 const tollColors = {
@@ -79,7 +79,7 @@ function TruckTimeRow({ truck, dispatch, timeEntries, onTimeEntry, readOnly }) {
   }
 
   return (
-    <div className="bg-white border border-slate-200 rounded-lg p-3 space-y-2">
+    <div className="bg-white border border-slate-200 rounded-xl p-3 space-y-2 shadow-sm">
       <div className="flex items-center gap-2">
         <Truck className="h-3.5 w-3.5 text-slate-400" />
         <span className="text-sm font-mono font-medium">{truck}</span>
@@ -181,7 +181,7 @@ export default function DispatchDetailDrawer({
           </Button>
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2 flex-wrap text-base">
-              <Badge className={`${statusBadgeColors[dispatch.status]} border text-xs font-medium`}>
+              <Badge className={`${statusBadgeBase} ${statusBadgeColors[dispatch.status]}`}>
                 {dispatch.status}
               </Badge>
               <span className="text-xs text-slate-400 flex items-center gap-1 font-normal">
@@ -400,7 +400,7 @@ export default function DispatchDetailDrawer({
                       const conf = getTruckCurrentConfirmation(truck);
                       const priorConfs = getTruckPriorConfirmations(truck);
                       return (
-                        <div key={truck} className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+                        <div key={truck} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                           <div className="flex items-center justify-between px-3 py-2">
                             <div className="flex items-center gap-2">
                               <Truck className="h-3.5 w-3.5 text-slate-400" />
@@ -492,7 +492,7 @@ export default function DispatchDetailDrawer({
                                 <div key={i} className="flex items-center justify-between px-3 py-2 text-xs">
                                   <div className="flex items-center gap-2">
                                     <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                                    <Badge className={`${statusBadgeColors[c.confirmation_type]} border text-xs py-0`}>{c.confirmation_type}</Badge>
+                                    <Badge className={`${statusBadgeBase} ${statusBadgeColors[c.confirmation_type]}`}>{c.confirmation_type}</Badge>
                                   </div>
                                   {c.confirmed_at && (
                                     <span className="text-slate-400">{format(new Date(c.confirmed_at), 'MMM d, h:mm a')}</span>

@@ -5,6 +5,8 @@ export const statusBadgeColors = {
   Cancelled: 'bg-red-50 text-red-700 border-red-200',
 };
 
+export const statusBadgeBase = 'border rounded-full px-2.5 py-1 text-xs font-semibold';
+
 // Left border accent for dispatch cards
 export const statusBorderAccent = {
   Scheduled: 'border-l-4 border-l-blue-400',

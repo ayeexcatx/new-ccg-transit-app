@@ -13,15 +13,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useOwnerNotifications } from '../components/notifications/useOwnerNotifications';
 import NotificationStatusBadge from '../components/notifications/NotificationStatusBadge';
 import { formatNotificationDetailsMessage } from '../components/notifications/formatNotificationDetailsMessage';
+import { statusBadgeBase, statusBadgeColors } from '@/components/portal/statusConfig';
 
 const dateOnly = (v) => (typeof v === 'string' ? v.slice(0, 10) : v);
 
-const statusColors = {
-  Scheduled: 'bg-blue-50 text-blue-700 border-blue-200',
-  Dispatch: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  Amended: 'bg-amber-50 text-amber-700 border-amber-200',
-  Cancelled: 'bg-red-50 text-red-700 border-red-200',
-};
 
 const formatDispatchDate = (dateValue) => (dateValue ? format(parseISO(dateValue), 'EEE, MMM d, yyyy') : '');
 
@@ -67,7 +62,7 @@ function MiniDispatchCard({ dispatch, companyName }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2 mb-1">
             <div className="min-w-0">
-              <Badge className={`${statusColors[dispatch.status]} border text-xs`}>{dispatch.status}</Badge>
+              <Badge className={`${statusBadgeBase} ${statusBadgeColors[dispatch.status]}`}>{dispatch.status}</Badge>
             </div>
             <div className="shrink-0 text-right text-xs text-slate-500 leading-tight">
               <div className="whitespace-nowrap">{formatDispatchDate(dispatch.date)}</div>

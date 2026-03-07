@@ -83,6 +83,36 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-slate-50 text-slate-900 antialiased;
+  }
+
+  h1 {
+    @apply text-2xl font-semibold tracking-tight text-slate-900;
+  }
+
+  h2 {
+    @apply text-xl font-semibold tracking-tight text-slate-900;
+  }
+
+  h3 {
+    @apply text-sm font-semibold text-slate-700;
+  }
+
+  label {
+    @apply text-xs font-medium uppercase tracking-wide text-slate-500;
+  }
+}
+
+@layer components {
+  .page-shell {
+    @apply mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8;
+  }
+
+  .page-title-block {
+    @apply space-y-1;
+  }
+
+  .page-subtle-text {
+    @apply text-sm text-slate-500;
   }
 }

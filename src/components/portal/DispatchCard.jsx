@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import DispatchDetailDrawer from './DispatchDetailDrawer';
-import { statusBadgeColors, statusBorderAccent } from './statusConfig';
+import { statusBadgeBase, statusBadgeColors, statusBorderAccent } from './statusConfig';
 
 const formatDispatchTime = (startTime) => {
   if (!startTime) return '';
@@ -59,17 +59,17 @@ const DispatchCard = React.forwardRef(function DispatchCard({
   return (
     <div ref={ref}>
       <Card
-        className={`overflow-hidden border-slate-200 hover:border-slate-400 hover:shadow-md transition-all cursor-pointer ${statusBorderAccent[dispatch.status] || ''}`}
+        className={`overflow-hidden border-slate-200 hover:border-slate-300 hover:shadow-md transition-all duration-200 cursor-pointer ${statusBorderAccent[dispatch.status] || ''}`}
         onClick={() => setDrawerOpen(true)}
       >
         <CardContent className="p-0">
           <div className="p-4 sm:p-5">
             <div className="flex items-start justify-between gap-3 mb-3">
               <div className="flex items-center gap-2 flex-wrap">
-                <Badge className={`${statusBadgeColors[dispatch.status]} border text-xs font-medium`}>
+                <Badge className={`${statusBadgeBase} ${statusBadgeColors[dispatch.status]}`}>
                   {dispatch.status}
                 </Badge>
-                <span className="text-xs text-slate-400 flex items-center gap-1">
+                <span className="text-xs text-slate-500 flex items-center gap-1">
                   {dispatch.shift_time === 'Day Shift' ? <Sun className="h-3 w-3" /> : <Moon className="h-3 w-3" />}
                   {dispatch.shift_time}
                 </span>
@@ -88,8 +88,8 @@ const DispatchCard = React.forwardRef(function DispatchCard({
             <div className="space-y-2">
               {dispatch.status === 'Scheduled' ? (
                 <>
-                  <h3 className="text-sm font-semibold text-slate-700">Scheduled</h3>
-                  <p className="text-xs text-blue-600 italic mt-0.5">Your truck has been scheduled — details will follow</p>
+                  <h3 className="text-sm font-semibold text-slate-800">Scheduled</h3>
+                  <p className="text-xs text-blue-700 italic mt-0.5">Your truck has been scheduled — details will follow</p>
                 </>
               ) : (
                 <>
@@ -129,7 +129,7 @@ const DispatchCard = React.forwardRef(function DispatchCard({
 
             <button
               onClick={(e) => { e.stopPropagation(); setDrawerOpen(true); }}
-              className="mt-3 flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition-colors"
+              className="mt-3 flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700 transition-colors"
             >
               <ChevronDown className="h-3.5 w-3.5" />
               View details

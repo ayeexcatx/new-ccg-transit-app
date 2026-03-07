@@ -75,7 +75,7 @@ export default function NotificationBell({ session }) {
             notifications.slice(0, 5).map(n => (
               <div
                 key={n.id}
-                className={`p-3 border-b hover:bg-slate-50 cursor-pointer ${!n.read_flag ? 'bg-blue-50/30' : ''}`}
+                className={`p-3 border-b border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors ${!n.read_flag ? 'bg-blue-50/40 border-l-2 border-l-blue-500' : ''}`}
                 onClick={() => handleNotificationClick(n)}
               >
                 <div className="flex items-start justify-between gap-2">

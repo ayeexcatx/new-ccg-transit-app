@@ -228,15 +228,29 @@ export default function Home() {
 
       {/* Announcements */}
       {announcements.length > 0 && (
-        <section className="space-y-2">
+        <section className="space-y-3">
           {announcements.map(a => (
-            <div key={a.id} className={`rounded-lg border px-4 py-3 flex gap-3 items-start ${priorityBg[a.priority] || priorityBg[3]}`}>
-              <Megaphone className={`h-4 w-4 shrink-0 mt-0.5 ${priorityText[a.priority] || priorityText[3]}`} />
-              <div>
-                <p className={`text-sm font-semibold ${priorityText[a.priority] || priorityText[3]}`}>{a.title}</p>
-                <p className={`text-xs mt-0.5 whitespace-pre-wrap ${priorityText[a.priority] || priorityText[3]} opacity-90`}>{a.message}</p>
-              </div>
-            </div>
+            <Card
+              key={a.id}
+              className={`rounded-lg border border-l-4 ${priorityBg[a.priority] || priorityBg[3]}`}
+            >
+              <CardContent className="p-3 sm:p-4">
+                <div className="flex items-start gap-3">
+                  <div className={`rounded-md p-1.5 ${priorityBg[a.priority] || priorityBg[3]}`}>
+                    <Megaphone className={`h-4 w-4 shrink-0 ${priorityText[a.priority] || priorityText[3]}`} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className={`text-sm font-semibold leading-tight ${priorityText[a.priority] || priorityText[3]}`}>{a.title}</p>
+                    <p className="mt-1 text-sm text-slate-700 whitespace-pre-wrap break-words">{a.message}</p>
+                    {a.created_at && (
+                      <p className="mt-2 text-[11px] text-slate-500">
+                        {format(new Date(a.created_at), 'MMM d, yyyy · h:mm a')}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </section>
       )}

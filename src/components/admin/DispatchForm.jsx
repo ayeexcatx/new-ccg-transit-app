@@ -79,12 +79,21 @@ export default function DispatchForm({ dispatch, dispatches = [], companies, acc
   const copyEligibleDispatches = (dispatches || [])
   .filter((candidate) => candidate?.id && candidate.id !== dispatch?.id)
   .sort((a, b) => {
-    const sameCompanyA = form.company_id && a.company_id === form.company_id ? 1 : 0;
-    const sameCompanyB = form.company_id && b.company_id === form.company_id ? 1 : 0;
-    if (sameCompanyA !== sameCompanyB) return sameCompanyB - sameCompanyA;
     const dateCompare = String(b.date || '').localeCompare(String(a.date || ''));
     if (dateCompare !== 0) return dateCompare;
     return String(b.created_date || '').localeCompare(String(a.created_date || ''));
+  })
+  .filter((candidate, index, arr) => {
+    const dedupeKey = [candidate.job_number, candidate.start_location, candidate.instructions]
+    .map((field) => String(field || '').trim().toLowerCase())
+    .join('||');
+
+    return index === arr.findIndex((other) => {
+      const otherKey = [other.job_number, other.start_location, other.instructions]
+      .map((field) => String(field || '').trim().toLowerCase())
+      .join('||');
+      return dedupeKey === otherKey;
+    });
   })
   .filter((candidate) => {
     const term = copySearch.trim().toLowerCase();
@@ -94,6 +103,8 @@ export default function DispatchForm({ dispatch, dispatches = [], companies, acc
     companyMap[candidate.company_id],
     candidate.client_name,
     candidate.job_number,
+    candidate.start_location,
+    candidate.instructions,
     candidate.status]
     .filter(Boolean)
     .join(' ')
@@ -112,8 +123,7 @@ export default function DispatchForm({ dispatch, dispatches = [], companies, acc
       instructions: sourceDispatch.instructions || 'Deliver material to / from',
       notes: sourceDispatch.notes || '',
       toll_status: sourceDispatch.toll_status || '',
-      additional_assignments: normalizeAdditionalAssignments(sourceDispatch.additional_assignments),
-      trucks_assigned: Array.isArray(sourceDispatch.trucks_assigned) ? sourceDispatch.trucks_assigned : []
+      additional_assignments: normalizeAdditionalAssignments(sourceDispatch.additional_assignments)
     }));
 
     const sourceCompany = companyMap[sourceDispatch.company_id] || 'Unknown company';
@@ -540,22 +550,22 @@ export default function DispatchForm({ dispatch, dispatches = [], companies, acc
               }
               {copyEligibleDispatches.map((candidate) => {
                 const sourceCompany = companyMap[candidate.company_id] || '—';
-                const sameCompany = form.company_id && candidate.company_id === form.company_id;
                 return (
                   <button
                     type="button"
                     key={candidate.id}
                     onClick={() => copyDetailsFromDispatch(candidate)}
-                    className="w-full text-left px-3 py-2.5 border-b last:border-b-0 hover:bg-slate-50 transition-colors"
+                    className="w-full text-left px-3 py-2 border-b last:border-b-0 hover:bg-slate-50 transition-colors"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-sm font-medium text-slate-800">{candidate.date || 'No date'} • {sourceCompany}</p>
                       <div className="flex items-center gap-1.5">
-                        {sameCompany && <Badge variant="outline" className="text-[10px]">Same company</Badge>}
                         <Badge variant="outline" className="text-[10px]">{candidate.status || 'Unknown'}</Badge>
                       </div>
                     </div>
-                    <p className="text-xs text-slate-600 mt-1">Client: {candidate.client_name || '—'} • Job: {candidate.job_number || '—'}</p>
+                    <p className="text-xs text-slate-600 mt-0.5">Client: {candidate.client_name || '—'} • Job: {candidate.job_number || '—'}</p>
+                    <p className="text-xs text-slate-600 truncate">Start: {candidate.start_location || '—'}</p>
+                    <p className="text-xs text-slate-600 truncate">Instructions: {candidate.instructions || '—'}</p>
                   </button>);
 
               })}

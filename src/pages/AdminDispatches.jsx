@@ -21,6 +21,7 @@ import { useSession } from '../components/session/SessionContext';
 import { Label } from '@/components/ui/label';
 import { statusBadgeColors, statusBorderAccent } from '../components/portal/statusConfig';
 import { reconcileOwnerNotificationsForDispatch } from '@/components/notifications/createNotifications';
+import { getOwnerNotificationsQueryKey } from '@/components/notifications/useOwnerNotifications';
 
 const STATUS_ORDER = ['Scheduled', 'Dispatch', 'Amended', 'Cancelled'];
 
@@ -237,11 +238,19 @@ export default function AdminDispatches() {
         return base44.entities.Dispatch.create(data);
       }
     },
-    onSuccess: () => {
+    onSuccess: (_savedDispatch, _vars) => {
       queryClient.invalidateQueries({ queryKey: ['dispatches-admin'] });
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       queryClient.invalidateQueries({ queryKey: ['portal-dispatches'] });
       queryClient.invalidateQueries({ predicate: (query) => String(query.queryKey?.[0] || '').startsWith('confirmations') });
+
+      accessCodes
+        .filter((code) => code?.code_type === 'CompanyOwner')
+        .forEach((ownerCode) => {
+          const ownerQueryKey = getOwnerNotificationsQueryKey(ownerCode);
+          queryClient.invalidateQueries({ queryKey: ownerQueryKey, exact: true, refetchType: 'active' });
+        });
+
       setOpen(false);
       setEditing(null);
     }
@@ -259,14 +268,33 @@ export default function AdminDispatches() {
       ...notifications.map((notification) => base44.entities.Notification.delete(notification.id)),
       ...confirmations.map((confirmation) => base44.entities.Confirmation.delete(confirmation.id))]
       );
+
+      return { notifications, deletedDispatchId: id };
     },
-    onSuccess: async () => {
+    onSuccess: async ({ notifications: deletedNotifications = [], deletedDispatchId } = {}) => {
+      const ownerRecipientIds = Array.from(new Set(
+        deletedNotifications
+          .filter((notification) => notification.recipient_type === 'AccessCode')
+          .map((notification) => notification.recipient_access_code_id || notification.recipient_id)
+          .filter(Boolean)
+      ));
+
+      ownerRecipientIds.forEach((ownerId) => {
+        const ownerQueryKey = getOwnerNotificationsQueryKey({ id: ownerId });
+        queryClient.setQueryData(ownerQueryKey, (current = []) => current.filter((notification) => notification.related_dispatch_id !== deletedDispatchId));
+      });
+
       await Promise.all([
       queryClient.invalidateQueries({ queryKey: ['dispatches-admin'] }),
       queryClient.invalidateQueries({ queryKey: ['portal-dispatches'] }),
       queryClient.invalidateQueries({ queryKey: ['dispatches-admin-confirmations'] }),
       queryClient.invalidateQueries({ predicate: (query) => String(query.queryKey?.[0] || '').startsWith('notifications') }),
-      queryClient.invalidateQueries({ predicate: (query) => String(query.queryKey?.[0] || '').startsWith('confirmations') })]
+      queryClient.invalidateQueries({ predicate: (query) => String(query.queryKey?.[0] || '').startsWith('confirmations') }),
+      ...ownerRecipientIds.map((ownerId) => queryClient.invalidateQueries({
+        queryKey: getOwnerNotificationsQueryKey({ id: ownerId }),
+        exact: true,
+        refetchType: 'active',
+      }))]
       );
     }
   });

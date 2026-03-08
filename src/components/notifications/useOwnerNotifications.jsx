@@ -1,10 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 
+export const getOwnerNotificationsQueryKey = (session) => ['notifications', session?.id];
+
 export function useOwnerNotifications(session) {
   const queryClient = useQueryClient();
 
-  const queryKey = ['notifications', session?.id];
+  const queryKey = getOwnerNotificationsQueryKey(session);
+
+  const updateCachedNotifications = (updater) => {
+    queryClient.setQueryData(queryKey, (current = []) => updater(current));
+  };
 
   const { data: rawNotifications = [], isLoading } = useQuery({
     queryKey,
@@ -48,8 +54,23 @@ export function useOwnerNotifications(session) {
     mutationFn: (id) => {
       return base44.entities.Notification.update(id, { read_flag: true });
     },
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey, exact: true });
+      const previous = queryClient.getQueryData(queryKey) || [];
+
+      updateCachedNotifications((current) => current.map((notification) => (
+        notification.id === id ? { ...notification, read_flag: true } : notification
+      )));
+
+      return { previous };
+    },
+    onError: (_error, _id, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(queryKey, context.previous);
+      }
+    },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey });
+      queryClient.invalidateQueries({ queryKey, exact: true, refetchType: 'active' });
     },
   });
 
@@ -58,11 +79,27 @@ export function useOwnerNotifications(session) {
       const unread = notifications.filter(n => !n.read_flag);
       await Promise.all(unread.map(n => base44.entities.Notification.update(n.id, { read_flag: true })));
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey }),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey, exact: true });
+      const previous = queryClient.getQueryData(queryKey) || [];
+
+      updateCachedNotifications((current) => current.map((notification) => ({
+        ...notification,
+        read_flag: true,
+      })));
+
+      return { previous };
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(queryKey, context.previous);
+      }
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey, exact: true, refetchType: 'active' }),
   });
 
   const refresh = () => Promise.all([
-    queryClient.invalidateQueries({ queryKey }),
+    queryClient.invalidateQueries({ queryKey, exact: true, refetchType: 'active' }),
     queryClient.invalidateQueries({ queryKey: ['portal-dispatches', session?.company_id] }),
   ]);
 

@@ -357,25 +357,26 @@ export async function reconcileOwnerNotificationsForDispatch(dispatch, accessCod
       }));
     }
 
-    const statusSet = new Set();
-    ownerNotifications.forEach(n => {
-      const parts = String(n.dispatch_status_key || '').split(':');
-      if (parts.length >= 2 && parts[1]) statusSet.add(parts[1]);
-    });
-
-    const confirmationsByStatus = {};
-    await Promise.all([...statusSet].map(async (status) => {
-      confirmationsByStatus[status] = await base44.entities.Confirmation.filter({
+    const currentStatus = dispatch.status;
+    const confirmationsByStatus = {
+      [currentStatus]: await base44.entities.Confirmation.filter({
         dispatch_id: dispatch.id,
-        confirmation_type: status,
-      }, '-confirmed_at', 500);
-    }));
+        confirmation_type: currentStatus,
+      }, '-confirmed_at', 500),
+    };
 
     for (const notification of ownerNotifications) {
       if (notification.notification_category === 'dispatch_update_info') continue;
 
-      const status = String(notification.dispatch_status_key || '').split(':')[1];
+      const status = parseStatusFromDedupKey(notification);
       if (!status) continue;
+
+      if (status !== currentStatus) {
+        if (!notification.read_flag) {
+          await base44.entities.Notification.update(notification.id, { read_flag: true });
+        }
+        continue;
+      }
 
       const ownerCode = ownerCodeMap.get(notification.recipient_access_code_id || notification.recipient_id);
       if (!ownerCode) continue;

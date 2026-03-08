@@ -26,19 +26,20 @@ const priorityText = {
   5: 'text-slate-700',
 };
 
-export default function AnnouncementCard({ announcement, footer, showCreatedAt = false }) {
+export default function AnnouncementCard({ announcement, footer, showCreatedAt = false, variant = 'priority' }) {
+  const isPlain = variant === 'plain';
   const cardClass = priorityCard[announcement.priority] || priorityCard[3];
   const iconClass = priorityIcon[announcement.priority] || priorityIcon[3];
   const textClass = priorityText[announcement.priority] || priorityText[3];
 
   return (
-    <div className={`rounded-lg border p-3 sm:p-4 ${cardClass}`}>
+    <div className={isPlain ? 'px-4 py-3 sm:px-5 sm:py-4' : `rounded-lg border p-3 sm:p-4 ${cardClass}`}>
       <div className="flex items-start gap-3">
-        <div className={`rounded-md p-1.5 ${iconClass}`}>
+        <div className={isPlain ? 'rounded-md bg-slate-100 p-1.5 text-slate-700' : `rounded-md p-1.5 ${iconClass}`}>
           <Megaphone className="h-4 w-4 shrink-0" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className={`text-sm font-semibold leading-tight ${textClass}`}>{announcement.title}</p>
+          <p className={`text-sm font-semibold leading-tight ${isPlain ? 'text-slate-900' : textClass}`}>{announcement.title}</p>
           <p className="mt-1 text-sm text-slate-700 whitespace-pre-wrap break-words">{announcement.message}</p>
           {showCreatedAt && announcement.created_at && (
             <p className="mt-2 text-[11px] text-slate-500">

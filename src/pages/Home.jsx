@@ -223,17 +223,17 @@ export default function Home() {
       {/* Announcements */}
       {announcements.length > 0 && (
         <section>
-          <Card className="rounded-lg border bg-white shadow-sm">
+          <Card className="rounded-lg border bg-white shadow-sm overflow-hidden">
             <div className="border-b border-slate-100 bg-blue-700 px-4 py-3">
               <div className="flex items-center gap-2">
                 <Megaphone className="h-4 w-4 text-white" />
                 <h3 className="text-sm font-semibold text-white">Announcement Center</h3>
               </div>
             </div>
-            <CardContent className="p-0">
-              <div className="space-y-2 p-3 sm:p-4">
+            <CardContent className="bg-white p-0">
+              <div className="divide-y divide-slate-100 bg-white">
                 {announcements.map(a => (
-                  <AnnouncementCard key={a.id} announcement={a} />
+                  <AnnouncementCard key={a.id} announcement={a} variant="plain" />
                 ))}
               </div>
             </CardContent>

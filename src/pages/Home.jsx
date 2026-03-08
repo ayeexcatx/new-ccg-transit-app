@@ -223,16 +223,16 @@ export default function Home() {
       </div>
 
       {/* Announcements */}
-      <section>
-        <Card className="rounded-lg border bg-white shadow-sm">
-          <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3">
-            <Megaphone className="h-4 w-4 text-slate-600" />
-            <h3 className="text-sm font-semibold text-slate-800">Announcement Center</h3>
-          </div>
-          <CardContent className="p-0">
-            {announcements.length === 0 ? (
-              <p className="px-4 py-5 text-sm text-slate-500">No announcements at this time.</p>
-            ) : (
+      {announcements.length > 0 && (
+        <section>
+          <Card className="rounded-lg border bg-white shadow-sm">
+            <div className="border-b border-slate-100 bg-blue-700 px-4 py-3">
+              <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1">
+                <Megaphone className="h-4 w-4 text-blue-700" />
+                <h3 className="text-sm font-semibold text-blue-700">Announcement Center</h3>
+              </div>
+            </div>
+            <CardContent className="p-0">
               <div className="divide-y divide-slate-100">
                 {announcements.map(a => (
                   <div key={a.id} className="px-4 py-3">
@@ -241,10 +241,10 @@ export default function Home() {
                   </div>
                 ))}
               </div>
-            )}
-          </CardContent>
-        </Card>
-      </section>
+            </CardContent>
+          </Card>
+        </section>
+      )}
 
       {/* Action Needed — always visible for CompanyOwner */}
       {session?.code_type === 'CompanyOwner' && (

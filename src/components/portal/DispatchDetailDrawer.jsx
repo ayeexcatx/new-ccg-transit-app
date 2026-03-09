@@ -272,9 +272,13 @@ export default function DispatchDetailDrawer({
   const ownerTruckOptions = session?.code_type === 'CompanyOwner' ? (session?.allowed_trucks || []) : [];
   const requiredTruckCount = (dispatch?.trucks_assigned || []).filter(Boolean).length;
 
+  const resetDraftTrucksToCurrentDispatch = () => {
+    setDraftTrucks(dispatch?.trucks_assigned || []);
+  };
+
   const resetTruckEditing = () => {
     setIsEditingTrucks(false);
-    setDraftTrucks(dispatch?.trucks_assigned || []);
+    resetDraftTrucksToCurrentDispatch();
     setTruckEditMessage(null);
   };
 
@@ -301,6 +305,7 @@ export default function DispatchDetailDrawer({
         type: 'error',
         text: `Truck count must remain ${requiredTruckCount}. Replace trucks one-for-one before saving.`,
       });
+      resetDraftTrucksToCurrentDispatch();
       return;
     }
 
@@ -315,6 +320,7 @@ export default function DispatchDetailDrawer({
         type: 'error',
         text: error?.message || 'Unable to update truck assignments.',
       });
+      resetDraftTrucksToCurrentDispatch();
     } finally {
       setIsSavingTrucks(false);
     }

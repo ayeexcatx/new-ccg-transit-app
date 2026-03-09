@@ -11,7 +11,19 @@ import { startOfDay, parseISO } from 'date-fns';
 import { areAllAssignedTrucksTimeComplete } from '@/lib/timeLogs';
 import { getDispatchBucket } from '../components/portal/dispatchBuckets';
 import { sortTemplateNotesForDispatch } from '@/lib/templateNotes';
-import { notifyTruckConfirmation, resolveOwnerNotificationIfComplete } from '../components/notifications/createNotifications';
+import { notifyTruckConfirmation, resolveOwnerNotificationIfComplete, notifyOwnerTruckReassignment } from '../components/notifications/createNotifications';
+
+
+function formatConflictDispatchSummary(dispatch) {
+  const parts = [dispatch?.status, dispatch?.job_number, dispatch?.start_time]
+    .filter((value) => value && String(value).trim());
+  return parts.join(' | ');
+}
+
+function getOwnerDisplayName(session) {
+  if (!session) return 'Company owner';
+  return session.label || session.name || session.code || 'Company owner';
+}
 
 function myTrucksForHistory(dispatch, timeEntries, session) {
   const trucks = (session?.allowed_trucks || []).filter(t => (dispatch.trucks_assigned || []).includes(t));
@@ -133,6 +145,195 @@ export default function Portal() {
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['time-entries'] }),
   });
+
+  const updateOwnerTrucksMutation = useMutation({
+    mutationFn: async ({ dispatch, nextTrucks }) => {
+      if (!dispatch?.id) throw new Error('Dispatch missing');
+
+      const normalizedNext = [...new Set((nextTrucks || []).filter(Boolean))];
+      if (!normalizedNext.length) throw new Error('Please assign at least one truck.');
+
+      const allowedSet = new Set(session?.allowed_trucks || []);
+      const hasUnauthorizedTruck = normalizedNext.some((truck) => !allowedSet.has(truck));
+      if (hasUnauthorizedTruck) throw new Error('You can only assign trucks from your own company.');
+
+      const previousTrucks = dispatch.trucks_assigned || [];
+      const removedTrucks = previousTrucks.filter((truck) => !normalizedNext.includes(truck));
+      const addedTrucks = normalizedNext.filter((truck) => !previousTrucks.includes(truck));
+      const hasChanges = addedTrucks.length > 0 || removedTrucks.length > 0;
+
+      if (!hasChanges) return { updated: false };
+
+      const sameCompanyDispatches = await base44.entities.Dispatch.filter({
+        company_id: dispatch.company_id,
+        date: dispatch.date,
+        shift_time: dispatch.shift_time,
+      }, '-created_date', 500);
+
+      const conflictByTruck = new Map();
+      (sameCompanyDispatches || []).forEach((candidate) => {
+        if (!candidate?.id || candidate.id === dispatch.id) return;
+        (candidate.trucks_assigned || []).forEach((truck) => conflictByTruck.set(truck, candidate));
+      });
+
+      const conflictingAdded = addedTrucks.filter((truck) => conflictByTruck.has(truck));
+      if (conflictingAdded.length > 1) {
+        throw new Error('Unable to swap multiple conflicting trucks in one save. Please update one truck at a time.');
+      }
+
+      const actorName = getOwnerDisplayName(session);
+      const currentStatus = dispatch.status;
+
+      if (conflictingAdded.length === 1) {
+        const incomingTruck = conflictingAdded[0];
+        const conflictingDispatch = conflictByTruck.get(incomingTruck);
+        const outgoingTruck = removedTrucks[0];
+
+        if (!outgoingTruck) {
+          throw new Error('No removable truck is available to complete this swap. Please remove one truck first.');
+        }
+
+        const conflictSummary = formatConflictDispatchSummary(conflictingDispatch);
+        const promptMessage = `${incomingTruck} is currently assigned to another dispatch:
+${conflictSummary}
+Would you like to swap ${outgoingTruck} with ${incomingTruck}?`;
+        const confirmed = window.confirm(promptMessage);
+        if (!confirmed) return { updated: false, cancelled: true };
+
+        const conflictingCurrent = conflictingDispatch.trucks_assigned || [];
+        if (!conflictingCurrent.includes(incomingTruck)) {
+          throw new Error(`${incomingTruck} is no longer assigned on the other dispatch. Please refresh and try again.`);
+        }
+
+        const conflictingNext = conflictingCurrent
+          .filter((truck) => truck !== incomingTruck)
+          .concat(outgoingTruck);
+
+        const dedupConflicting = [...new Set(conflictingNext.filter(Boolean))];
+        if (dedupConflicting.length !== conflictingNext.length) {
+          throw new Error('Swap would create duplicate trucks on the conflicting dispatch.');
+        }
+
+        await base44.entities.Dispatch.update(dispatch.id, {
+          trucks_assigned: normalizedNext,
+          admin_activity_log: [
+            {
+              timestamp: new Date().toISOString(),
+              actor_type: 'CompanyOwner',
+              actor_id: session?.id,
+              actor_name: actorName,
+              action: 'owner_swapped_trucks',
+              message: `${actorName} swapped ${outgoingTruck} for ${incomingTruck}`,
+            },
+            ...(Array.isArray(dispatch.admin_activity_log) ? dispatch.admin_activity_log : []),
+          ],
+        });
+
+        await base44.entities.Dispatch.update(conflictingDispatch.id, {
+          trucks_assigned: dedupConflicting,
+          admin_activity_log: [
+            {
+              timestamp: new Date().toISOString(),
+              actor_type: 'CompanyOwner',
+              actor_id: session?.id,
+              actor_name: actorName,
+              action: 'owner_swap_received_truck',
+              message: `${actorName} swapped ${incomingTruck} with ${outgoingTruck}`,
+            },
+            ...(Array.isArray(conflictingDispatch.admin_activity_log) ? conflictingDispatch.admin_activity_log : []),
+          ],
+        });
+
+        const currentStatusConfirmations = confirmations.filter((confirmation) =>
+          confirmation.dispatch_id === dispatch.id &&
+          confirmation.confirmation_type === currentStatus
+        );
+
+        const removeConfirmationIds = currentStatusConfirmations
+          .filter((confirmation) => removedTrucks.includes(confirmation.truck_number))
+          .map((confirmation) => confirmation.id)
+          .filter(Boolean);
+
+        if (removeConfirmationIds.length > 0) {
+          await Promise.all(removeConfirmationIds.map((id) => base44.entities.Confirmation.delete(id)));
+        }
+
+        await Promise.all(addedTrucks.map((truck) =>
+          base44.entities.Confirmation.create({
+            dispatch_id: dispatch.id,
+            access_code_id: session.id,
+            truck_number: truck,
+            confirmation_type: currentStatus,
+            confirmed_at: new Date().toISOString(),
+          })
+        ));
+
+        await notifyOwnerTruckReassignment({
+          dispatch,
+          actorName,
+          swapDetails: {
+            fromTruck: outgoingTruck,
+            toTruck: incomingTruck,
+            conflictingDispatchStatus: conflictingDispatch.status,
+          },
+        });
+
+        return { updated: true };
+      }
+
+      await base44.entities.Dispatch.update(dispatch.id, {
+        trucks_assigned: normalizedNext,
+        admin_activity_log: [
+          {
+            timestamp: new Date().toISOString(),
+            actor_type: 'CompanyOwner',
+            actor_id: session?.id,
+            actor_name: actorName,
+            action: 'owner_updated_truck_assignments',
+            message: `${actorName} updated truck assignments`,
+          },
+          ...(Array.isArray(dispatch.admin_activity_log) ? dispatch.admin_activity_log : []),
+        ],
+      });
+
+      const currentStatusConfirmations = confirmations.filter((confirmation) =>
+        confirmation.dispatch_id === dispatch.id &&
+        confirmation.confirmation_type === currentStatus
+      );
+
+      const removeConfirmationIds = currentStatusConfirmations
+        .filter((confirmation) => removedTrucks.includes(confirmation.truck_number))
+        .map((confirmation) => confirmation.id)
+        .filter(Boolean);
+
+      if (removeConfirmationIds.length > 0) {
+        await Promise.all(removeConfirmationIds.map((id) => base44.entities.Confirmation.delete(id)));
+      }
+
+      await Promise.all(addedTrucks.map((truck) =>
+        base44.entities.Confirmation.create({
+          dispatch_id: dispatch.id,
+          access_code_id: session.id,
+          truck_number: truck,
+          confirmation_type: currentStatus,
+          confirmed_at: new Date().toISOString(),
+        })
+      ));
+
+      await notifyOwnerTruckReassignment({ dispatch, actorName });
+
+      return { updated: true };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['portal-dispatches', session?.company_id] });
+      queryClient.invalidateQueries({ queryKey: ['dispatches-admin'] });
+      queryClient.invalidateQueries({ queryKey: ['confirmations'] });
+      queryClient.invalidateQueries({ queryKey: ['confirmations-admin'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+
+  const handleOwnerTruckUpdate = (dispatch, nextTrucks) => updateOwnerTrucksMutation.mutateAsync({ dispatch, nextTrucks });
 
   const allowedTrucks = session?.allowed_trucks || [];
 
@@ -331,6 +532,7 @@ export default function Portal() {
                 templateNotes={sortedNotes}
                 onConfirm={handleConfirm}
                 onTimeEntry={handleTimeEntry}
+                onOwnerTruckUpdate={handleOwnerTruckUpdate}
                 companyName={companyMap[d.company_id]}
                 forceOpen={drawerDispatchId === d.id}
                 onDrawerClose={handleDrawerClose}

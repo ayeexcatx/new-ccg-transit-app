@@ -439,6 +439,38 @@ export async function resolveOwnerNotificationIfComplete(dispatch, confirmations
   }
 }
 
+export async function notifyOwnerTruckReassignment({
+  dispatch,
+  actorName,
+  swapDetails = null,
+}) {
+  try {
+    if (!dispatch?.id) return;
+
+    const dateText = dispatch.date ? format(parseISO(dispatch.date), 'EEE MM-dd-yyyy').toUpperCase() : '';
+    const shiftText = dispatch.shift_time || '';
+
+    const title = swapDetails
+      ? 'Owner Truck Swap Applied'
+      : 'Owner Truck Assignments Updated';
+
+    const message = swapDetails
+      ? `${actorName} swapped ${swapDetails.fromTruck} with ${swapDetails.toTruck}${swapDetails.conflictingDispatchStatus ? ` (${swapDetails.conflictingDispatchStatus})` : ''} · ${dateText}${shiftText ? ` · ${shiftText}` : ''}`
+      : `${actorName} updated truck assignments · ${dateText}${shiftText ? ` · ${shiftText}` : ''}`;
+
+    await base44.entities.Notification.create({
+      recipient_type: 'Admin',
+      title,
+      message,
+      related_dispatch_id: dispatch.id,
+      read_flag: false,
+      notification_category: 'owner_truck_reassignment',
+    });
+  } catch (error) {
+    console.error('Error creating owner truck reassignment notification:', error);
+  }
+}
+
 /**
  * Create notification when truck confirms receipt (admin notification).
  */

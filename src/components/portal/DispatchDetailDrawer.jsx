@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   CheckCircle2, Clock, Truck, Sun, Moon,
-  FileText, AlertTriangle, Save, History, ArrowLeft
+  FileText, AlertTriangle, Save, History, ArrowLeft, Pencil
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { statusBadgeColors } from './statusConfig';
@@ -130,14 +131,23 @@ function TruckTimeRow({
 
 export default function DispatchDetailDrawer({
   dispatch, session, confirmations, timeEntries, templateNotes,
-  onConfirm, onTimeEntry, companyName, open, onClose
+  onConfirm, onTimeEntry, onOwnerTruckUpdate, companyName, open, onClose
 }) {
   const [draftTimeEntries, setDraftTimeEntries] = useState({});
   const [isSavingAll, setIsSavingAll] = useState(false);
+  const [isEditingTrucks, setIsEditingTrucks] = useState(false);
+  const [draftTrucks, setDraftTrucks] = useState([]);
+  const [isSavingTrucks, setIsSavingTrucks] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setDraftTimeEntries({});
   }, [dispatch?.id]);
+
+  useEffect(() => {
+    setIsEditingTrucks(false);
+    setDraftTrucks(dispatch?.trucks_assigned || []);
+    setIsSavingTrucks(false);
+  }, [dispatch?.id, dispatch?.trucks_assigned]);
 
   if (!dispatch) return null;
 
@@ -240,6 +250,53 @@ export default function DispatchDetailDrawer({
     onConfirm(dispatch, truck, currentConfType);
   };
 
+
+  const ownerTruckOptions = session?.code_type === 'CompanyOwner' ? (session?.allowed_trucks || []) : [];
+
+  const toggleDraftTruck = (truck) => {
+    setDraftTrucks((prev) =>
+      prev.includes(truck)
+        ? prev.filter((item) => item !== truck)
+        : [...prev, truck]
+    );
+  };
+
+  const handleSaveTrucks = async () => {
+    if (!onOwnerTruckUpdate) return;
+    const nextTrucks = [...new Set(draftTrucks.filter(Boolean))];
+
+    if (nextTrucks.length === 0) {
+      toast({
+        variant: 'destructive',
+        description: 'Please keep at least one truck assigned.',
+      });
+      return;
+    }
+
+    setIsSavingTrucks(true);
+    try {
+      const result = await onOwnerTruckUpdate(dispatch, nextTrucks);
+      if (result?.updated) {
+        toast({ description: 'Truck assignments updated.' });
+        setIsEditingTrucks(false);
+      }
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        description: error?.message || 'Unable to update truck assignments.',
+      });
+    } finally {
+      setIsSavingTrucks(false);
+    }
+  };
+
+  const hasTruckDraftChanges = (() => {
+    const current = [...new Set((dispatch?.trucks_assigned || []).filter(Boolean))].sort();
+    const next = [...new Set(draftTrucks.filter(Boolean))].sort();
+    if (current.length !== next.length) return true;
+    return current.some((truck, index) => truck !== next[index]);
+  })();
+
   // Safe date display: use parseISO to avoid timezone shift on YYYY-MM-DD strings
   const displayDate = dispatch.date
     ? format(parseISO(dispatch.date), 'EEE, MMM d, yyyy')
@@ -304,13 +361,58 @@ export default function DispatchDetailDrawer({
               )}
 
               {/* Trucks */}
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <Truck className="h-3.5 w-3.5 text-slate-400" />
-                {myTrucks.map(t => (
-                  <Badge key={t} variant="outline" className="text-xs border-slate-900 text-slate-900 font-medium">
-                    {t}
-                  </Badge>
-                ))}
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <Truck className="h-3.5 w-3.5 text-slate-400" />
+                  {myTrucks.map(t => (
+                    <Badge key={t} variant="outline" className="text-xs border-slate-900 text-slate-900 font-medium">
+                      {t}
+                    </Badge>
+                  ))}
+                  {isOwner && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => {
+                        if (isEditingTrucks) {
+                          setDraftTrucks(dispatch?.trucks_assigned || []);
+                        }
+                        setIsEditingTrucks((prev) => !prev);
+                      }}
+                    >
+                      <Pencil className="h-3.5 w-3.5 mr-1" />
+                      {isEditingTrucks ? 'Cancel' : 'Edit Trucks'}
+                    </Button>
+                  )}
+                </div>
+
+                {isOwner && isEditingTrucks && (
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-3">
+                    <p className="text-xs text-slate-500">Select assigned trucks</p>
+                    <div className="space-y-2">
+                      {ownerTruckOptions.map((truck) => (
+                        <label key={truck} className="flex items-center gap-2 text-sm text-slate-700">
+                          <Checkbox
+                            checked={draftTrucks.includes(truck)}
+                            onCheckedChange={() => toggleDraftTruck(truck)}
+                          />
+                          <span className="font-mono">{truck}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="bg-slate-900 hover:bg-slate-800"
+                      disabled={!hasTruckDraftChanges || isSavingTrucks}
+                      onClick={handleSaveTrucks}
+                    >
+                      {isSavingTrucks ? 'Saving…' : 'Save Truck Assignments'}
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           )}

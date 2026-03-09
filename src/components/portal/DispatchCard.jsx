@@ -39,7 +39,7 @@ const formatDispatchTime = (startTime) => {
 
 const DispatchCard = React.forwardRef(function DispatchCard({
   dispatch, session, confirmations, timeEntries, templateNotes,
-  onConfirm, onTimeEntry, companyName, forceOpen, onDrawerClose
+  onConfirm, onTimeEntry, onOwnerTruckUpdate, companyName, forceOpen, onDrawerClose
 }, ref) {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -148,6 +148,7 @@ const DispatchCard = React.forwardRef(function DispatchCard({
         templateNotes={templateNotes}
         onConfirm={onConfirm}
         onTimeEntry={onTimeEntry}
+        onOwnerTruckUpdate={onOwnerTruckUpdate}
         companyName={companyName}
       />
     </div>

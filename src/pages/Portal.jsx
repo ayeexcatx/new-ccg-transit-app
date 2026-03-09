@@ -218,9 +218,7 @@ export default function Portal() {
     }
   };
 
-  const handleTimeEntry = (dispatch, entries) => {
-    timeEntryMutation.mutate({ dispatch, entries });
-  };
+  const handleTimeEntry = async (dispatch, entries) => timeEntryMutation.mutateAsync({ dispatch, entries });
 
   const currentListBase = tab === 'upcoming' ? upcomingDispatches : tab === 'today' ? todayDispatches : historyDispatches;
   const currentOpenDispatch = drawerDispatchId ? filteredDispatches.find((d) => d.id === drawerDispatchId) : null;

@@ -249,6 +249,7 @@ export default function DispatchDetailDrawer({
   );
   const isOwner = session.code_type === 'CompanyOwner';
   const isAdmin = session.code_type === 'Admin';
+  const primaryReferenceTag = String(dispatch.reference_tag || '').trim();
   const currentConfType = dispatch.status;
   const hasAdditional = Array.isArray(dispatch.additional_assignments) && dispatch.additional_assignments.length > 0;
 
@@ -495,9 +496,14 @@ export default function DispatchDetailDrawer({
               {!hasAdditional && (
                 <div className="grid grid-cols-1 gap-3 text-sm">
                   {dispatch.job_number && (
-                    <div className="flex items-center gap-2 text-slate-600">
-                      <FileText className="h-4 w-4 text-slate-400 shrink-0" />
-                      <span>Job #{dispatch.job_number}</span>
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-2 text-slate-600">
+                        <FileText className="h-4 w-4 text-slate-400 shrink-0" />
+                        <span>Job #{dispatch.job_number}</span>
+                      </div>
+                      {primaryReferenceTag && (
+                        <p className="text-xs text-slate-400 pl-6">Reference Tag: {primaryReferenceTag}</p>
+                      )}
                     </div>
                   )}
                 </div>
@@ -579,9 +585,14 @@ export default function DispatchDetailDrawer({
                 <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-3">
                   <p className="text-xs text-slate-500 uppercase tracking-wide">Assignment 1</p>
                   {hasAdditional && (
-                    <div className="flex items-center gap-2 text-sm text-slate-600">
-                      <FileText className="h-4 w-4 text-slate-400 shrink-0" />
-                      <span>Job Number{dispatch.job_number ? `: ${dispatch.job_number}` : ''}</span>
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-2 text-sm text-slate-600">
+                        <FileText className="h-4 w-4 text-slate-400 shrink-0" />
+                        <span>Job Number{dispatch.job_number ? `: ${dispatch.job_number}` : ''}</span>
+                      </div>
+                      {primaryReferenceTag && (
+                        <p className="text-xs text-slate-400 pl-6">Reference Tag: {primaryReferenceTag}</p>
+                      )}
                     </div>
                   )}
                   {dispatch.start_time && (
@@ -625,9 +636,14 @@ export default function DispatchDetailDrawer({
                         <p className="text-xs font-semibold text-slate-500 mb-2">Assignment {i + 2}</p>
                         <div className="space-y-1.5">
                           {a.job_number && (
-                            <div className="flex items-center gap-2 text-slate-600">
-                              <FileText className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                              <span>Job Number: {a.job_number}</span>
+                            <div className="space-y-0.5">
+                              <div className="flex items-center gap-2 text-slate-600">
+                                <FileText className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                                <span>Job Number: {a.job_number}</span>
+                              </div>
+                              {String(a.reference_tag || '').trim() && (
+                                <p className="text-xs text-slate-400 pl-[1.375rem]">Reference Tag: {String(a.reference_tag || '').trim()}</p>
+                              )}
                             </div>
                           )}
                           {a.start_time && (

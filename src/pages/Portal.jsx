@@ -257,6 +257,12 @@ Would you like to swap ${outgoingTruck} with ${incomingTruck}?`;
           confirmation.confirmation_type === currentStatus
         );
 
+        const conflictingStatus = conflictingDispatch.status;
+        const conflictingStatusConfirmations = confirmations.filter((confirmation) =>
+          confirmation.dispatch_id === conflictingDispatch.id &&
+          confirmation.confirmation_type === conflictingStatus
+        );
+
         const removeConfirmationIds = currentStatusConfirmations
           .filter((confirmation) => removedTrucks.includes(confirmation.truck_number))
           .map((confirmation) => confirmation.id)
@@ -275,6 +281,30 @@ Would you like to swap ${outgoingTruck} with ${incomingTruck}?`;
             confirmed_at: new Date().toISOString(),
           })
         ));
+
+        const conflictingRemovedConfirmationIds = conflictingStatusConfirmations
+          .filter((confirmation) => confirmation.truck_number === incomingTruck)
+          .map((confirmation) => confirmation.id)
+          .filter(Boolean);
+
+        if (conflictingRemovedConfirmationIds.length > 0) {
+          await Promise.all(conflictingRemovedConfirmationIds.map((id) => base44.entities.Confirmation.delete(id)));
+        }
+
+        const outgoingAlreadyConfirmedOnConflicting = conflictingStatusConfirmations
+          .some((confirmation) => confirmation.truck_number === outgoingTruck);
+        const incomingWasConfirmedOnConflicting = conflictingStatusConfirmations
+          .some((confirmation) => confirmation.truck_number === incomingTruck);
+
+        if (!outgoingAlreadyConfirmedOnConflicting && incomingWasConfirmedOnConflicting) {
+          await base44.entities.Confirmation.create({
+            dispatch_id: conflictingDispatch.id,
+            access_code_id: session.id,
+            truck_number: outgoingTruck,
+            confirmation_type: conflictingStatus,
+            confirmed_at: new Date().toISOString(),
+          });
+        }
 
         await expandCurrentStatusRequiredTrucks(updatedDispatch, addedTrucks);
         await expandCurrentStatusRequiredTrucks(updatedConflictingDispatch, [outgoingTruck]);

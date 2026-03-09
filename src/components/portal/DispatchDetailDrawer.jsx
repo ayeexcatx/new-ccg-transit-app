@@ -12,6 +12,7 @@ import { format, parseISO } from 'date-fns';
 import { statusBadgeColors } from './statusConfig';
 import { NOTE_TYPES, normalizeTemplateNote, renderSimpleMarkupToHtml } from '@/lib/templateNotes';
 import { calculateWorkedHours, formatTime24h, formatWorkedHours } from '@/lib/timeLogs';
+import { toast } from 'sonner';
 
 const tollColors = {
   Authorized: 'bg-green-50 text-green-700',
@@ -46,6 +47,85 @@ function formatTimeToAmPm(value) {
   if (hh === 0) hh = 12;
 
   return `${hh}:${mm} ${suffix}`;
+}
+
+function buildDispatchCopyText({ dispatch, trucks, boxNotes, generalTemplateNotes }) {
+  const lines = ['CCG DISPATCH'];
+  const dateValue = dispatch?.date ? format(parseISO(dispatch.date), 'MM-dd-yyyy') : '';
+
+  const appendLine = (label, value) => {
+    if (!value) return;
+    lines.push(`${label}: ${value}`);
+  };
+
+  lines.push('');
+  appendLine('Date', dateValue);
+  appendLine('Shift', dispatch?.shift_time);
+  appendLine('Status', dispatch?.status);
+
+  lines.push('');
+  appendLine('Client', dispatch?.client_name);
+  appendLine('Job Number', dispatch?.job_number);
+  if (Array.isArray(trucks) && trucks.length > 0) appendLine('Trucks Assigned', trucks.join(', '));
+
+  lines.push('');
+  appendLine('Start Time', formatTimeToAmPm(dispatch?.start_time));
+  appendLine('Start Location', dispatch?.start_location);
+
+  if (dispatch?.instructions) {
+    lines.push('');
+    lines.push('Instructions:');
+    lines.push(dispatch.instructions);
+  }
+
+  const templateLines = [];
+  boxNotes.forEach((note) => {
+    if (note?.title) templateLines.push(note.title);
+    if (note?.box_content) templateLines.push(note.box_content);
+    else if (note?.note_text) templateLines.push(note.note_text);
+  });
+  generalTemplateNotes.forEach((note) => {
+    if (note?.title) templateLines.push(note.title);
+    if (Array.isArray(note?.bullet_lines) && note.bullet_lines.length > 0) {
+      note.bullet_lines.forEach((line) => templateLines.push(line));
+      return;
+    }
+    if (note?.note_text) templateLines.push(note.note_text);
+  });
+
+  if (templateLines.length > 0) {
+    lines.push('');
+    lines.push('Dispatch Template Notes:');
+    lines.push(templateLines.join('\n'));
+  }
+
+  if (dispatch?.notes) {
+    lines.push('');
+    lines.push('General Notes:');
+    lines.push(dispatch.notes);
+  }
+
+  if (dispatch?.toll_status) {
+    lines.push('');
+    appendLine('Toll Status', dispatch.toll_status);
+  }
+
+  const additionalAssignments = (dispatch?.additional_assignments || []).filter((assignment) => (
+    assignment?.job_number || assignment?.start_time || assignment?.start_location || assignment?.instructions || assignment?.notes
+  ));
+
+  if (additionalAssignments.length > 0) {
+    lines.push('');
+    lines.push('Additional Assignments:');
+    additionalAssignments.forEach((assignment, index) => {
+      const summaryParts = [assignment.job_number, formatTimeToAmPm(assignment.start_time), assignment.start_location].filter(Boolean);
+      lines.push(`${index + 1}. ${summaryParts.join(' | ')}`);
+      if (assignment.instructions) lines.push(`   Instructions: ${assignment.instructions}`);
+      if (assignment.notes) lines.push(`   Notes: ${assignment.notes}`);
+    });
+  }
+
+  return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 
 function TruckTimeRow({
@@ -338,6 +418,22 @@ export default function DispatchDetailDrawer({
     ? format(parseISO(dispatch.date), 'EEE, MMM d, yyyy')
     : '';
 
+  const handleCopyDispatch = async () => {
+    const copyText = buildDispatchCopyText({
+      dispatch,
+      trucks: myTrucks,
+      boxNotes,
+      generalTemplateNotes: generalNotes,
+    });
+
+    try {
+      await navigator.clipboard.writeText(copyText);
+      toast.success('Dispatch copied to clipboard.');
+    } catch (error) {
+      toast.error('Unable to copy dispatch details.');
+    }
+  };
+
   return (
     <Sheet open={open} onOpenChange={(v) => { if (!v) handleDrawerClose(); }}>
       <SheetContent ref={drawerScrollRef} side="right" className="w-full sm:max-w-lg overflow-y-auto p-0">
@@ -370,6 +466,20 @@ export default function DispatchDetailDrawer({
         </div>
 
         <div className="px-5 py-5 space-y-6">
+
+          {isOwner && (
+            <div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs"
+                onClick={handleCopyDispatch}
+              >
+                Copy Dispatch
+              </Button>
+            </div>
+          )}
 
           {/* Main info */}
           {dispatch.status === 'Scheduled' ? (

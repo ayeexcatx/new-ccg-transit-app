@@ -8,13 +8,16 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Truck, Inbox } from 'lucide-react';
 import { startOfDay, parseISO } from 'date-fns';
+import { areAllAssignedTrucksTimeComplete } from '@/lib/timeLogs';
 import { getDispatchBucket } from '../components/portal/dispatchBuckets';
 import { sortTemplateNotesForDispatch } from '@/lib/templateNotes';
 import { notifyTruckConfirmation, resolveOwnerNotificationIfComplete } from '../components/notifications/createNotifications';
 
 function myTrucksForHistory(dispatch, timeEntries, session) {
   const trucks = (session?.allowed_trucks || []).filter(t => (dispatch.trucks_assigned || []).includes(t));
-  return trucks.some(t => timeEntries.some(te => te.dispatch_id === dispatch.id && te.truck_number === t));
+  if (trucks.length === 0) return false;
+  const dispatchEntries = timeEntries.filter((te) => te.dispatch_id === dispatch.id && trucks.includes(te.truck_number));
+  return areAllAssignedTrucksTimeComplete({ trucks_assigned: trucks }, dispatchEntries);
 }
 
 export default function Portal() {
@@ -65,32 +68,59 @@ export default function Portal() {
   const today = startOfDay(new Date());
 
   const timeEntryMutation = useMutation({
-    mutationFn: async ({ dispatch, truck, start, end }) => {
-      const existing = timeEntries.find(te =>
-        te.dispatch_id === dispatch.id && te.truck_number === truck && te.access_code_id === session.id
-      );
-      let savedEntry;
-      if (existing) {
-        savedEntry = await base44.entities.TimeEntry.update(existing.id, {
-          start_time: start !== undefined ? start : existing.start_time,
-          end_time: end !== undefined ? end : existing.end_time,
-        });
-      } else {
-        savedEntry = await base44.entities.TimeEntry.create({
+    mutationFn: async ({ dispatch, entries }) => {
+      const savedEntries = [];
+
+      for (const { truck, start, end } of entries) {
+        const existing = timeEntries.find(te =>
+          te.dispatch_id === dispatch.id && te.truck_number === truck && te.access_code_id === session.id
+        );
+
+        if (existing) {
+          const updated = await base44.entities.TimeEntry.update(existing.id, {
+            start_time: start !== undefined ? start : existing.start_time,
+            end_time: end !== undefined ? end : existing.end_time,
+          });
+          savedEntries.push(updated);
+          continue;
+        }
+
+        const created = await base44.entities.TimeEntry.create({
           dispatch_id: dispatch.id,
           access_code_id: session.id,
           truck_number: truck,
           start_time: start,
           end_time: end,
         });
+        savedEntries.push(created);
       }
 
-      // Auto-archive if both times set and dispatch date is today or past
-      const effectiveStart = start || existing?.start_time;
-      const effectiveEnd = end || existing?.end_time;
+      const dispatchEntries = timeEntries
+        .filter((te) => te.dispatch_id === dispatch.id)
+        .map((te) => {
+          const update = entries.find((entry) => entry.truck === te.truck_number);
+          if (!update) return te;
+          return {
+            ...te,
+            start_time: update.start !== undefined ? update.start : te.start_time,
+            end_time: update.end !== undefined ? update.end : te.end_time,
+          };
+        });
+
+      for (const entry of entries) {
+        if (dispatchEntries.some((te) => te.truck_number === entry.truck)) continue;
+        dispatchEntries.push({
+          dispatch_id: dispatch.id,
+          truck_number: entry.truck,
+          start_time: entry.start,
+          end_time: entry.end,
+        });
+      }
+
+      const allComplete = areAllAssignedTrucksTimeComplete(dispatch, dispatchEntries);
       const dispatchDate = dispatch.date ? startOfDay(parseISO(dispatch.date)) : null;
       const isPastOrToday = dispatchDate && dispatchDate <= today;
-      if (effectiveStart && effectiveEnd && isPastOrToday && !dispatch.archived_flag) {
+      if (allComplete && isPastOrToday && !dispatch.archived_flag) {
         await base44.entities.Dispatch.update(dispatch.id, {
           archived_flag: true,
           archived_at: new Date().toISOString(),
@@ -99,7 +129,7 @@ export default function Portal() {
         queryClient.invalidateQueries({ queryKey: ['portal-dispatches', session?.company_id] });
       }
 
-      return savedEntry;
+      return savedEntries;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['time-entries'] }),
   });
@@ -188,11 +218,15 @@ export default function Portal() {
     }
   };
 
-  const handleTimeEntry = (dispatch, truck, start, end) => {
-    timeEntryMutation.mutate({ dispatch, truck, start, end });
+  const handleTimeEntry = (dispatch, entries) => {
+    timeEntryMutation.mutate({ dispatch, entries });
   };
 
-  const currentList = tab === 'upcoming' ? upcomingDispatches : tab === 'today' ? todayDispatches : historyDispatches;
+  const currentListBase = tab === 'upcoming' ? upcomingDispatches : tab === 'today' ? todayDispatches : historyDispatches;
+  const currentOpenDispatch = drawerDispatchId ? filteredDispatches.find((d) => d.id === drawerDispatchId) : null;
+  const currentList = currentOpenDispatch && !currentListBase.some((d) => d.id === currentOpenDispatch.id)
+    ? [currentOpenDispatch, ...currentListBase]
+    : currentListBase;
   const sortedNotes = sortTemplateNotesForDispatch(templateNotes);
 
   const dispatchNotFound = targetDispatchId && dispatches.length > 0 &&

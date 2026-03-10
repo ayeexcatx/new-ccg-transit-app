@@ -98,9 +98,11 @@ function LayoutInner({ children, currentPageName }) {
                   </Button>
                 </Link>
                 <Link to={createPageUrl('Incidents')}>
-                  <Button variant={isActive('Incidents') ? 'secondary' : 'ghost'} size="sm" className="text-xs flex items-center gap-1">
-                    <TriangleAlert className="h-3 w-3" />Incidents
-                <Link to={createPageUrl('AdminAvailability')}>
+                   <Button variant={isActive('Incidents') ? 'secondary' : 'ghost'} size="sm" className="text-xs flex items-center gap-1">
+                     <TriangleAlert className="h-3 w-3" />Incidents
+                   </Button>
+                 </Link>
+                 <Link to={createPageUrl('AdminAvailability')}>
                   <Button variant={isActive('AdminAvailability') ? 'secondary' : 'ghost'} size="sm" className="text-xs flex items-center gap-1">
                     <CalendarDays className="h-3 w-3" />Availability
                   </Button>

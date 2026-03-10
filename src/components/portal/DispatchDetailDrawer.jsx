@@ -9,6 +9,7 @@ import {
   FileText, AlertTriangle, Save, History, ArrowLeft, Pencil, Camera
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
+import { createPageUrl } from '@/utils';
 import { statusBadgeColors } from './statusConfig';
 import { NOTE_TYPES, normalizeTemplateNote, renderSimpleMarkupToHtml } from '@/lib/templateNotes';
 import { calculateWorkedHours, formatTime24h, formatWorkedHours } from '@/lib/timeLogs';
@@ -173,6 +174,7 @@ export default function DispatchDetailDrawer({
   );
   const isOwner = session.code_type === 'CompanyOwner';
   const isAdmin = session.code_type === 'Admin';
+  const isTruckUser = session.code_type === 'Truck';
   const primaryReferenceTag = String(dispatch.reference_tag || '').trim();
   const currentConfType = dispatch.status;
   const hasAdditional = Array.isArray(dispatch.additional_assignments) && dispatch.additional_assignments.length > 0;
@@ -343,6 +345,25 @@ export default function DispatchDetailDrawer({
     ? format(parseISO(dispatch.date), 'EEE, MMM d, yyyy')
     : '';
 
+
+  const handleReportIncident = () => {
+    const params = new URLSearchParams();
+    params.set('create', '1');
+    params.set('fromDispatch', '1');
+    params.set('dispatchId', dispatch.id);
+
+    if (dispatch.company_id) {
+      params.set('companyId', dispatch.company_id);
+    }
+
+    if (myTrucks.length === 1) {
+      params.set('truckNumber', myTrucks[0]);
+    }
+
+    handleDrawerClose();
+    window.location.href = createPageUrl(`Incidents?${params.toString()}`);
+  };
+
   const handleScreenshotDispatch = async () => {
     if (isEditingTrucks) {
       toast.error('Finish editing trucks before creating a screenshot.');
@@ -470,19 +491,32 @@ export default function DispatchDetailDrawer({
 
         <div className="px-5 py-5 space-y-6">
 
-          {isOwner && (
+          {(isOwner || isTruckUser) && (
             <div className="flex items-center gap-2">
               <Button
                 type="button"
-                variant="ghost"
+                variant="outline"
                 size="sm"
                 className="h-8 text-xs"
-                disabled={isCreatingScreenshot || isEditingTrucks}
-                onClick={handleScreenshotDispatch}
+                data-screenshot-exclude="true"
+                onClick={handleReportIncident}
               >
-                <Camera className="h-3.5 w-3.5 mr-1" />
-                {isCreatingScreenshot ? 'Creating…' : 'Screenshot Dispatch'}
+                <AlertTriangle className="h-3.5 w-3.5 mr-1" />
+                Report Incident
               </Button>
+              {isOwner && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 text-xs"
+                  disabled={isCreatingScreenshot || isEditingTrucks}
+                  onClick={handleScreenshotDispatch}
+                >
+                  <Camera className="h-3.5 w-3.5 mr-1" />
+                  {isCreatingScreenshot ? 'Creating…' : 'Screenshot Dispatch'}
+                </Button>
+              )}
             </div>
           )}
 

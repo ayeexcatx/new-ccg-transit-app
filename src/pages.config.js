@@ -27,11 +27,13 @@
  * Example with Layout (wraps all pages):
  *
  *   import Home from './pages/Home';
+import Incidents from './pages/Incidents';
  *   import Settings from './pages/Settings';
  *   import __Layout from './Layout.jsx';
  *
  *   export const PAGES = {
  *       "Home": Home,
+    "Incidents": Incidents,
  *       "Settings": Settings,
  *   }
  *
@@ -60,6 +62,7 @@ import Portal from './pages/Portal';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminDispatches from './pages/AdminDispatches';
 import Home from './pages/Home';
+import Incidents from './pages/Incidents';
 import __Layout from './Layout.jsx';
 
 
@@ -77,6 +80,7 @@ export const PAGES = {
     "AdminDashboard": AdminDashboard,
     "AdminDispatches": AdminDispatches,
     "Home": Home,
+    "Incidents": Incidents,
 }
 
 export const pagesConfig = {

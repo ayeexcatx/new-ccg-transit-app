@@ -1,96 +1,91 @@
-import { useEffect, useState } from 'react';
-import {
-  APP_VERSION,
-  APP_VERSION_ENDPOINT,
-  APP_VERSION_CHECK_INTERVAL_MS,
-} from '@/lib/appVersion';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  APP_RUNTIME_VERSION_CHECK_INTERVAL_MS,
+  APP_RUNTIME_VERSION_CONFIG_KEY,
+  APP_RUNTIME_VERSION_KEY,
+  normalizeRuntimeVersion,
+} from '@/lib/runtimeVersion';
+
+async function fetchRuntimeVersion() {
+  const rows = await base44.entities.AppConfig.filter({ key: APP_RUNTIME_VERSION_CONFIG_KEY }, '-updated_date', 1);
+  return normalizeRuntimeVersion(rows?.[0]?.value);
+}
 
 export default function NewVersionBanner() {
-  const [showBanner, setShowBanner] = useState(false);
+  const [showRefreshModal, setShowRefreshModal] = useState(false);
+  const lastSeenVersionRef = useRef('');
+
+  const checkVersion = useCallback(async () => {
+    try {
+      const runtimeVersion = await fetchRuntimeVersion();
+      if (!runtimeVersion) return;
+
+      if (!lastSeenVersionRef.current) {
+        const storedVersion = normalizeRuntimeVersion(localStorage.getItem(APP_RUNTIME_VERSION_KEY));
+        lastSeenVersionRef.current = storedVersion || runtimeVersion;
+        localStorage.setItem(APP_RUNTIME_VERSION_KEY, lastSeenVersionRef.current);
+        return;
+      }
+
+      if (runtimeVersion !== lastSeenVersionRef.current) {
+        localStorage.setItem(APP_RUNTIME_VERSION_KEY, runtimeVersion);
+        setShowRefreshModal(true);
+      }
+    } catch {
+      // Version checks should never block normal app usage.
+    }
+  }, []);
 
   useEffect(() => {
-    let isMounted = true;
-
-    const checkForNewVersion = async () => {
-      try {
-        const cacheBust = `t=${Date.now()}`;
-        const url = `${APP_VERSION_ENDPOINT}?${cacheBust}`;
-        const response = await fetch(url, {
-          cache: 'no-store',
-          headers: {
-            'cache-control': 'no-cache',
-            pragma: 'no-cache',
-          },
-        });
-
-        if (!response.ok) {
-          return;
-        }
-
-        const data = await response.json();
-        const deployedVersion = data?.version;
-
-        if (!deployedVersion) {
-          return;
-        }
-
-        if (deployedVersion !== APP_VERSION && isMounted) {
-          setShowBanner(true);
-        }
-      } catch {
-        // Keep this silent: version checks should never interrupt normal app usage.
-      }
-    };
+    const storedVersion = normalizeRuntimeVersion(localStorage.getItem(APP_RUNTIME_VERSION_KEY));
+    if (storedVersion) {
+      lastSeenVersionRef.current = storedVersion;
+    }
 
     const handleVisibilityOrFocus = () => {
       if (document.visibilityState === 'visible') {
-        checkForNewVersion();
+        checkVersion();
       }
     };
 
-    checkForNewVersion();
+    checkVersion();
 
-    const intervalId = window.setInterval(checkForNewVersion, APP_VERSION_CHECK_INTERVAL_MS);
+    const intervalId = window.setInterval(checkVersion, APP_RUNTIME_VERSION_CHECK_INTERVAL_MS);
     document.addEventListener('visibilitychange', handleVisibilityOrFocus);
     window.addEventListener('focus', handleVisibilityOrFocus);
 
     return () => {
-      isMounted = false;
       window.clearInterval(intervalId);
       document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
       window.removeEventListener('focus', handleVisibilityOrFocus);
     };
-  }, []);
-
-  if (!showBanner) {
-    return null;
-  }
+  }, [checkVersion]);
 
   return (
-    <div className="sticky top-0 z-[70] border-b border-amber-200 bg-amber-50 px-4 py-2 shadow-sm">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm font-medium text-amber-900">A new version of the app is available.</p>
-        <div className="flex items-center gap-2">
+    <Dialog open={showRefreshModal}>
+      <DialogContent
+        className="max-w-md [&>button.absolute.right-4.top-4]:hidden"
+        onEscapeKeyDown={(event) => event.preventDefault()}
+        onPointerDownOutside={(event) => event.preventDefault()}
+      >
+        <DialogHeader>
+          <DialogTitle>Refresh Required</DialogTitle>
+          <DialogDescription>
+            A new version of the app is available. Please refresh to continue.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="pt-1">
           <Button
-            size="sm"
-            onClick={() => {
-              window.location.reload();
-            }}
-            className="h-8 bg-amber-500 px-3 text-xs font-semibold text-white hover:bg-amber-600"
+            onClick={() => window.location.reload()}
+            className="h-11 w-full bg-slate-900 text-base font-semibold text-white hover:bg-slate-800"
           >
-            Refresh
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowBanner(false)}
-            className="h-8 px-2 text-xs text-amber-900 hover:bg-amber-100"
-          >
-            Dismiss
+            Refresh App
           </Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -215,7 +215,7 @@ export default function Home() {
       <div>
         <h2 className="text-2xl font-semibold text-slate-900">Home</h2>
         <p className="text-sm text-slate-500">
-          {session?.label || session?.code_type} · Trucks: {allowedTrucks.join(', ') || '—'}
+          {session?.label || session?.code_type}
         </p>
       </div>
 

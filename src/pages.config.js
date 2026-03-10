@@ -27,13 +27,11 @@
  * Example with Layout (wraps all pages):
  *
  *   import Home from './pages/Home';
-import Incidents from './pages/Incidents';
  *   import Settings from './pages/Settings';
  *   import __Layout from './Layout.jsx';
  *
  *   export const PAGES = {
  *       "Home": Home,
-    "Incidents": Incidents,
  *       "Settings": Settings,
  *   }
  *
@@ -50,36 +48,36 @@ import Incidents from './pages/Incidents';
  * The mainPage value must match a key in the PAGES object exactly.
  */
 import AccessCodeLogin from './pages/AccessCodeLogin';
-import Availability from './pages/Availability';
 import AdminAccessCodes from './pages/AdminAccessCodes';
-import AdminAvailability from './pages/AdminAvailability';
 import AdminAnnouncements from './pages/AdminAnnouncements';
+import AdminAvailability from './pages/AdminAvailability';
 import AdminCompanies from './pages/AdminCompanies';
 import AdminConfirmations from './pages/AdminConfirmations';
-import AdminTemplateNotes from './pages/AdminTemplateNotes';
-import Notifications from './pages/Notifications';
-import Portal from './pages/Portal';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminDispatches from './pages/AdminDispatches';
+import AdminTemplateNotes from './pages/AdminTemplateNotes';
+import Availability from './pages/Availability';
 import Home from './pages/Home';
+import Notifications from './pages/Notifications';
+import Portal from './pages/Portal';
 import Incidents from './pages/Incidents';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
     "AccessCodeLogin": AccessCodeLogin,
-    "Availability": Availability,
     "AdminAccessCodes": AdminAccessCodes,
-    "AdminAvailability": AdminAvailability,
     "AdminAnnouncements": AdminAnnouncements,
+    "AdminAvailability": AdminAvailability,
     "AdminCompanies": AdminCompanies,
     "AdminConfirmations": AdminConfirmations,
-    "AdminTemplateNotes": AdminTemplateNotes,
-    "Notifications": Notifications,
-    "Portal": Portal,
     "AdminDashboard": AdminDashboard,
     "AdminDispatches": AdminDispatches,
+    "AdminTemplateNotes": AdminTemplateNotes,
+    "Availability": Availability,
     "Home": Home,
+    "Notifications": Notifications,
+    "Portal": Portal,
     "Incidents": Incidents,
 }
 

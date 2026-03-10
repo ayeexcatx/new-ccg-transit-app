@@ -2,8 +2,7 @@ import React, { useEffect } from 'react';
 import { SessionProvider, useSession } from './components/session/SessionContext';
 import { createPageUrl } from './utils';
 import { Link, useLocation } from 'react-router-dom';
-import { LogOut, Truck, Shield, Building2, Megaphone, TriangleAlert } from 'lucide-react';
-import { LogOut, Truck, Shield, Building2, Megaphone, CalendarDays } from 'lucide-react';
+import { LogOut, Truck, Shield, Building2, Megaphone, TriangleAlert, CalendarDays } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import NotificationBell from '@/components/notifications/NotificationBell';
 

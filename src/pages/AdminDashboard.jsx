@@ -1,11 +1,14 @@
 import React, { useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import AnnouncementCard from '@/components/announcements/AnnouncementCard';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { buildOpenConfirmationRows } from '@/components/notifications/openConfirmations';
+import { createRuntimeVersionToken, APP_RUNTIME_VERSION_CONFIG_KEY } from '@/lib/runtimeVersion';
+import { toast } from 'sonner';
 import {
   Building2, Key, FileText, StickyNote,
   ArrowRight, Clock, CheckCircle2, Megaphone
@@ -13,6 +16,7 @@ import {
 import { format } from 'date-fns';
 
 export default function AdminDashboard() {
+  const queryClient = useQueryClient();
   const { data: codes = [] } = useQuery({
     queryKey: ['access-codes'],
     queryFn: () => base44.entities.AccessCode.list(),
@@ -41,6 +45,29 @@ export default function AdminDashboard() {
   const { data: dispatches = [] } = useQuery({
     queryKey: ['dispatches-all'],
     queryFn: () => base44.entities.Dispatch.list('-date', 200),
+  });
+
+  const refreshTriggerMutation = useMutation({
+    mutationFn: async () => {
+      const nextVersion = createRuntimeVersionToken();
+      const existingRows = await base44.entities.AppConfig.filter({ key: APP_RUNTIME_VERSION_CONFIG_KEY }, '-updated_date', 1);
+      const existing = existingRows?.[0];
+
+      if (existing?.id) {
+        await base44.entities.AppConfig.update(existing.id, { value: nextVersion });
+      } else {
+        await base44.entities.AppConfig.create({ key: APP_RUNTIME_VERSION_CONFIG_KEY, value: nextVersion });
+      }
+
+      return nextVersion;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['app-runtime-version'] });
+      toast.success('Force refresh triggered. Open sessions will be prompted to refresh.');
+    },
+    onError: () => {
+      toast.error('Unable to trigger app refresh. Please try again.');
+    },
   });
 
   const activeDispatches = dispatches.filter(d => d.status !== 'Completed' && d.status !== 'Cancelled');
@@ -134,6 +161,16 @@ export default function AdminDashboard() {
       <div>
         <h2 className="text-2xl font-semibold text-slate-900">Admin Dashboard</h2>
         <p className="text-sm text-slate-500 mt-1">Overview of your dispatch operations</p>
+        <div className="mt-4 inline-flex w-full max-w-md flex-col rounded-lg border border-slate-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+          <p className="text-xs text-slate-600">Need everyone to reload now?</p>
+          <Button
+            size="sm"
+            onClick={() => refreshTriggerMutation.mutate()}
+            disabled={refreshTriggerMutation.isPending}
+          >
+            {refreshTriggerMutation.isPending ? 'Triggering…' : 'Force App Refresh'}
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

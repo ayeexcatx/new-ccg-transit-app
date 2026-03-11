@@ -39,11 +39,22 @@ const INITIAL_FORM = {
   details: '',
 };
 
+const EASTERN_TIMEZONE = 'America/New_York';
+
 const formatDateTime = (value) => {
   if (!value) return '—';
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return '—';
-  return format(d, 'MMM d, yyyy h:mm a');
+
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: EASTERN_TIMEZONE,
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }).format(d);
 };
 
 const toIsoOrNull = (value) => {
@@ -775,6 +786,7 @@ export default function Incidents() {
                     {sortedIncidentUpdates.length > 0 ? (
                       sortedIncidentUpdates.map((update) => (
                         <div key={update.id} className="text-sm text-slate-700 border-t border-slate-200 pt-2">
+                          <p className="font-medium">Update</p>
                           <p className="whitespace-pre-wrap">{update?.update_text || '—'}</p>
                           <p className="text-xs text-slate-500 mt-1">
                             {formatDateTime(update?.update_datetime)}

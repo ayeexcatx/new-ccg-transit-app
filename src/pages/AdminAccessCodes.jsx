@@ -78,6 +78,32 @@ export default function AdminAccessCodes() {
     },
   });
 
+  const createPendingDriverCodeMutation = useMutation({
+    mutationFn: async (driver) => {
+      const created = await base44.entities.AccessCode.create({
+        code: generateCode(),
+        label: driver.driver_name || '',
+        active_flag: true,
+        code_type: 'Driver',
+        company_id: driver.company_id,
+        driver_id: driver.id,
+        allowed_trucks: [],
+      });
+
+      await base44.entities.Driver.update(driver.id, {
+        access_code_id: created.id,
+        access_code_status: 'Created',
+      });
+
+      return created;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['access-codes'] });
+      queryClient.invalidateQueries({ queryKey: ['drivers-all'] });
+      toast.success('Driver access code created');
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.AccessCode.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['access-codes'] }),
@@ -119,20 +145,6 @@ export default function AdminAccessCodes() {
       company_id: code.company_id || '',
       allowed_trucks: code.allowed_trucks || [],
       driver_id: code.driver_id || '',
-    });
-    setOpen(true);
-  };
-
-  const openNewDriverCode = (driver) => {
-    setEditing(null);
-    setForm({
-      code: generateCode(),
-      label: driver.driver_name || '',
-      active_flag: true,
-      code_type: 'Driver',
-      company_id: driver.company_id || '',
-      allowed_trucks: [],
-      driver_id: driver.id,
     });
     setOpen(true);
   };
@@ -213,12 +225,31 @@ export default function AdminAccessCodes() {
               {pendingDrivers.map((driver) => {
                 const company = companies.find((c) => c.id === driver.company_id);
                 return (
-                  <div key={driver.id} className="flex items-center justify-between bg-white rounded-lg border p-3 gap-2">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-slate-900 truncate">{driver.driver_name || 'Unnamed driver'}</p>
-                      <p className="text-xs text-slate-500 truncate">{company?.name || 'Unknown company'}</p>
+                  <div key={driver.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white rounded-lg border p-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 text-sm min-w-0 flex-1">
+                      <div className="min-w-0">
+                        <p className="text-xs text-slate-500">Driver</p>
+                        <p className="font-medium text-slate-900 truncate">{driver.driver_name || 'Unnamed driver'}</p>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs text-slate-500">Company</p>
+                        <p className="text-slate-700 truncate">{company?.name || 'Unknown company'}</p>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs text-slate-500">Phone</p>
+                        <p className="text-slate-700 truncate">{driver.phone || '—'}</p>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs text-slate-500">Current Status</p>
+                        <Badge variant="outline">{driver.access_code_status || 'Not Requested'}</Badge>
+                      </div>
                     </div>
-                    <Button size="sm" className="text-xs" onClick={() => openNewDriverCode(driver)}>
+                    <Button
+                      size="sm"
+                      className="text-xs"
+                      disabled={createPendingDriverCodeMutation.isPending}
+                      onClick={() => createPendingDriverCodeMutation.mutate(driver)}
+                    >
                       <Plus className="h-3.5 w-3.5 mr-1" />Create Code
                     </Button>
                   </div>

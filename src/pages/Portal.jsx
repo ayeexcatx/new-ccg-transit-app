@@ -32,6 +32,8 @@ function getOwnerDisplayName(session) {
   return session.label || session.name || session.code || 'Company owner';
 }
 
+const normalizeId = (value) => String(value ?? '');
+
 function myTrucksForHistory(dispatch, timeEntries, session) {
   const trucks = (session?.allowed_trucks || []).filter(t => (dispatch.trucks_assigned || []).includes(t));
   if (trucks.length === 0) return false;
@@ -46,12 +48,12 @@ export default function Portal() {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatchRefs = useRef({});
-  const [drawerDispatchId, setDrawerDispatchId] = useState(null);
+  const [drawerDispatchId, setDrawerDispatchId] = useState('');
   const [drawerMountKey, setDrawerMountKey] = useState('');
-  const pendingOpenIdRef = useRef(null);
+  const pendingOpenIdRef = useRef('');
 
   const urlParams = new URLSearchParams(location.search);
-  const targetDispatchId = urlParams.get('dispatchId');
+  const targetDispatchId = normalizeId(urlParams.get('dispatchId'));
 
   const { data: dispatches = [] } = useQuery({
     queryKey: ['portal-dispatches', session?.company_id],
@@ -497,18 +499,20 @@ Would you like to swap ${outgoingTruck} with ${incomingTruck}?`;
   const handleTimeEntry = async (dispatch, entries) => timeEntryMutation.mutateAsync({ dispatch, entries });
 
   const currentListBase = tab === 'upcoming' ? upcomingDispatches : tab === 'today' ? todayDispatches : historyDispatches;
-  const currentOpenDispatch = drawerDispatchId ? filteredDispatches.find((d) => d.id === drawerDispatchId) : null;
-  const currentList = currentOpenDispatch && !currentListBase.some((d) => d.id === currentOpenDispatch.id)
+  const currentOpenDispatch = drawerDispatchId
+    ? filteredDispatches.find((d) => normalizeId(d.id) === drawerDispatchId)
+    : null;
+  const currentList = currentOpenDispatch && !currentListBase.some((d) => normalizeId(d.id) === normalizeId(currentOpenDispatch.id))
     ? [currentOpenDispatch, ...currentListBase]
     : currentListBase;
   const sortedNotes = sortTemplateNotesForDispatch(templateNotes);
 
   const dispatchNotFound = targetDispatchId && dispatches.length > 0 &&
-    !dispatches.find(d => d.id === targetDispatchId);
+    !dispatches.find(d => normalizeId(d.id) === targetDispatchId);
 
 
   const handleDrawerClose = () => {
-    setDrawerDispatchId(null);
+    setDrawerDispatchId('');
 
     if (!targetDispatchId) return;
 
@@ -518,18 +522,18 @@ Would you like to swap ${outgoingTruck} with ${incomingTruck}?`;
   };
 
   useEffect(() => {
-    const idToOpen = targetDispatchId || pendingOpenIdRef.current;
+    const idToOpen = normalizeId(targetDispatchId || pendingOpenIdRef.current);
     if (!idToOpen || dispatches.length === 0) return;
 
-    const target = dispatches.find(d => d.id === idToOpen);
+    const target = dispatches.find(d => normalizeId(d.id) === idToOpen);
     if (!target) return;
 
-    const filteredTarget = filteredDispatches.find(d => d.id === idToOpen);
+    const filteredTarget = filteredDispatches.find(d => normalizeId(d.id) === idToOpen);
     if (!filteredTarget) return;
 
-    const inUpcoming = upcomingDispatches.some(d => d.id === idToOpen);
-    const inToday = todayDispatches.some(d => d.id === idToOpen);
-    const inHistory = historyDispatches.some(d => d.id === idToOpen);
+    const inUpcoming = upcomingDispatches.some(d => normalizeId(d.id) === idToOpen);
+    const inToday = todayDispatches.some(d => normalizeId(d.id) === idToOpen);
+    const inHistory = historyDispatches.some(d => normalizeId(d.id) === idToOpen);
 
     const correctTab = inUpcoming ? 'upcoming' : inToday ? 'today' : inHistory ? 'history' : null;
     if (!correctTab) return;
@@ -540,13 +544,13 @@ Would you like to swap ${outgoingTruck} with ${incomingTruck}?`;
       return;
     }
 
-    pendingOpenIdRef.current = null;
-    setDrawerDispatchId(null);
+    pendingOpenIdRef.current = '';
+    setDrawerDispatchId('');
     setDrawerMountKey(`${idToOpen}:${Date.now()}`);
     requestAnimationFrame(() => {
       setDrawerDispatchId(idToOpen);
       setTimeout(() => {
-        const el = dispatchRefs.current[idToOpen];
+        const el = dispatchRefs.current[normalizeId(idToOpen)];
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 100);
     });
@@ -598,25 +602,34 @@ Would you like to swap ${outgoingTruck} with ${incomingTruck}?`;
         </div>
       ) : (
         <div className="space-y-3">
-          {currentList.map(d => (
-            <div key={d.id} ref={el => dispatchRefs.current[d.id] = el}>
-              <DispatchCard
-                key={drawerDispatchId === d.id ? drawerMountKey || d.id : d.id}
-                dispatch={d}
-                session={session}
-                confirmations={confirmations}
-                timeEntries={timeEntries}
-                templateNotes={sortedNotes}
-                onConfirm={handleConfirm}
-                onTimeEntry={handleTimeEntry}
-                onOwnerTruckUpdate={handleOwnerTruckUpdate}
-                companyName={companyMap[d.company_id]}
-                forceOpen={drawerDispatchId === d.id}
-                onDrawerClose={handleDrawerClose}
-                visibleTrucksOverride={isDriverUser ? (driverAssignedTrucksByDispatch.get(d.id) || []) : undefined}
-              />
-            </div>
-          ))}
+          {currentList.map(d => {
+            const isForcedOpenCard = drawerDispatchId === normalizeId(d.id);
+            const cardKey = isForcedOpenCard && drawerMountKey ? `${d.id}:${drawerMountKey}` : d.id;
+
+            return (
+              <div
+                key={cardKey}
+                ref={(el) => {
+                  dispatchRefs.current[normalizeId(d.id)] = el;
+                }}
+              >
+                <DispatchCard
+                  dispatch={d}
+                  session={session}
+                  confirmations={confirmations}
+                  timeEntries={timeEntries}
+                  templateNotes={sortedNotes}
+                  onConfirm={handleConfirm}
+                  onTimeEntry={handleTimeEntry}
+                  onOwnerTruckUpdate={handleOwnerTruckUpdate}
+                  companyName={companyMap[d.company_id]}
+                  forceOpen={isForcedOpenCard}
+                  onDrawerClose={handleDrawerClose}
+                  visibleTrucksOverride={isDriverUser ? (driverAssignedTrucksByDispatch.get(d.id) || []) : undefined}
+                />
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

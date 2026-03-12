@@ -598,25 +598,29 @@ Would you like to swap ${outgoingTruck} with ${incomingTruck}?`;
         </div>
       ) : (
         <div className="space-y-3">
-          {currentList.map(d => (
-            <div key={d.id} ref={el => dispatchRefs.current[d.id] = el}>
-              <DispatchCard
-                key={drawerDispatchId === d.id ? drawerMountKey || d.id : d.id}
-                dispatch={d}
-                session={session}
-                confirmations={confirmations}
-                timeEntries={timeEntries}
-                templateNotes={sortedNotes}
-                onConfirm={handleConfirm}
-                onTimeEntry={handleTimeEntry}
-                onOwnerTruckUpdate={handleOwnerTruckUpdate}
-                companyName={companyMap[d.company_id]}
-                forceOpen={drawerDispatchId === d.id}
-                onDrawerClose={handleDrawerClose}
-                visibleTrucksOverride={isDriverUser ? (driverAssignedTrucksByDispatch.get(d.id) || []) : undefined}
-              />
-            </div>
-          ))}
+          {currentList.map(d => {
+            const isForcedOpenCard = drawerDispatchId === d.id;
+            const cardKey = isForcedOpenCard && drawerMountKey ? `${d.id}:${drawerMountKey}` : d.id;
+
+            return (
+              <div key={cardKey} ref={el => dispatchRefs.current[d.id] = el}>
+                <DispatchCard
+                  dispatch={d}
+                  session={session}
+                  confirmations={confirmations}
+                  timeEntries={timeEntries}
+                  templateNotes={sortedNotes}
+                  onConfirm={handleConfirm}
+                  onTimeEntry={handleTimeEntry}
+                  onOwnerTruckUpdate={handleOwnerTruckUpdate}
+                  companyName={companyMap[d.company_id]}
+                  forceOpen={isForcedOpenCard}
+                  onDrawerClose={handleDrawerClose}
+                  visibleTrucksOverride={isDriverUser ? (driverAssignedTrucksByDispatch.get(d.id) || []) : undefined}
+                  />
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

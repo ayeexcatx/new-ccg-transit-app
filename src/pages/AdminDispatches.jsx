@@ -21,6 +21,7 @@ import { useSession } from '../components/session/SessionContext';
 import { Label } from '@/components/ui/label';
 import { statusBadgeColors, statusBorderAccent } from '../components/portal/statusConfig';
 import { reconcileOwnerNotificationsForDispatch } from '@/components/notifications/createNotifications';
+import { syncDispatchHtmlToDrive } from '@/lib/dispatchDriveSync';
 import { toast } from 'sonner';
 
 const STATUS_ORDER = ['Scheduled', 'Dispatch', 'Amended', 'Cancelled'];
@@ -44,6 +45,27 @@ const appendAdminActivityLog = (existingLog, entries) => {
   const current = Array.isArray(existingLog) ? existingLog : [];
   const nextEntries = Array.isArray(entries) ? entries : [entries];
   return [...nextEntries, ...current];
+};
+
+const getCompanyNameFromDispatch = (dispatch, companies) => {
+  const company = companies.find((candidate) => candidate.id === dispatch?.company_id);
+  return company?.name || 'Unknown Company';
+};
+
+const syncDispatchRecordHtml = async ({ dispatch, previousDispatch, companies }) => {
+  const companyName = getCompanyNameFromDispatch(dispatch, companies);
+  const [confirmationsForDispatch, timeEntriesForDispatch] = await Promise.all([
+    base44.entities.Confirmation.filter({ dispatch_id: dispatch.id }, '-confirmed_at', 500),
+    base44.entities.TimeEntry.filter({ dispatch_id: dispatch.id }, '-created_date', 500)
+  ]);
+
+  return syncDispatchHtmlToDrive({
+    dispatch,
+    previousDispatch,
+    companyName,
+    confirmations: confirmationsForDispatch,
+    timeEntries: timeEntriesForDispatch
+  });
 };
 
 const normalizeTextField = (value) => String(value ?? '').trim();
@@ -422,12 +444,25 @@ export default function AdminDispatches() {
 
         if (savedDispatch) {
           await reconcileOwnerNotificationsForDispatch(savedDispatch, accessCodes);
+          try {
+            await syncDispatchRecordHtml({
+              dispatch: savedDispatch,
+              previousDispatch: editing,
+              companies
+            });
+          } catch (error) {
+            await base44.entities.Dispatch.update(savedDispatch.id, {
+              dispatch_html_drive_last_sync_status: 'failed',
+              dispatch_html_drive_last_sync_error: String(error?.message || error || 'Drive sync failed')
+            });
+            toast.warning('Dispatch saved, but Google Drive sync failed.');
+          }
         }
 
         return savedDispatch;
       } else {
         const adminName = getAdminDisplayName(session);
-        return base44.entities.Dispatch.create({
+        const createdDispatch = await base44.entities.Dispatch.create({
           ...data,
           admin_activity_log: appendAdminActivityLog(data.admin_activity_log, createAdminActivityEntry(session, 'created_dispatch', `${adminName} created this dispatch`)),
           edit_locked: false,
@@ -435,6 +470,22 @@ export default function AdminDispatches() {
           edit_locked_by_name: null,
           edit_locked_at: null
         });
+
+        try {
+          await syncDispatchRecordHtml({
+            dispatch: createdDispatch,
+            previousDispatch: null,
+            companies
+          });
+        } catch (error) {
+          await base44.entities.Dispatch.update(createdDispatch.id, {
+            dispatch_html_drive_last_sync_status: 'failed',
+            dispatch_html_drive_last_sync_error: String(error?.message || error || 'Drive sync failed')
+          });
+          toast.warning('Dispatch created, but Google Drive sync failed.');
+        }
+
+        return createdDispatch;
       }
     },
     onSuccess: () => {

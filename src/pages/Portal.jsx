@@ -49,8 +49,9 @@ export default function Portal() {
   const navigate = useNavigate();
   const dispatchRefs = useRef({});
   const [drawerDispatchId, setDrawerDispatchId] = useState('');
-  const [drawerMountKey, setDrawerMountKey] = useState('');
   const pendingOpenIdRef = useRef('');
+  const lastHandledDispatchIdRef = useRef('');
+  const drawerDispatchIdRef = useRef('');
 
   const urlParams = new URLSearchParams(location.search);
   const targetDispatchId = normalizeId(urlParams.get('dispatchId'));
@@ -500,6 +501,7 @@ Would you like to swap ${outgoingTruck} with ${incomingTruck}?`;
 
   const currentListBase = tab === 'upcoming' ? upcomingDispatches : tab === 'today' ? todayDispatches : historyDispatches;
   const normalizedDrawerDispatchId = normalizeId(drawerDispatchId);
+  drawerDispatchIdRef.current = normalizedDrawerDispatchId;
   const currentOpenDispatch = normalizedDrawerDispatchId
     ? filteredDispatches.find((d) => normalizeId(d.id) === normalizedDrawerDispatchId)
     : null;
@@ -514,6 +516,9 @@ Would you like to swap ${outgoingTruck} with ${incomingTruck}?`;
 
   const handleDrawerClose = () => {
     setDrawerDispatchId('');
+    drawerDispatchIdRef.current = '';
+    pendingOpenIdRef.current = '';
+    lastHandledDispatchIdRef.current = '';
 
     if (!targetDispatchId) return;
 
@@ -522,9 +527,42 @@ Would you like to swap ${outgoingTruck} with ${incomingTruck}?`;
     navigate({ search: nextParams.toString() ? `?${nextParams.toString()}` : '' }, { replace: true });
   };
 
+  const openDrawer = (dispatchId) => {
+    const normalizedId = normalizeId(dispatchId);
+    if (!normalizedId) return false;
+    if (drawerDispatchIdRef.current === normalizedId) return false;
+
+    setDrawerDispatchId(normalizedId);
+    drawerDispatchIdRef.current = normalizedId;
+
+    setTimeout(() => {
+      const el = dispatchRefs.current[normalizedId];
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+
+    return true;
+  };
+
+  useEffect(() => {
+    if (!targetDispatchId) {
+      pendingOpenIdRef.current = '';
+      lastHandledDispatchIdRef.current = '';
+      return;
+    }
+
+    if (normalizeId(lastHandledDispatchIdRef.current) !== targetDispatchId) {
+      pendingOpenIdRef.current = targetDispatchId;
+    }
+  }, [targetDispatchId]);
+
   useEffect(() => {
     const idToOpen = normalizeId(targetDispatchId || pendingOpenIdRef.current);
     if (!idToOpen || dispatches.length === 0) return;
+
+    if (normalizeId(lastHandledDispatchIdRef.current) === idToOpen &&
+      normalizeId(drawerDispatchIdRef.current) === idToOpen) {
+      return;
+    }
 
     const target = dispatches.find(d => normalizeId(d.id) === idToOpen);
     if (!target) return;
@@ -546,15 +584,14 @@ Would you like to swap ${outgoingTruck} with ${incomingTruck}?`;
     }
 
     pendingOpenIdRef.current = '';
-    setDrawerDispatchId('');
-    setDrawerMountKey(`${idToOpen}:${Date.now()}`);
-    requestAnimationFrame(() => {
-      setDrawerDispatchId(idToOpen);
-      setTimeout(() => {
-        const el = dispatchRefs.current[normalizeId(idToOpen)];
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 100);
-    });
+    if (normalizeId(drawerDispatchIdRef.current) === idToOpen) {
+      lastHandledDispatchIdRef.current = idToOpen;
+      return;
+    }
+
+    if (openDrawer(idToOpen)) {
+      lastHandledDispatchIdRef.current = idToOpen;
+    }
   }, [location.search, filteredDispatches, tab, upcomingDispatches, todayDispatches, historyDispatches]);
 
   return (
@@ -605,11 +642,10 @@ Would you like to swap ${outgoingTruck} with ${incomingTruck}?`;
         <div className="space-y-3">
           {currentList.map(d => {
             const isForcedOpenCard = normalizeId(drawerDispatchId) === normalizeId(d.id);
-            const cardKey = isForcedOpenCard && drawerMountKey ? `${d.id}:${drawerMountKey}` : d.id;
 
             return (
               <div
-                key={cardKey}
+                key={d.id}
                 ref={(el) => {
                   dispatchRefs.current[normalizeId(d.id)] = el;
                 }}

@@ -32,6 +32,27 @@ const isIosSafari = () => {
   return isWebkit && !isOtherIOSBrowser;
 };
 
+const isMobileOrTabletDevice = () => {
+  if (typeof navigator === 'undefined') return false;
+
+  const userAgent = navigator.userAgent || navigator.vendor || '';
+  const mobileOrTabletByUA =
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|Tablet/i.test(userAgent);
+
+  return mobileOrTabletByUA || isIosDevice();
+};
+
+const isDesktopEnvironment = () => {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
+  if (isMobileOrTabletDevice()) return false;
+
+  const isLargeScreen = window.matchMedia?.('(min-width: 1024px)').matches;
+  const hasDesktopInputs =
+    window.matchMedia?.('(hover: hover)').matches && window.matchMedia?.('(pointer: fine)').matches;
+
+  return Boolean(isLargeScreen && hasDesktopInputs);
+};
+
 export default function InstallPromptBanner() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isEligibleIosSafari, setIsEligibleIosSafari] = useState(false);
@@ -41,7 +62,7 @@ export default function InstallPromptBanner() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    if (isStandaloneMode()) {
+    if (isStandaloneMode() || isDesktopEnvironment()) {
       return;
     }
 

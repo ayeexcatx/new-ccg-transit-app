@@ -32,6 +32,8 @@ function getOwnerDisplayName(session) {
   return session.label || session.name || session.code || 'Company owner';
 }
 
+const normalizeId = (value) => (value == null ? '' : String(value));
+
 function myTrucksForHistory(dispatch, timeEntries, session) {
   const trucks = (session?.allowed_trucks || []).filter(t => (dispatch.trucks_assigned || []).includes(t));
   if (trucks.length === 0) return false;
@@ -51,7 +53,7 @@ export default function Portal() {
   const pendingOpenIdRef = useRef(null);
 
   const urlParams = new URLSearchParams(location.search);
-  const targetDispatchId = urlParams.get('dispatchId');
+  const targetDispatchId = normalizeId(urlParams.get('dispatchId'));
 
   const { data: dispatches = [] } = useQuery({
     queryKey: ['portal-dispatches', session?.company_id],
@@ -504,7 +506,7 @@ Would you like to swap ${outgoingTruck} with ${incomingTruck}?`;
   const sortedNotes = sortTemplateNotesForDispatch(templateNotes);
 
   const dispatchNotFound = targetDispatchId && dispatches.length > 0 &&
-    !dispatches.find(d => d.id === targetDispatchId);
+    !dispatches.some((dispatch) => normalizeId(dispatch.id) === targetDispatchId);
 
 
   const handleDrawerClose = () => {
@@ -521,15 +523,15 @@ Would you like to swap ${outgoingTruck} with ${incomingTruck}?`;
     const idToOpen = targetDispatchId || pendingOpenIdRef.current;
     if (!idToOpen || dispatches.length === 0) return;
 
-    const target = dispatches.find(d => d.id === idToOpen);
+    const target = dispatches.find((dispatch) => normalizeId(dispatch.id) === idToOpen);
     if (!target) return;
 
-    const filteredTarget = filteredDispatches.find(d => d.id === idToOpen);
+    const filteredTarget = filteredDispatches.find((dispatch) => normalizeId(dispatch.id) === idToOpen);
     if (!filteredTarget) return;
 
-    const inUpcoming = upcomingDispatches.some(d => d.id === idToOpen);
-    const inToday = todayDispatches.some(d => d.id === idToOpen);
-    const inHistory = historyDispatches.some(d => d.id === idToOpen);
+    const inUpcoming = upcomingDispatches.some((dispatch) => normalizeId(dispatch.id) === idToOpen);
+    const inToday = todayDispatches.some((dispatch) => normalizeId(dispatch.id) === idToOpen);
+    const inHistory = historyDispatches.some((dispatch) => normalizeId(dispatch.id) === idToOpen);
 
     const correctTab = inUpcoming ? 'upcoming' : inToday ? 'today' : inHistory ? 'history' : null;
     if (!correctTab) return;

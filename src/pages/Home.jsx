@@ -55,10 +55,21 @@ const formatDispatchTime = (startTime) => {
   return `${hour12}:${minute} ${period}`;
 };
 
+const normalizeId = (value) => (value == null ? '' : String(value));
+
+const getDispatchPageName = (session) => {
+  if (session?.code_type === 'Admin') return 'AdminDispatches';
+  return 'Portal';
+};
+
+const getDispatchDeepLink = (session, dispatchId) =>
+  createPageUrl(`${getDispatchPageName(session)}?dispatchId=${encodeURIComponent(normalizeId(dispatchId))}`);
+
 function MiniDispatchCard({ dispatch, companyName, truckNumbers = [] }) {
+  const { session } = useSession();
 
   return (
-    <Link to={createPageUrl(`Portal?dispatchId=${dispatch.id}`)}>
+    <Link to={getDispatchDeepLink(session, dispatch.id)}>
       <div className="flex items-start gap-3 p-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition-all cursor-pointer">
         <div className="shrink-0 mt-0.5">
           {dispatch.shift_time === 'Day Shift'
@@ -206,18 +217,18 @@ export default function Home() {
   // Build action items: unread dispatch-change notifications enriched with dispatch data
   const actionItems = useMemo(() => {
     const dispatchMap = {};
-    filteredDispatches.forEach((dispatch) => {dispatchMap[dispatch.id] = dispatch;});
+    filteredDispatches.forEach((dispatch) => {dispatchMap[normalizeId(dispatch.id)] = dispatch;});
 
     return notifications
       .filter((notification) => {
         if (notification.read_flag) return false;
         if (!notification.related_dispatch_id) return true;
-        return Boolean(dispatchMap[notification.related_dispatch_id]);
+        return Boolean(dispatchMap[normalizeId(notification.related_dispatch_id)]);
       })
       .slice(0, 8)
       .map((notification) => ({
         notification,
-        dispatch: notification.related_dispatch_id ? dispatchMap[notification.related_dispatch_id] : null,
+        dispatch: notification.related_dispatch_id ? dispatchMap[normalizeId(notification.related_dispatch_id)] : null,
       }));
   }, [notifications, filteredDispatches]);
 
@@ -236,7 +247,7 @@ export default function Home() {
     }
 
     if (n.related_dispatch_id) {
-      navigate(createPageUrl(`Portal?dispatchId=${n.related_dispatch_id}`));
+      navigate(getDispatchDeepLink(session, n.related_dispatch_id));
     } else {
       navigate(createPageUrl('Notifications'));
     }

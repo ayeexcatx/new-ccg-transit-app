@@ -48,9 +48,9 @@ export default function Portal() {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatchRefs = useRef({});
-  const [drawerDispatchId, setDrawerDispatchId] = useState('');
+  const [drawerDispatchId, setDrawerDispatchId] = useState(null);
   const [drawerMountKey, setDrawerMountKey] = useState('');
-  const pendingOpenIdRef = useRef('');
+  const pendingOpenIdRef = useRef(null);
 
   const urlParams = new URLSearchParams(location.search);
   const targetDispatchId = normalizeId(urlParams.get('dispatchId'));
@@ -513,7 +513,7 @@ Would you like to swap ${outgoingTruck} with ${incomingTruck}?`;
 
 
   const handleDrawerClose = () => {
-    setDrawerDispatchId('');
+    setDrawerDispatchId(null);
 
     if (!targetDispatchId) return;
 
@@ -545,8 +545,8 @@ Would you like to swap ${outgoingTruck} with ${incomingTruck}?`;
       return;
     }
 
-    pendingOpenIdRef.current = '';
-    setDrawerDispatchId('');
+    pendingOpenIdRef.current = null;
+    setDrawerDispatchId(null);
     setDrawerMountKey(`${idToOpen}:${Date.now()}`);
     requestAnimationFrame(() => {
       setDrawerDispatchId(idToOpen);

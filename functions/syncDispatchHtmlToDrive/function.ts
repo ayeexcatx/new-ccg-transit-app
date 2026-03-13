@@ -1,5 +1,4 @@
 {
-  // Base44 function manifest
   "name": "syncDispatchHtmlToDrive",
   "entrypoint": "index.ts",
   "permissions": ["service_role"],

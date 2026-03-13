@@ -72,6 +72,15 @@ const formatDispatchDate = (value) => {
   }
 };
 
+const formatDispatchDateForOption = (value) => {
+  if (!value) return '—';
+  try {
+    return format(parseISO(value), 'MM/dd/yyyy');
+  } catch {
+    return value;
+  }
+};
+
 const getIncidentCreatedDateTime = (incident) => incident?.incident_datetime || incident?.created_date || null;
 
 export default function Incidents() {
@@ -232,6 +241,24 @@ export default function Incidents() {
 
   const visibleDispatchIds = useMemo(() => new Set(visibleDispatches.map((d) => d.id)), [visibleDispatches]);
 
+  const sortedVisibleDispatches = useMemo(() => (
+    visibleDispatches
+      .map((dispatch, index) => ({ dispatch, index }))
+      .sort((a, b) => {
+        const aTime = new Date(a.dispatch?.date || 0).getTime();
+        const bTime = new Date(b.dispatch?.date || 0).getTime();
+        if (aTime !== bTime) return bTime - aTime;
+
+        const aJob = String(a.dispatch?.job_number || a.dispatch?.reference_tag || a.dispatch?.id || '');
+        const bJob = String(b.dispatch?.job_number || b.dispatch?.reference_tag || b.dispatch?.id || '');
+        const compareJob = aJob.localeCompare(bJob, undefined, { numeric: true, sensitivity: 'base' });
+        if (compareJob !== 0) return compareJob;
+
+        return a.index - b.index;
+      })
+      .map((item) => item.dispatch)
+  ), [visibleDispatches]);
+
   const formTruckOptions = useMemo(() => {
     const selectedDispatch = form.dispatch_id ? dispatchMap[form.dispatch_id] : null;
 
@@ -363,10 +390,10 @@ export default function Incidents() {
       await queryClient.invalidateQueries({ queryKey: ['incidents'] });
       await queryClient.refetchQueries({ queryKey: ['incidents'] });
       setDraftTimeStoppedTo((prev) => ({ ...prev, [variables.incidentId]: '' }));
-      toast.success('Time Stopped To saved.');
+      toast.success('Restart Time saved.');
     },
     onError: (error) => {
-      toast.error(error?.message || 'Failed to save Time Stopped To.');
+      toast.error(error?.message || 'Failed to save Restart Time.');
     },
   });
 
@@ -470,10 +497,12 @@ export default function Incidents() {
           <h2 className="text-2xl font-semibold text-slate-900">Incidents</h2>
           <p className="text-sm text-slate-500">View and create incident reports.</p>
         </div>
-        <Button onClick={() => setCreateOpen(true)} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Create Incident
-        </Button>
+        {!isDriver && (
+          <Button onClick={() => setCreateOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Create Incident
+          </Button>
+        )}
       </div>
 
       <Card>
@@ -603,9 +632,9 @@ export default function Incidents() {
                   <SelectTrigger><SelectValue placeholder="Select dispatch" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__none__">No dispatch link</SelectItem>
-                    {visibleDispatches.map((dispatch) => (
+                    {sortedVisibleDispatches.map((dispatch) => (
                       <SelectItem key={dispatch.id} value={dispatch.id}>
-                        {(dispatch.job_number || dispatch.reference_tag || dispatch.id)}
+                        {`${formatDispatchDateForOption(dispatch.date)} - ${dispatch.job_number || dispatch.reference_tag || dispatch.id}`}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -647,7 +676,7 @@ export default function Incidents() {
               </div>
 
               <div>
-                <Label>Time Stopped From</Label>
+                <Label>Time Stopped</Label>
                 <Input
                   type="datetime-local"
                   value={form.time_stopped_from}
@@ -656,12 +685,15 @@ export default function Incidents() {
               </div>
 
               <div>
-                <Label>Time Stopped To</Label>
+                <Label>Time Restarted</Label>
                 <Input
                   type="datetime-local"
                   value={form.time_stopped_to}
                   onChange={(e) => setForm((p) => ({ ...p, time_stopped_to: e.target.value }))}
                 />
+                <p className="mt-1 text-xs text-slate-500">
+                  If unknown now, you can enter restart time later. The incident can remain open until then.
+                </p>
               </div>
             </div>
 
@@ -729,11 +761,11 @@ export default function Incidents() {
                       <p className="text-slate-900">{formatDateTime(getIncidentCreatedDateTime(incident))}</p>
                     </div>
                     <div>
-                      <p className="text-slate-500">Time Stopped From</p>
+                      <p className="text-slate-500">Time Stopped</p>
                       <p className="text-slate-900">{formatDateTime(incident.time_stopped_from)}</p>
                     </div>
                     <div>
-                      <p className="text-slate-500">Time Stopped To</p>
+                      <p className="text-slate-500">Time Restarted</p>
                       <p className="text-slate-900">{formatDateTime(incident.time_stopped_to)}</p>
                     </div>
                     <div className="md:col-span-2">
@@ -748,7 +780,7 @@ export default function Incidents() {
 
                   {!incident.time_stopped_to && (
                     <div className="space-y-2 rounded-md border border-slate-200 p-3">
-                      <Label className="text-sm text-slate-700">Enter Time Stopped To</Label>
+                      <Label className="text-sm text-slate-700">Restart Time</Label>
                       <Input
                         type="datetime-local"
                         value={draftTimeStoppedTo[incident.id] || ''}
@@ -756,37 +788,18 @@ export default function Incidents() {
                       />
                       <Button
                         type="button"
-                        variant="outline"
+                        className="bg-red-900 text-white hover:bg-red-800"
                         onClick={() => updateTimeStoppedToMutation.mutate({
                           incidentId: incident.id,
                           timeStoppedTo: draftTimeStoppedTo[incident.id] || '',
                         })}
                         disabled={updateTimeStoppedToMutation.isPending || !draftTimeStoppedTo[incident.id]}
                       >
-                        Save Time Stopped To
+                        Save Restart Time
                       </Button>
+                      <p className="text-xs text-slate-500">→ Please save time first before marking complete.</p>
                     </div>
                   )}
-
-                  <div className="flex gap-2">
-                    {incident.status === 'Completed' ? (
-                      <Button
-                        type="button"
-                        onClick={() => updateStatusMutation.mutate({ incidentId: incident.id, status: 'Open' })}
-                        disabled={updateStatusMutation.isPending}
-                      >
-                        Reopen Incident
-                      </Button>
-                    ) : (
-                      <Button
-                        type="button"
-                        onClick={() => updateStatusMutation.mutate({ incidentId: incident.id, status: 'Completed' })}
-                        disabled={updateStatusMutation.isPending}
-                      >
-                        Mark Completed
-                      </Button>
-                    )}
-                  </div>
 
                   <div className="space-y-2">
                     <Label className="text-sm text-slate-700">Add Update / Note</Label>
@@ -798,12 +811,38 @@ export default function Incidents() {
                     />
                     <Button
                       type="button"
-                      variant="outline"
+                      className="bg-red-700 text-green-300 hover:bg-red-600"
                       onClick={() => addUpdateMutation.mutate({ incident, note: draftUpdates[incident.id] || '' })}
                       disabled={addUpdateMutation.isPending || !(draftUpdates[incident.id] || '').trim()}
                     >
                       Add Update
                     </Button>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex justify-end">
+                      {incident.status === 'Completed' ? (
+                        <Button
+                          type="button"
+                          onClick={() => updateStatusMutation.mutate({ incidentId: incident.id, status: 'Open' })}
+                          disabled={updateStatusMutation.isPending}
+                        >
+                          Reopen Incident
+                        </Button>
+                      ) : (
+                        <Button
+                          type="button"
+                          onClick={() => updateStatusMutation.mutate({ incidentId: incident.id, status: 'Completed' })}
+                          disabled={updateStatusMutation.isPending}
+                        >
+                          Mark Completed
+                        </Button>
+                      )}
+                    </div>
+                    {!incident.time_stopped_to && incident.status !== 'Completed' && (
+                      <p className="text-xs text-slate-500 text-right">Please save restart time before marking complete.</p>
+                    )}
+                    <p className="text-xs text-slate-500 text-right">You can still add updates after marking this incident complete.</p>
                   </div>
 
                   <div className="rounded-md border border-slate-200 bg-slate-50 p-3 space-y-3">

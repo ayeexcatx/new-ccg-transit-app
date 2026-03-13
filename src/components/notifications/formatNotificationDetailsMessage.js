@@ -58,6 +58,11 @@ export function formatOwnerDispatchMessage(message) {
 }
 
 export function getNotificationDisplay(notification, dispatch = null) {
+  const isAdminHeadlineNotification = new Set([
+    'admin_dispatch_all_confirmed',
+    'owner_truck_reassignment',
+  ]).has(notification?.notification_category);
+
   if (notification?.notification_category === 'dispatch_update_info') {
     const dateTimeLine = formatDispatchDateTimeLine(dispatch, 'AT');
     const messageParts = [dateTimeLine, notification?.message].filter(Boolean);
@@ -74,7 +79,7 @@ export function getNotificationDisplay(notification, dispatch = null) {
     return {
       title: notification?.title,
       message: formatNotificationDetailsMessage(notification?.message),
-      isOwnerDispatchStatus: false,
+      isOwnerDispatchStatus: isAdminHeadlineNotification,
     };
   }
 

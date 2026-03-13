@@ -1,6 +1,6 @@
 import { base44 } from '@/api/base44Client'; 
 import { format, parseISO } from 'date-fns';
-import { formatDispatchDateTimeLine, formatStartTimeToAmPm } from '@/components/notifications/dispatchDateTimeFormat';
+import { formatDispatchDateTimeLine } from '@/components/notifications/dispatchDateTimeFormat';
 
 const statusLabels = {
   Scheduled: 'Scheduled (details to follow)',
@@ -419,16 +419,22 @@ export async function notifyOwnerTruckReassignment({
   try {
     if (!dispatch?.id) return;
 
+    let companyName = '';
+    if (dispatch.company_id) {
+      const company = await base44.entities.Company.filter({ id: dispatch.company_id }, '-created_date', 1);
+      companyName = company?.[0]?.name || '';
+    }
+
     const dateText = dispatch.date ? format(parseISO(dispatch.date), 'EEE MM-dd-yyyy').toUpperCase() : '';
     const shiftText = dispatch.shift_time || '';
 
     const title = swapDetails
-      ? 'Owner Truck Swap Applied'
-      : 'Owner Truck Assignments Updated';
+      ? `${companyName || 'Company'} swapped their trucks`
+      : `${companyName || 'Company'} changed their truck`;
 
     const message = swapDetails
-      ? `${actorName} swapped ${swapDetails.fromTruck} with ${swapDetails.toTruck}${swapDetails.conflictingDispatchStatus ? ` (${swapDetails.conflictingDispatchStatus})` : ''} · ${dateText}${shiftText ? ` · ${shiftText}` : ''}`
-      : `${actorName} updated truck assignments · ${dateText}${shiftText ? ` · ${shiftText}` : ''}`;
+      ? `${actorName} updated truck assignments\n${dateText}${shiftText ? ` • ${shiftText}` : ''}`
+      : `${actorName} updated truck assignments\n${dateText}${shiftText ? ` • ${shiftText}` : ''}`;
 
     await base44.entities.Notification.create({
       recipient_type: 'Admin',
@@ -448,21 +454,49 @@ export async function notifyOwnerTruckReassignment({
  */
 export async function notifyTruckConfirmation(dispatch, truckNumber, companyName) {
   try {
-    const statusText = statusLabels[dispatch.status] || dispatch.status;
+    const statusText = dispatch.status === 'Scheduled'
+      ? 'Scheduled'
+      : (statusLabels[dispatch.status] || dispatch.status);
     const dateText = format(parseISO(dispatch.date), 'EEE MM-dd-yyyy').toUpperCase();
-    const timeText = formatStartTimeToAmPm(dispatch.start_time);
-    const isScheduledDetails = statusText === 'Scheduled (details to follow)' || statusText === 'Confirmed (details to follow)';
-    const dateTimeText = (!isScheduledDetails && timeText) ? `${dateText} at ${timeText}` : dateText;
+    const shiftText = dispatch.shift_time || '';
+    const companyDisplayName = companyName || (await base44.entities.Company.filter({ id: dispatch.company_id }, '-created_date', 1))?.[0]?.name || 'Company';
+
+    const assignedTrucks = [...new Set((dispatch.trucks_assigned || []).filter(Boolean))];
+    if (!assignedTrucks.length) return;
+
+    const confirmations = await base44.entities.Confirmation.filter({
+      dispatch_id: dispatch.id,
+      confirmation_type: dispatch.status,
+    }, '-confirmed_at', 1000);
+
+    const confirmedTrucks = new Set((confirmations || []).map((confirmation) => confirmation.truck_number));
+    if (truckNumber) confirmedTrucks.add(truckNumber);
+
+    const allConfirmed = assignedTrucks.every((assignedTruck) => confirmedTrucks.has(assignedTruck));
+    if (!allConfirmed) return;
+
+    const existingAllConfirmed = await base44.entities.Notification.filter({
+      recipient_type: 'Admin',
+      notification_category: 'admin_dispatch_all_confirmed',
+      related_dispatch_id: dispatch.id,
+      confirmation_type: dispatch.status,
+    }, '-created_date', 1);
+
+    if (existingAllConfirmed?.length) return;
+
+    const lineTwo = [dateText, shiftText, statusText].filter(Boolean).join(' • ');
+    const jobTag = dispatch.reference_tag || dispatch.job_number || dispatch.id;
+    const lineThree = [jobTag, assignedTrucks.join(', ')].filter(Boolean).join(' • ');
 
     await base44.entities.Notification.create({
       recipient_type: 'Admin',
-      title: `Truck ${truckNumber} Confirmed`,
-      message: `${dateTimeText} · ${dispatch.shift_time} · ${statusText}${companyName ? ` | ${companyName}` : ''}${dispatch.client_name ? ` | ${dispatch.client_name}` : ''}`,
+      title: `${companyDisplayName} has confirmed their dispatch`,
+      message: `${lineTwo}\n${lineThree}`,
       related_dispatch_id: dispatch.id,
       read_flag: false,
-      // Group key so all truck confirmations for the same dispatch+status can be bulk-resolved
       admin_group_key: `${dispatch.id}:${dispatch.status}`,
       confirmation_type: dispatch.status,
+      notification_category: 'admin_dispatch_all_confirmed',
     });
   } catch (err) {
     console.error('Error creating confirmation notification:', err);

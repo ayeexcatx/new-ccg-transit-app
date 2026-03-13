@@ -2,14 +2,5 @@
   // Base44 function manifest
   "name": "syncDispatchHtmlToDrive",
   "entrypoint": "index.ts",
-  "permissions": ["service_role"],
-  "secrets": [
-    "GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL",
-    "GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY",
-    "GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY_BASE64",
-    "GOOGLE_IMPERSONATED_USER",
-    "BASE44_APP_BASE_URL",
-    "BASE44_APP_ID",
-    "BASE44_SERVICE_ROLE_TOKEN"
-  ]
+  "permissions": ["service_role"]
 }

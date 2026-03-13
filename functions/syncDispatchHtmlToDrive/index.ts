@@ -1,3 +1,5 @@
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
+
 type DesiredFile = {
   truckNumber: string;
   fileName: string;
@@ -37,16 +39,8 @@ type DriveFile = {
   mimeType?: string;
 };
 
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
-
 const DRIVE_API = 'https://www.googleapis.com/drive/v3';
 const DRIVE_UPLOAD_API = 'https://www.googleapis.com/upload/drive/v3';
-
-function getEnv(name: string): string | undefined {
-  const fromDeno = typeof Deno !== 'undefined' ? Deno.env.get(name) : undefined;
-  const fromNode = typeof process !== 'undefined' ? process.env[name] : undefined;
-  return fromDeno ?? fromNode;
-}
 
 function escapeDriveQueryValue(value: string): string {
   return value.replace(/'/g, "\\'");
@@ -98,10 +92,16 @@ async function findFileByNameInParent(
 }
 
 async function ensureFolder(token: string, parentId: string, folderName: string): Promise<DriveFile> {
-  const existing = await findFileByNameInParent(token, folderName, parentId, 'application/vnd.google-apps.folder');
+  const existing = await findFileByNameInParent(
+    token,
+    folderName,
+    parentId,
+    'application/vnd.google-apps.folder'
+  );
+
   if (existing) return existing;
 
-  const file = await driveRequest<DriveFile>(token, `${DRIVE_API}/files?supportsAllDrives=true`, {
+  return driveRequest<DriveFile>(token, `${DRIVE_API}/files?supportsAllDrives=true`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -110,11 +110,9 @@ async function ensureFolder(token: string, parentId: string, folderName: string)
       parents: [parentId],
     }),
   });
-
-  return file;
 }
 
-async function uploadHtmlFile(
+async function upsertHtmlFile(
   token: string,
   parentId: string,
   fileName: string,
@@ -123,14 +121,17 @@ async function uploadHtmlFile(
   const existing = await findFileByNameInParent(token, fileName, parentId);
 
   if (existing) {
-    const updateUrl = `${DRIVE_UPLOAD_API}/files/${existing.id}?uploadType=media&supportsAllDrives=true`;
-    await driveRequest<DriveFile>(token, updateUrl, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'text/html; charset=utf-8' },
-      body: htmlContent,
-    });
+    await driveRequest<DriveFile>(
+      token,
+      `${DRIVE_UPLOAD_API}/files/${existing.id}?uploadType=media&supportsAllDrives=true`,
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'text/html; charset=utf-8' },
+        body: htmlContent,
+      }
+    );
 
-    return { ...existing };
+    return existing;
   }
 
   const boundary = `syncDispatchHtmlToDrive_${crypto.randomUUID()}`;
@@ -170,43 +171,12 @@ async function deleteFile(token: string, fileId: string): Promise<void> {
 
 async function getPayload(req: Request): Promise<SyncPayload> {
   const body = await req.json();
+
   if (!body || typeof body !== 'object' || !('dispatchId' in body)) {
     throw new Error('Invalid payload for syncDispatchHtmlToDrive.');
   }
+
   return body as SyncPayload;
-}
-
-async function updateDispatchMetadata(dispatchId: string, records: ExistingDriveRecord[], updatedAt: string) {
-  const appBaseUrl = getEnv('BASE44_APP_BASE_URL');
-  const appId = getEnv('BASE44_APP_ID');
-  const serviceToken = getEnv('BASE44_SERVICE_ROLE_TOKEN');
-
-  if (!appBaseUrl || !appId || !serviceToken) {
-    console.warn('Skipping Dispatch metadata update: missing BASE44_APP_BASE_URL/BASE44_APP_ID/BASE44_SERVICE_ROLE_TOKEN.');
-    return;
-  }
-
-  const endpoint = `${appBaseUrl.replace(/\/$/, '')}/api/apps/${appId}/entities/Dispatch/${dispatchId}`;
-  const body = {
-    dispatch_html_drive_records: records,
-    dispatch_html_drive_last_synced_at: updatedAt,
-    dispatch_html_drive_last_sync_status: 'synced',
-    dispatch_html_drive_last_sync_error: null,
-  };
-
-  const response = await fetch(endpoint, {
-    method: 'PATCH',
-    headers: {
-      Authorization: `Bearer ${serviceToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`Dispatch metadata update failed (${response.status}): ${text}`);
-  }
 }
 
 Deno.serve(async (req: Request) => {
@@ -228,23 +198,26 @@ Deno.serve(async (req: Request) => {
     const syncedFiles: ExistingDriveRecord[] = [];
 
     const desiredPathKeys = new Set(desiredFiles.map((file) => file.pathKey));
-    const staleFiles = previousFiles.filter((file) => file.path_key && !desiredPathKeys.has(file.path_key));
+    const staleFiles = previousFiles.filter(
+      (file) => file.path_key && !desiredPathKeys.has(file.path_key)
+    );
     const removedFiles: ExistingDriveRecord[] = [];
 
     for (const stale of staleFiles) {
       if (!stale.file_id) continue;
+
       try {
         await deleteFile(token, stale.file_id);
         removedFiles.push(stale);
-      } catch (deleteError) {
-        console.error('Failed to delete stale Drive file.', { stale, error: deleteError });
+      } catch (error) {
+        console.error('Failed to delete stale Drive file.', { stale, error });
       }
     }
 
     for (const target of desiredFiles) {
       const companyFolder = await ensureFolder(token, rootFolderId, target.companyFolderName);
       const truckFolder = await ensureFolder(token, companyFolder.id, target.truckFolderName);
-      const uploaded = await uploadHtmlFile(token, truckFolder.id, target.fileName, target.htmlContent);
+      const uploaded = await upsertHtmlFile(token, truckFolder.id, target.fileName, target.htmlContent);
 
       syncedFiles.push({
         dispatch_id: dispatchId,
@@ -260,14 +233,12 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    await updateDispatchMetadata(dispatchId, syncedFiles, updatedAt);
-
     return Response.json({
       files: syncedFiles,
       removedFiles,
     });
   } catch (error) {
     console.error('syncDispatchHtmlToDrive failed.', { error });
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
   }
 });

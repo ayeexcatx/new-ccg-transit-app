@@ -91,7 +91,7 @@ export default function Notifications() {
       ) : (
         <div className="space-y-2">
           {filteredNotifications.map(n => {
-            const display = getNotificationDisplay(n);
+            const display = getNotificationDisplay(n, dispatchMap[n.related_dispatch_id] || null);
 
             return (
               <Card

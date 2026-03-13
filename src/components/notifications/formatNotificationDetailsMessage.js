@@ -1,4 +1,5 @@
 import { format, isValid, parseISO } from 'date-fns';
+import { formatDispatchDateTimeLine } from '@/components/notifications/dispatchDateTimeFormat';
 
 const STATUS_LINE_VALUES = new Set([
   'Scheduled',
@@ -56,7 +57,18 @@ export function formatOwnerDispatchMessage(message) {
   return [dateTimeLine, detailParts.join(' • ')].filter(Boolean).join('\n');
 }
 
-export function getNotificationDisplay(notification) {
+export function getNotificationDisplay(notification, dispatch = null) {
+  if (notification?.notification_category === 'dispatch_update_info') {
+    const dateTimeLine = formatDispatchDateTimeLine(dispatch, 'AT');
+    const messageParts = [notification?.message, dateTimeLine].filter(Boolean);
+
+    return {
+      title: 'Your dispatch has been updated',
+      message: messageParts.join('\n'),
+      isOwnerDispatchStatus: true,
+    };
+  }
+
   const status = getNotificationStatus(notification);
   if (!status) {
     return {

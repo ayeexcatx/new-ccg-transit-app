@@ -399,9 +399,12 @@ export default function Incidents() {
 
   const updateStatusMutation = useMutation({
     mutationFn: ({ incidentId, status }) => base44.entities.IncidentReport.update(incidentId, { status }),
-    onSuccess: async () => {
+    onSuccess: async (_, variables) => {
       await queryClient.invalidateQueries({ queryKey: ['incidents'] });
       await queryClient.refetchQueries({ queryKey: ['incidents'] });
+      if (variables?.status === 'Completed') {
+        setSelectedIncidentId(null);
+      }
       toast.success('Incident status updated.');
     },
     onError: (error) => {
@@ -788,7 +791,7 @@ export default function Incidents() {
                       />
                       <Button
                         type="button"
-                        className="bg-red-900 text-white hover:bg-red-800"
+                        className="bg-red-700 text-white hover:bg-red-600"
                         onClick={() => updateTimeStoppedToMutation.mutate({
                           incidentId: incident.id,
                           timeStoppedTo: draftTimeStoppedTo[incident.id] || '',
@@ -797,7 +800,7 @@ export default function Incidents() {
                       >
                         Save Restart Time
                       </Button>
-                      <p className="text-xs text-slate-500">→ Please save time first before marking complete.</p>
+                      <p className="text-xs font-bold text-red-700">→ Please save time first before marking complete.</p>
                     </div>
                   )}
 
@@ -811,7 +814,7 @@ export default function Incidents() {
                     />
                     <Button
                       type="button"
-                      className="bg-red-700 text-green-300 hover:bg-red-600"
+                      className="bg-red-700 text-white hover:bg-red-600"
                       onClick={() => addUpdateMutation.mutate({ incident, note: draftUpdates[incident.id] || '' })}
                       disabled={addUpdateMutation.isPending || !(draftUpdates[incident.id] || '').trim()}
                     >
@@ -840,7 +843,7 @@ export default function Incidents() {
                       )}
                     </div>
                     {!incident.time_stopped_to && incident.status !== 'Completed' && (
-                      <p className="text-xs text-slate-500 text-right">Please save restart time before marking complete.</p>
+                      <p className="text-xs font-bold text-red-700 text-right">Please save restart time before marking complete.</p>
                     )}
                     <p className="text-xs text-slate-500 text-right">You can still add updates after marking this incident complete.</p>
                   </div>

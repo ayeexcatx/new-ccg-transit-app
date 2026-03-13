@@ -114,18 +114,21 @@ export default function AdminDashboard() {
   const stats = [
     {
       label: 'Confirmations', value: openConfirmationCount, icon: CheckCircle2,
+      headerLabel: 'Confirmations',
       color: 'bg-blue-500', link: 'AdminConfirmations'
     },
     {
-      label: 'Create New Dispatch', value: 'New', icon: FileText,
+      label: 'Create Dispatch', value: 'Create Dispatch', headerLabel: 'New', icon: FileText,
       color: 'bg-emerald-500', link: 'AdminDispatches', state: { openNewDispatch: true }, isAction: true
     },
     {
       label: "Today's Dispatches", value: todayDispatches.length, icon: Clock,
+      headerLabel: "Today's Dispatches",
       color: 'bg-amber-500', link: 'AdminDispatches'
     },
     {
       label: tomorrowCardConfig.label,
+      headerLabel: tomorrowCardConfig.label,
       value: tomorrowCardConfig.isFridayView ? null : tomorrowCardConfig.count,
       isFridayView: tomorrowCardConfig.isFridayView,
       sundayCount: tomorrowCardConfig.sundayCount,
@@ -223,30 +226,37 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map(s => (
           <Link key={s.label} to={createPageUrl(s.link)} state={s.state}>
-            <Card className="hover:shadow-md transition-shadow cursor-pointer group">
-              <CardContent className="p-5">
-                <div className={`h-10 w-10 rounded-xl ${s.color} bg-opacity-10 flex items-center justify-center mb-3`}>
-                  <s.icon className={`h-5 w-5 ${s.color.replace('bg-', 'text-')}`} />
-                </div>
-                {s.isFridayView ? (
-                  <div className="space-y-1.5 min-h-[2rem]">
-                    {s.sundayCount > 0 ? (
-                      <div className="flex items-baseline justify-between gap-3">
-                        <p className="text-xs text-slate-500">Sunday</p>
-                        <p className="text-xl font-semibold text-slate-900">{s.sundayCount}</p>
-                      </div>
-                    ) : null}
-                    <div className="flex items-baseline justify-between gap-3">
-                      <p className="text-xs text-slate-500">Monday</p>
-                      <p className="text-xl font-semibold text-slate-900">{s.mondayCount}</p>
+            <Card className="h-full hover:shadow-md transition-shadow cursor-pointer group">
+              <CardContent className="p-5 h-full flex flex-col">
+                <div className="flex items-center justify-between gap-3 mb-4">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className={`h-10 w-10 rounded-xl ${s.color} bg-opacity-10 flex items-center justify-center shrink-0`}>
+                      <s.icon className={`h-5 w-5 ${s.color.replace('bg-', 'text-')}`} />
                     </div>
+                    <p className={`text-xs leading-tight truncate ${s.isAction ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
+                      {s.headerLabel}
+                    </p>
                   </div>
-                ) : (
-                  <p className="text-2xl font-semibold text-slate-900">{s.value}</p>
-                )}
-                <div className="flex items-center justify-between mt-1">
-                  <p className={`text-xs ${s.isAction ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>{s.label}</p>
-                  <ArrowRight className="h-3.5 w-3.5 text-slate-300 group-hover:text-slate-500 transition-colors" />
+                  <ArrowRight className="h-3.5 w-3.5 text-slate-300 group-hover:text-slate-500 transition-colors shrink-0" />
+                </div>
+
+                <div className="flex-1 flex items-center">
+                  {s.isFridayView ? (
+                    <div className={`grid w-full gap-2 ${s.sundayCount > 0 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                      {s.sundayCount > 0 ? (
+                        <div className="rounded-md bg-slate-50 px-2 py-1.5">
+                          <p className="text-[11px] text-slate-500">Sunday</p>
+                          <p className="text-xl font-semibold text-slate-900 leading-tight">{s.sundayCount}</p>
+                        </div>
+                      ) : null}
+                      <div className="rounded-md bg-slate-50 px-2 py-1.5">
+                        <p className="text-[11px] text-slate-500">Monday</p>
+                        <p className="text-xl font-semibold text-slate-900 leading-tight">{s.mondayCount}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-2xl font-semibold text-slate-900 leading-tight">{s.value}</p>
+                  )}
                 </div>
               </CardContent>
             </Card>

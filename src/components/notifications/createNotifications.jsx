@@ -425,15 +425,27 @@ export async function expandCurrentStatusRequiredTrucks(dispatch, addedTrucks = 
         ? reconcileExistingRequiredTrucks(existingNotification, dispatch, ownerCode)
         : [];
       const nextRequired = [...new Set([...existingRequired, ...ownerAddedTrucks])];
+      const newlyAddedRequired = nextRequired.filter((truck) => !existingRequired.includes(truck));
       const message = buildOwnerDispatchMessage(dispatch, statusText, nextRequired);
       const allConfirmed = nextRequired.every(truck => confirmedTruckSet.has(truck));
 
       if (existingNotification) {
-        await base44.entities.Notification.update(existingNotification.id, {
+        const updatedNotification = await base44.entities.Notification.update(existingNotification.id, {
           required_trucks: nextRequired,
           message,
           read_flag: allConfirmed,
         });
+
+        const hasNewActionableTrucks = newlyAddedRequired.some((truck) => !confirmedTruckSet.has(truck));
+        if (hasNewActionableTrucks) {
+          await sendNotificationSmsIfEligible({
+            ...existingNotification,
+            ...updatedNotification,
+            required_trucks: nextRequired,
+            message,
+            read_flag: allConfirmed,
+          });
+        }
       } else {
         const notification = await base44.entities.Notification.create({
           recipient_type: 'AccessCode',

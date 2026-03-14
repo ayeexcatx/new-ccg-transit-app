@@ -163,17 +163,84 @@ export default function Drivers() {
       )}
 
       <Card className="border-slate-200 bg-slate-50/60">
-        <CardContent className="p-4 space-y-3">
-          <h3 className="text-base font-semibold text-slate-900">Assigning Drivers:</h3>
-          <ul className="list-disc pl-5 space-y-2 text-sm leading-6 text-slate-700">
-            <li>When you select a driver on a dispatch, a copy of the dispatch and a notification will be sent to the driver.</li>
-            <li>Any subsequent status changes by the admin will also be received by the driver as long as they remain assigned.</li>
-            <li>If you remove a driver from the dispatch assignment, they will immediately receive a cancellation.</li>
-            <li>If you still have a driver assigned, and switch the driver, the driver you removed will immediately receive a cancellation, and the driver you added will immediately receive a new dispatch notification.</li>
-            <li>When you switch trucks, the driver assignment will reset and the driver will receive a cancellation if you have one assigned.</li>
-            <li>Please make sure to reassign the drivers to the correct dispatch if you switch trucks.</li>
-            <li>If you select a driver and do nothing, they will receive notifications and dispatch updates the same way you receive them, except they will only receive the ones pertaining to the dispatch they are assigned to.</li>
-          </ul>
+        <CardContent className="p-5 space-y-6">
+          <section className="space-y-2">
+            <h3 className="text-lg font-semibold text-slate-900">Driver Portal</h3>
+            <p className="text-sm leading-6 text-slate-700">
+              A driver portal only has the ability to view driver-specific announcements, dispatches that they are
+              assigned to, and have the ability to report incidents. They do not have the ability to view or see
+              anything else, including the confirmation logs or other trucks assigned to the same dispatch.
+            </p>
+          </section>
+
+          <section className="space-y-2">
+            <h3 className="text-lg font-semibold text-slate-900">Assigning Drivers</h3>
+            <ul className="list-disc pl-5 space-y-2 text-sm leading-6 text-slate-700">
+              <li>
+                A driver can only see a dispatch and receive notifications if you assign them to a truck number on a
+                dispatch.
+              </li>
+              <li>
+                When you select a driver on a dispatch, a copy of the dispatch and a notification will be sent to the
+                driver. Display the message{' '}
+                <span className="font-medium text-emerald-600">&ldquo;You have received a new dispatch&rdquo;</span> in green text.
+              </li>
+              <li>
+                Any changes made by the dispatcher after they are assigned will also be received by the driver as long
+                as they remain assigned. ( <span className="text-amber-600">Amendments</span>,{' '}
+                <span className="text-red-600">Cancellations</span> )
+              </li>
+              <li>
+                If you <span className="font-medium">remove a driver</span> from the dispatch assignment, they will
+                immediately receive a <span className="font-medium text-red-600">cancellation</span> notification.
+              </li>
+            </ul>
+          </section>
+
+          <section className="space-y-2">
+            <h3 className="text-lg font-semibold text-slate-900">Changing Drivers / Trucks</h3>
+            <ul className="list-disc pl-5 space-y-2 text-sm leading-6 text-slate-700">
+              <li>
+                If you have a driver assigned and <span className="font-medium">switch the driver</span> in the
+                dropdown menu, the driver you removed will immediately receive a{' '}
+                <span className="text-red-600">cancellation</span> notification, and the driver you added will
+                immediately receive a <span className="text-emerald-600">new dispatch</span> notification.
+              </li>
+            </ul>
+            <p className="pl-5 text-sm text-slate-500 italic leading-6">
+              Example: Switch Driver 1 to Driver 2<br />
+              Driver 1 = cancellation notification<br />
+              Driver 2 = new dispatch notification
+            </p>
+            <ul className="list-disc pl-5 space-y-2 text-sm leading-6 text-slate-700">
+              <li>
+                If you <span className="font-medium">switch trucks</span> that currently has a driver assigned, the
+                driver assignment will reset and the driver will receive a cancellation.
+              </li>
+            </ul>
+            <p className="pl-5 text-sm text-slate-500 italic leading-6">
+              Example: Truck 1 that has Driver 1 assigned is switched to Truck 2 that has Driver 2 assigned.<br />
+              Both trucks will have their drivers reset (drivers removed), so both drivers will receive a cancellation
+              notification.
+            </p>
+            <ul className="list-disc pl-5 space-y-2 text-sm leading-6 text-slate-700">
+              <li>
+                Please make sure to <span className="font-medium">reassign</span> the drivers to the correct dispatch
+                if you <span className="font-medium">switch trucks</span>.
+              </li>
+            </ul>
+          </section>
+
+          <section className="space-y-2">
+            <h3 className="text-lg font-semibold text-slate-900">Passive Driver Notifications</h3>
+            <ul className="list-disc pl-5 space-y-2 text-sm leading-6 text-slate-700">
+              <li>
+                If you <span className="font-medium">select a driver and do nothing else</span>, they will receive
+                notifications and dispatch updates the same way you receive them, except they will only receive the
+                ones pertaining to the dispatch they are <span className="font-medium">assigned</span> to.
+              </li>
+            </ul>
+          </section>
         </CardContent>
       </Card>
 

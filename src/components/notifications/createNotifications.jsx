@@ -61,6 +61,14 @@ async function createDriverDispatchNotification({
     notification_category: DRIVER_NOTIFICATION_CATEGORY,
   });
 
+  console.log('Notification created before SMS delivery (createDriverDispatchNotification)', {
+    notificationId: notification?.id,
+    recipientType: notification?.recipient_type,
+    recipientAccessCodeId: notification?.recipient_access_code_id || null,
+    recipientId: notification?.recipient_id || null,
+    relatedDispatchId: notification?.related_dispatch_id || null,
+  });
+
   await sendNotificationSmsIfEligible(notification);
 }
 
@@ -284,6 +292,13 @@ export async function notifyDispatchChange(dispatch, oldStatus, newStatus, compa
         required_trucks: relevantTrucks,
       });
 
+      console.log('Notification created before SMS delivery (notifyDispatchChange)', {
+        notificationId: notification?.id,
+        recipientType: notification?.recipient_type,
+        recipientAccessCodeId: notification?.recipient_access_code_id || null,
+        recipientId: notification?.recipient_id || null,
+        relatedDispatchId: notification?.related_dispatch_id || null,
+      });
       await sendNotificationSmsIfEligible(notification);
     }
   } catch (err) {
@@ -343,6 +358,14 @@ export async function notifyDispatchInformationalUpdate(dispatch, customMessage,
         read_flag: false,
         notification_category: 'dispatch_update_info',
         notification_type: 'informational',
+      });
+
+      console.log('Notification created before SMS delivery (notifyDispatchInformationalUpdate)', {
+        notificationId: notification?.id,
+        recipientType: notification?.recipient_type,
+        recipientAccessCodeId: notification?.recipient_access_code_id || null,
+        recipientId: notification?.recipient_id || null,
+        relatedDispatchId: notification?.related_dispatch_id || null,
       });
 
       await sendNotificationSmsIfEligible(notification);
@@ -423,6 +446,14 @@ export async function expandCurrentStatusRequiredTrucks(dispatch, addedTrucks = 
           read_flag: allConfirmed,
           dispatch_status_key: dedupKey,
           required_trucks: nextRequired,
+        });
+
+        console.log('Notification created before SMS delivery (expandCurrentStatusRequiredTrucks)', {
+          notificationId: notification?.id,
+          recipientType: notification?.recipient_type,
+          recipientAccessCodeId: notification?.recipient_access_code_id || null,
+          recipientId: notification?.recipient_id || null,
+          relatedDispatchId: notification?.related_dispatch_id || null,
         });
 
         await sendNotificationSmsIfEligible(notification);

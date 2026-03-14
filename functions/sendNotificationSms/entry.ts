@@ -39,6 +39,14 @@ function readPayload(body: unknown): SmsPayload {
   return body as SmsPayload;
 }
 
+
+function maskPhone(value: string): string {
+  const normalized = String(value || '').trim();
+  if (!normalized) return '';
+
+  return `***${normalized.slice(-4)}`;
+}
+
 function normalizeSpaceUrl(value: string): string {
   const trimmed = String(value || '').trim();
   if (!trimmed) return '';
@@ -86,7 +94,16 @@ Deno.serve(async (req: Request) => {
     const phone = String(payload.phone || '').trim();
     const message = String(payload.message || '').trim();
 
+    console.log('sendNotificationSms payload received', {
+      notificationId: payload.notificationId || null,
+      dispatchId: payload.dispatchId || null,
+      recipientAccessCodeId: payload.recipientAccessCodeId || null,
+      phoneMasked: maskPhone(phone),
+      messageLength: message.length,
+    });
+
     if (!phone) {
+      console.log('sendNotificationSms failure reason', { reason: 'invalid_input', error: 'phone is required' });
       return Response.json<SmsResult>({
         ok: false,
         provider: 'signalwire',
@@ -98,6 +115,7 @@ Deno.serve(async (req: Request) => {
     }
 
     if (!message) {
+      console.log('sendNotificationSms failure reason', { reason: 'invalid_input', error: 'message is required' });
       return Response.json<SmsResult>({
         ok: false,
         provider: 'signalwire',
@@ -110,7 +128,16 @@ Deno.serve(async (req: Request) => {
 
     const config = getProviderConfig();
 
+    console.log('sendNotificationSms provider config check', {
+      configured: config.configured,
+      hasProjectId: Boolean(config.projectId),
+      hasAuthToken: Boolean(config.authToken),
+      hasSpaceUrl: Boolean(config.spaceUrl),
+      hasFromPhone: Boolean(config.fromPhone),
+    });
+
     if (!config.configured) {
+      console.log('sendNotificationSms failure reason', { reason: 'provider_not_configured' });
       return Response.json<SmsResult>({
         ok: false,
         provider: 'signalwire',
@@ -130,6 +157,13 @@ Deno.serve(async (req: Request) => {
       Body: message,
     });
 
+    console.log('sendNotificationSms request about to be sent to SignalWire', {
+      url,
+      toPhoneMasked: maskPhone(phone),
+      fromPhoneMasked: maskPhone(config.fromPhone),
+      messageLength: message.length,
+    });
+
     const providerResponse = await fetch(url, {
       method: 'POST',
       headers: {
@@ -137,6 +171,11 @@ Deno.serve(async (req: Request) => {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body,
+    });
+
+    console.log('sendNotificationSms SignalWire response status', {
+      status: providerResponse.status,
+      ok: providerResponse.ok,
     });
 
     const responseText = await providerResponse.text();
@@ -148,16 +187,32 @@ Deno.serve(async (req: Request) => {
       responseJson = null;
     }
 
+    console.log('sendNotificationSms parsed response body', {
+      responseJson,
+      responseText,
+    });
+
     if (!providerResponse.ok) {
+      const failureReason = extractErrorMessage(responseJson, responseText);
+      console.log('sendNotificationSms failure reason', {
+        reason: 'provider_api_error',
+        error: failureReason,
+      });
+
       return Response.json<SmsResult>({
         ok: false,
         provider: 'signalwire',
         providerMessageId: responseJson?.sid || null,
         sentAt: null,
         reason: 'provider_api_error',
-        error: extractErrorMessage(responseJson, responseText),
+        error: failureReason,
       }, { status: 200 });
     }
+
+    console.log('sendNotificationSms success', {
+      providerMessageId: responseJson?.sid || null,
+      sentAt: responseJson?.date_created || null,
+    });
 
     return Response.json<SmsResult>({
       ok: true,
@@ -166,7 +221,7 @@ Deno.serve(async (req: Request) => {
       sentAt: responseJson?.date_created || new Date().toISOString(),
     }, { status: 200 });
   } catch (error) {
-    console.error('sendNotificationSms failed', { error });
+    console.error('sendNotificationSms failure reason', { reason: 'unexpected_error', error });
 
     return Response.json<SmsResult>({
       ok: false,

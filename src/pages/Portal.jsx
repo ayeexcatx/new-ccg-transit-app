@@ -172,6 +172,20 @@ export default function Portal() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['time-entries'] }),
   });
 
+  const archiveCanceledDispatchMutation = useMutation({
+    mutationFn: async ({ dispatch }) => {
+      const actorType = session?.code_type || 'User';
+      return base44.entities.Dispatch.update(dispatch.id, {
+        archived_flag: true,
+        archived_at: new Date().toISOString(),
+        archived_reason: `${actorType} archived cancelled dispatch`,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['portal-dispatches', session?.company_id] });
+    },
+  });
+
   const updateOwnerTrucksMutation = useMutation({
     mutationFn: async ({ dispatch, nextTrucks }) => {
       if (!dispatch?.id) throw new Error('Dispatch missing');
@@ -469,6 +483,7 @@ Would you like to swap ${outgoingTruck} with ${incomingTruck}?`;
   const historyDispatches = useMemo(() => filteredDispatches
     .filter(d => {
       if (getDispatchBucket(d) !== 'history') return false;
+      if (d.status === 'Cancelled' || d.status === 'Canceled') return true;
       if (!d.archived_flag) return myTrucksForHistory(d, timeEntries, session);
       return true;
     })
@@ -508,24 +523,10 @@ Would you like to swap ${outgoingTruck} with ${incomingTruck}?`;
       resolveOwnerNotificationIfComplete(dispatch, updatedConfirmations, session.id);
     }
 
-    // Auto-archive Cancelled dispatch once all trucks have confirmed cancellation
-    if (confType === 'Cancelled') {
-      const allTrucks = dispatch.trucks_assigned || [];
-      const confirmedCanceledTrucks = updatedConfirmations
-        .filter(c => c.dispatch_id === dispatch.id && c.confirmation_type === 'Cancelled')
-        .map(c => c.truck_number);
-      const allConfirmed = allTrucks.every(t => confirmedCanceledTrucks.includes(t));
-      if (allConfirmed && !dispatch.archived_flag) {
-        base44.entities.Dispatch.update(dispatch.id, {
-          archived_flag: true,
-          archived_at: new Date().toISOString(),
-          archived_reason: 'Cancellation confirmed',
-        }).then(() => queryClient.invalidateQueries({ queryKey: ['portal-dispatches', session?.company_id] }));
-      }
-    }
   };
 
   const handleTimeEntry = async (dispatch, entries) => timeEntryMutation.mutateAsync({ dispatch, entries });
+  const handleArchiveCanceledDispatch = async (dispatch) => archiveCanceledDispatchMutation.mutateAsync({ dispatch });
 
   const currentListBase = tab === 'upcoming' ? upcomingDispatches : tab === 'today' ? todayDispatches : historyDispatches;
   const normalizedDrawerDispatchId = normalizeId(drawerDispatchId);
@@ -686,6 +687,8 @@ Would you like to swap ${outgoingTruck} with ${incomingTruck}?`;
                   templateNotes={sortedNotes}
                   onConfirm={handleConfirm}
                   onTimeEntry={handleTimeEntry}
+                  onArchiveCanceledDispatch={handleArchiveCanceledDispatch}
+                  archivePending={archiveCanceledDispatchMutation.isPending}
                   onOwnerTruckUpdate={handleOwnerTruckUpdate}
                   companyName={companyMap[d.company_id]}
                   forceOpen={isForcedOpenCard}

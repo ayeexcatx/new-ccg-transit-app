@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Clock, Truck, Sun, Moon,
   FileText, ChevronDown
@@ -39,7 +40,8 @@ const formatDispatchTime = (startTime) => {
 
 const DispatchCard = React.forwardRef(function DispatchCard({
   dispatch, session, confirmations, timeEntries, templateNotes,
-  onConfirm, onTimeEntry, onOwnerTruckUpdate, companyName, forceOpen, onDrawerClose, visibleTrucksOverride
+  onConfirm, onTimeEntry, onArchiveCanceledDispatch, archivePending, onOwnerTruckUpdate,
+  companyName, forceOpen, onDrawerClose, visibleTrucksOverride
 }, ref) {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -60,6 +62,19 @@ const DispatchCard = React.forwardRef(function DispatchCard({
     : session.code_type === 'Driver'
       ? (dispatch.trucks_assigned || [])
       : myTrucks;
+
+  const isCanceled = dispatch.status === 'Cancelled' || dispatch.status === 'Canceled';
+  const isDriverUser = session?.code_type === 'Driver';
+  const isTruckUser = session?.code_type === 'Truck';
+  const isCompanyOwner = session?.code_type === 'CompanyOwner';
+  const canShowArchiveButton = isCanceled && !dispatch.archived_flag && (isDriverUser || isTruckUser || isCompanyOwner);
+  const canceledConfirmations = confirmations.filter((c) =>
+    c.dispatch_id === dispatch.id && (c.confirmation_type === 'Cancelled' || c.confirmation_type === 'Canceled')
+  );
+  const confirmedCanceledTrucks = [...new Set(canceledConfirmations.map((c) => c.truck_number))];
+  const allTrucks = dispatch.trucks_assigned || [];
+  const ownerCanArchiveCanceled = isCompanyOwner && allTrucks.every((truck) => confirmedCanceledTrucks.includes(truck));
+  const canArchiveCanceled = isDriverUser || isTruckUser || ownerCanArchiveCanceled;
 
   return (
     <div ref={ref}>
@@ -142,6 +157,31 @@ const DispatchCard = React.forwardRef(function DispatchCard({
               <ChevronDown className="h-3.5 w-3.5" />
               View details
             </button>
+
+
+            {canShowArchiveButton && (
+              <div className="mt-3">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={!canArchiveCanceled || archivePending}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!canArchiveCanceled || archivePending) return;
+                    onArchiveCanceledDispatch?.(dispatch);
+                  }}
+                  title={isCompanyOwner && !canArchiveCanceled ? 'Confirm cancellation receipt for all trucks first.' : 'Archive cancelled dispatch'}
+                >
+                  Archive
+                </Button>
+                {isCompanyOwner && !canArchiveCanceled && (
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    Confirm cancellation receipt for all trucks before archiving.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

@@ -42,6 +42,7 @@ function getSessionActorMetadata(session) {
 }
 
 const normalizeId = (value) => String(value ?? '');
+const normalizeTruckValue = (value) => String(value ?? '').trim();
 
 function myTrucksForHistory(dispatch, timeEntries, session) {
   const trucks = (session?.allowed_trucks || []).filter(t => (dispatch.trucks_assigned || []).includes(t));
@@ -53,15 +54,35 @@ function myTrucksForHistory(dispatch, timeEntries, session) {
 async function clearRemovedTruckDriverAssignments(dispatch, removedTrucks = []) {
   if (!dispatch?.id || !removedTrucks.length) return;
 
+  const normalizedRemovedTrucks = removedTrucks
+    .map((truck) => normalizeTruckValue(truck))
+    .filter(Boolean);
+  if (!normalizedRemovedTrucks.length) return;
+
   const activeAssignments = await base44.entities.DriverDispatchAssignment.filter({
     dispatch_id: dispatch.id,
     active_flag: true,
   }, '-assigned_datetime', 500);
 
   const previousAssignments = activeAssignments || [];
+  console.log('[clearRemovedTruckDriverAssignments] removedTrucks', {
+    dispatchId: dispatch.id,
+    removedTrucks,
+    normalizedRemovedTrucks,
+  });
+  console.log('[clearRemovedTruckDriverAssignments] activeAssignments', {
+    dispatchId: dispatch.id,
+    activeAssignments: previousAssignments,
+  });
+
   const assignmentsToRemove = previousAssignments.filter((assignment) =>
-    removedTrucks.includes(assignment?.truck_number)
+    normalizedRemovedTrucks.includes(normalizeTruckValue(assignment?.truck_number))
   );
+
+  console.log('[clearRemovedTruckDriverAssignments] assignmentsToRemove', {
+    dispatchId: dispatch.id,
+    assignmentsToRemove,
+  });
 
   if (!assignmentsToRemove.length) return;
 
@@ -73,6 +94,12 @@ async function clearRemovedTruckDriverAssignments(dispatch, removedTrucks = []) 
 
   const removedIds = new Set(assignmentsToRemove.map((assignment) => assignment.id));
   const nextAssignments = previousAssignments.filter((assignment) => !removedIds.has(assignment.id));
+
+  console.log('[clearRemovedTruckDriverAssignments] assignmentDiff', {
+    dispatchId: dispatch.id,
+    previousAssignments,
+    nextAssignments,
+  });
 
   await notifyDriverAssignmentChanges(dispatch, previousAssignments, nextAssignments);
 }
@@ -378,7 +405,7 @@ Would you like to swap ${outgoingTruck} with ${incomingTruck}?`;
           },
         });
 
-        return { updated: true };
+        return { updated: true, affectedDispatchIds: [dispatch.id, conflictingDispatch.id] };
       }
 
       const updatedDispatch = await base44.entities.Dispatch.update(dispatch.id, {
@@ -436,11 +463,18 @@ Would you like to swap ${outgoingTruck} with ${incomingTruck}?`;
         },
       });
 
-      return { updated: true };
+      return { updated: true, affectedDispatchIds: [dispatch.id] };
     },
-    onSuccess: () => {
+    onSuccess: (result, variables) => {
       queryClient.invalidateQueries({ queryKey: ['portal-dispatches', session?.company_id] });
       queryClient.invalidateQueries({ queryKey: ['dispatches-admin'] });
+      queryClient.invalidateQueries({ queryKey: ['driver-dispatch-assignments'] });
+      queryClient.invalidateQueries({ queryKey: ['driver-dispatch-assignments', variables?.dispatch?.id] });
+      queryClient.invalidateQueries({ queryKey: ['driver-dispatch-assignments', session?.driver_id] });
+      queryClient.invalidateQueries({ queryKey: ['incident-driver-dispatch-assignments', session?.driver_id] });
+      (result?.affectedDispatchIds || []).forEach((dispatchId) => {
+        queryClient.invalidateQueries({ queryKey: ['driver-dispatch-assignments', dispatchId] });
+      });
       queryClient.invalidateQueries({ queryKey: confirmationsQueryKey });
       queryClient.invalidateQueries({ queryKey: ['confirmations-admin'] });
       queryClient.invalidateQueries({ queryKey: ['notifications'] });

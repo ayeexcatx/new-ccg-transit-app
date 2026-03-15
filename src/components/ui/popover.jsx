@@ -9,8 +9,23 @@ const PopoverTrigger = PopoverPrimitive.Trigger
 
 const PopoverAnchor = PopoverPrimitive.Anchor
 
-const PopoverContent = React.forwardRef(({ className, align = "center", sideOffset = 4, ...props }, ref) => (
+const PopoverContent = React.forwardRef(({
+  className,
+  align = "center",
+  sideOffset = 4,
+  showBackdrop = false,
+  backdropClassName,
+  onBackdropClick,
+  ...props
+}, ref) => (
   <PopoverPrimitive.Portal>
+    {showBackdrop && (
+      <div
+        className={cn("fixed inset-0 z-40 bg-slate-900/15", backdropClassName)}
+        onClick={onBackdropClick}
+        aria-hidden="true"
+      />
+    )}
     <PopoverPrimitive.Content
       ref={ref}
       align={align}

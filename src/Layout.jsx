@@ -83,12 +83,12 @@ function LayoutInner({ children, currentPageName }) {
   const mobileNavBaseClassName = 'text-xs whitespace-nowrap flex items-center gap-1 rounded-lg px-3 py-1 transition-all duration-200';
   const getNavItemClassName = (active) =>
   active ?
-  `${navBaseClassName} bg-slate-900 text-white font-medium hover:bg-slate-900 [&_svg]:text-white` :
+  `${navBaseClassName} bg-slate-900 text-white font-medium hover:bg-slate-900 hover:text-white [&_svg]:text-white hover:[&_svg]:text-white` :
   `${navBaseClassName} text-slate-600 hover:bg-slate-100 hover:text-slate-800 [&_svg]:text-slate-500 hover:[&_svg]:text-slate-700`;
 
   const getMobileNavItemClassName = (active) =>
   active ?
-  `${mobileNavBaseClassName} bg-slate-900 text-white font-medium hover:bg-slate-900 [&_svg]:text-white` :
+  `${mobileNavBaseClassName} bg-slate-900 text-white font-medium hover:bg-slate-900 hover:text-white [&_svg]:text-white hover:[&_svg]:text-white` :
   `${mobileNavBaseClassName} text-slate-600 hover:bg-slate-100 hover:text-slate-800 [&_svg]:text-slate-500 hover:[&_svg]:text-slate-700`;
 
   const portalNavItems = [

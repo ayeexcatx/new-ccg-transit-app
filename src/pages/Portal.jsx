@@ -675,7 +675,7 @@ Would you like to swap ${outgoingTruck} with ${incomingTruck}?`;
   }, [location.search, filteredDispatches, tab, upcomingDispatches, todayDispatches, historyDispatches]);
 
   return (
-    <div className="space-y-6" data-tour="dispatches-overview">
+    <div className="space-y-6">
       {dispatchNotFound && (
         <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-700">
           Dispatch no longer available.

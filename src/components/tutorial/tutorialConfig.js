@@ -23,7 +23,7 @@ export const companyOwnerTutorialSteps = [
     target: '[data-tour="home-overview"]',
     title: 'Home Screen',
     description:
-      'This is the home screen, which gives you a quick snapshot of pending actions and dispatches.',
+      'The Home Screen provides a quick snapshot of your pending actions and upcoming dispatches.',
   },
   {
     id: 'announcement-center',
@@ -39,21 +39,21 @@ export const companyOwnerTutorialSteps = [
     target: '[data-tour="action-needed"]',
     title: 'Action Needed',
     description:
-      'This area will show you any dispatches that require your urgent attention, such as waiting for your confirmation of receipt.',
+      'This section highlights dispatches that require your immediate attention, such as confirming receipt.',
   },
   {
     id: 'dispatch-preview',
     page: createPageUrl('Home'),
     target: '[data-tour="dispatch-preview"]',
     title: 'Dispatch Preview',
-    description: 'This is a quick view of the next few dispatches assigned to you.',
+    description: 'This area provides a quick view of your next few assigned dispatches',
   },
   {
     id: 'dispatches-page',
     page: createPageUrl('Home'),
     target: '[data-tour="dispatches-nav"]',
     title: 'Dispatches',
-    description: 'This is where you can see your entire dispatch history and upcoming dispatches.',
+    description: 'The Dispatch page shows you your full dispatch history as well as all upcoming dispatches.',
   },
   {
     id: 'availability-page',
@@ -61,7 +61,7 @@ export const companyOwnerTutorialSteps = [
     target: '[data-tour="availability-nav"]',
     title: 'Availability',
     description:
-      'This is where you will let us know if you are available for a certain shift and how many trucks you have available.',
+      'The Availability page allows you to indicate whether you are available for a specific shift and how many trucks you have available.',
   },
   {
     id: 'recurring-weekly-defaults',
@@ -69,7 +69,7 @@ export const companyOwnerTutorialSteps = [
     target: '[data-tour="recurring-weekly-defaults"]',
     title: 'Recurring Weekly Defaults',
     description:
-      'This is where you can set your default availability that will automatically apply each week.',
+      'Here you can set your default weekly availability. These settings will automatically apply to all future weeks unless changed.',
   },
   {
     id: 'availability-controls',
@@ -77,7 +77,7 @@ export const companyOwnerTutorialSteps = [
     target: '[data-tour="availability-controls"]',
     title: 'Availability Controls',
     description:
-      'This is where you can actively choose the number of trucks you have available for each shift.',
+      'This section allows you to actively select the number of trucks you have available for each shift. We recommend you visit this section daily or weekly to update the amount of trucks you have available for every upcoming shift.',
   },
   {
     id: 'drivers-page',
@@ -85,7 +85,7 @@ export const companyOwnerTutorialSteps = [
     target: '[data-tour="drivers-nav"]',
     title: 'Drivers',
     description:
-      'This is where you can add drivers by clicking Add Driver and entering their information. Please read the instructions about the driver portal at the bottom of the page in full. Once you add a driver, you will need to request a password for them.',
+      'Use this section to add drivers and entering their information. Please read the instructions about the driver portal at the bottom of the page in full. Once you add a driver, you will need to request a password for them.',
   },
   {
     id: 'incidents-page',
@@ -102,7 +102,7 @@ export const dispatchDrawerTutorialSteps = [
     target: '[data-tour="dispatch-report-incident"]',
     title: 'Report Incident',
     description:
-      'This is where you can report a breakdown or any other incident related to your dispatch. Ideally, this should be done after advising the dispatcher and while you are stopped, or sometime after your shift while the details are still fresh.',
+      'Click here to report breakdowns, accidents, delays, or any other incident related to this dispatch.<br /><br />This should be done after informing the dispatcher of your incident and is for record-keeping purposes. We encourage you to create reports immediately and visit the Incidents page to record your updates as you resolve the incident.',
   },
   {
     id: 'screenshot-dispatch',

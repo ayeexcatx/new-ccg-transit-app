@@ -4,7 +4,7 @@ import { createPageUrl } from '../utils';
 import { useSession } from '../components/session/SessionContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Truck, ArrowRight, AlertCircle } from 'lucide-react';
+import { ArrowRight, AlertCircle } from 'lucide-react';
 
 export default function AccessCodeLogin() {
   const { login } = useSession();
@@ -40,10 +40,14 @@ export default function AccessCodeLogin() {
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-10">
-          <div className="inline-flex h-16 w-16 rounded-2xl bg-white/10 items-center justify-center mb-6">
-            <Truck className="h-8 w-8 text-white" />
+          <div className="inline-flex items-center justify-center mb-6">
+            <img
+              src="/transitlogo.png"
+              alt="CCG Transit logo"
+              className="w-full max-w-[160px] h-auto"
+            />
           </div>
-          <h1 className="text-2xl font-semibold text-white tracking-tight">CCG Dispatch</h1>
+          <h1 className="text-2xl font-semibold text-white tracking-tight">CCG Transit</h1>
           <p className="text-slate-400 text-sm mt-2">Enter your access code to continue</p>
         </div>
 

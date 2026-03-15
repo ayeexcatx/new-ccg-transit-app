@@ -40,6 +40,7 @@ export const companyOwnerTutorialSteps = [
     title: 'Action Needed',
     description:
       'This section highlights dispatches that require your immediate attention, such as confirming receipt.',
+    warningText: 'Items will remain in this section until you confirm receipt of your dispatch.',
   },
   {
     id: 'dispatch-preview',
@@ -77,7 +78,8 @@ export const companyOwnerTutorialSteps = [
     target: '[data-tour="availability-controls"]',
     title: 'Availability Controls',
     description:
-      'This section allows you to actively select the number of trucks you have available for each shift. We recommend you visit this section daily or weekly to update the amount of trucks you have available for every upcoming shift.',
+      'This section allows you to actively select the number of trucks you have available for each shift.',
+    warningText: 'We recommend you visit this section daily or weekly to update the amount of trucks you have available for every upcoming shift.',
   },
   {
     id: 'drivers-page',
@@ -85,7 +87,8 @@ export const companyOwnerTutorialSteps = [
     target: '[data-tour="drivers-nav"]',
     title: 'Drivers',
     description:
-      'Use this section to add drivers and entering their information.\n\nPlease read the instructions about the driver portal at the bottom of the page in full. Once you add a driver, you will need to request a password for them.',
+      'Use this section to add drivers and enter their information.',
+    useWarning: 'Please read the instructions about the driver portal at the bottom of the page in full. Once you add a driver, you will need to request a password for them.',
   },
   {
     id: 'incidents-page',
@@ -102,46 +105,48 @@ export const dispatchDrawerTutorialSteps = [
     target: '[data-tour="dispatch-report-incident"]',
     title: 'Report Incident',
     description:
-      'Click here to report breakdowns, accidents, delays, or any other incident related to this dispatch.\n\nThis <strong>should</strong> be done after informing the dispatcher of your incident and is for record-keeping purposes. We encourage you to create reports immediately and visit the Incidents page to record your updates as you resolve the incident.',
+      'Click here to report breakdowns, accidents, delays, or any other incident related to this dispatch.',
+    warningText: 'This should be done after informing the dispatcher of your incident and is for record-keeping purposes. We encourage you to create reports immediately and visit the Incidents page to record your updates as you resolve the incident.',
   },
   {
     id: 'screenshot-dispatch',
     target: '[data-tour="dispatch-screenshot"]',
     title: 'Screenshot Dispatch',
     description:
-      'Press this button to take a clean screenshot of your dispatch without the action buttons or editable sections.',
+      'Click here to take a clean screenshot of your dispatch without the any of the action buttons or editable sections.',
   },
   {
     id: 'edit-trucks',
     target: '[data-tour="dispatch-edit-trucks"]',
     title: 'Edit Trucks',
-    description: 'This is where you can edit the trucks you have assigned to the dispatch.',
+    description: 'Click here to edit the truck numbers assigned to this dispatch.',
   },
   {
     id: 'driver-assignments',
     target: '[data-tour="dispatch-driver-assignments"]',
     title: 'Driver Assignments',
-    description: 'This is where you can assign drivers to your dispatch.',
+    description: 'Click the dropdown menu to assign drivers to your dispatch.',
     warningText: 'Please familiarize yourself with the instructions on the Drivers page before using this feature.',
   },
   {
     id: 'assignment-details',
     target: '[data-tour="dispatch-assignment-details"]',
     title: 'Assignment Details',
-    description: 'This section shows the dispatch start time and instructions.',
+    description: 'This section shows the standard details and instructions of the assignment.',
   },
   {
     id: 'dispatch-notes',
     target: '[data-tour="dispatch-notes"]',
     title: 'Dispatch Notes',
-    description: 'These are dispatch notes and reminders that may be included with a dispatch.',
+    description: 'These are dispatch notes and reminders that are included every dispatch.',
   },
   {
     id: 'confirm-receipt',
     target: '[data-tour="dispatch-confirm-receipt"]',
     title: 'Confirm Receipt',
     description:
-      'This is where you confirm receipt of the dispatch. You must confirm any time you receive: a new dispatch, a new schedule, an amendment, a cancellation, or another important update.',
+      'Click here to confirm receipt of the dispatch.',
+    warningText: 'You must confirm any time you receive: a new dispatch, a new schedule, an amendment, a cancellation, or another important update.',
   },
   {
     id: 'time-log',

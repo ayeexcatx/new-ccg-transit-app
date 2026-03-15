@@ -79,6 +79,16 @@ function LayoutInner({ children, currentPageName }) {
   const isDriver = session.code_type === 'Driver';
   const canUsePortalTabs = isOwner || isTruck || isDriver;
   const isActive = (pageName) => location.pathname === createPageUrl(pageName);
+  const getNavItemClassName = (active) =>
+  active ?
+  'text-xs flex items-center gap-1 border-b-2 border-amber-500 bg-amber-50 text-amber-700 font-semibold hover:bg-amber-100 hover:text-amber-800 [&_svg]:text-amber-600' :
+  'text-xs flex items-center gap-1 border-b-2 border-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-800 [&_svg]:text-slate-500 hover:[&_svg]:text-slate-700';
+
+  const getMobileNavItemClassName = (active) =>
+  active ?
+  'text-xs whitespace-nowrap flex items-center gap-1 border-b-2 border-amber-500 bg-amber-50 text-amber-700 font-semibold hover:bg-amber-100 hover:text-amber-800 [&_svg]:text-amber-600' :
+  'text-xs whitespace-nowrap flex items-center gap-1 border-b-2 border-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-800 [&_svg]:text-slate-500 hover:[&_svg]:text-slate-700';
+
   const portalNavItems = [
   {
     page: 'Home',
@@ -171,34 +181,34 @@ function LayoutInner({ children, currentPageName }) {
               {isAdmin &&
               <nav className="flex items-center gap-1">
                 <Link to={createPageUrl('AdminDashboard')}>
-                  <Button variant="ghost" size="sm" className="text-xs flex items-center gap-1"><Home className="h-3 w-3" />Dashboard</Button>
+                  <Button variant="ghost" size="sm" className={getNavItemClassName(isActive('AdminDashboard'))}><Home className="h-3 w-3" />Dashboard</Button>
                 </Link>
                 <Link to={createPageUrl('AdminDispatches')}>
-                  <Button variant="ghost" size="sm" className="text-xs flex items-center gap-1"><Truck className="h-3 w-3" />Dispatches</Button>
+                  <Button variant="ghost" size="sm" className={getNavItemClassName(isActive('AdminDispatches'))}><Truck className="h-3 w-3" />Dispatches</Button>
                 </Link>
                 <Link to={createPageUrl('AdminAvailability')}>
-                  <Button variant={isActive('AdminAvailability') ? 'secondary' : 'ghost'} size="sm" className="text-xs flex items-center gap-1">
+                  <Button variant="ghost" size="sm" className={getNavItemClassName(isActive('AdminAvailability'))}>
                     <CalendarDays className="h-3 w-3" />Availability
                   </Button>
                 </Link>
                 <Link to={createPageUrl('AdminConfirmations')}>
-                  <Button variant="ghost" size="sm" className="text-xs flex items-center gap-1"><CheckCircle2 className="h-3 w-3" />Confirmations</Button>
+                  <Button variant="ghost" size="sm" className={getNavItemClassName(isActive('AdminConfirmations'))}><CheckCircle2 className="h-3 w-3" />Confirmations</Button>
                 </Link>
                 <Link to={createPageUrl('Incidents')}>
-                   <Button variant={isActive('Incidents') ? 'secondary' : 'ghost'} size="sm" className="text-xs flex items-center gap-1">
+                   <Button variant="ghost" size="sm" className={getNavItemClassName(isActive('Incidents'))}>
                      <TriangleAlert className="h-3 w-3" />Incidents
                    </Button>
                  </Link>
                 <Link to={createPageUrl('AdminAnnouncements')}>
-                  <Button variant="ghost" size="sm" className="text-xs flex items-center gap-1">
+                  <Button variant="ghost" size="sm" className={getNavItemClassName(isActive('AdminAnnouncements'))}>
                     <Megaphone className="h-3 w-3" />Announcements
                   </Button>
                 </Link>
                 <Link to={createPageUrl('AdminCompanies')}>
-                  <Button variant="ghost" size="sm" className="text-xs flex items-center gap-1"><Building2 className="h-3 w-3" />Companies</Button>
+                  <Button variant="ghost" size="sm" className={getNavItemClassName(isActive('AdminCompanies'))}><Building2 className="h-3 w-3" />Companies</Button>
                 </Link>
                 <Link to={createPageUrl('AdminAccessCodes')}>
-                  <Button variant="ghost" size="sm" className="text-xs flex items-center gap-1">
+                  <Button variant="ghost" size="sm" className={getNavItemClassName(isActive('AdminAccessCodes'))}>
                     <Shield className="h-3 w-3" />
                     <span>Access Codes</span>
                     {pendingDriverRequestsCount > 0 && (
@@ -209,7 +219,7 @@ function LayoutInner({ children, currentPageName }) {
                   </Button>
                 </Link>
                 <Link to={createPageUrl('AdminTemplateNotes')}>
-                  <Button variant="ghost" size="sm" className="text-xs flex items-center gap-1"><FileText className="h-3 w-3" />Notes</Button>
+                  <Button variant="ghost" size="sm" className={getNavItemClassName(isActive('AdminTemplateNotes'))}><FileText className="h-3 w-3" />Notes</Button>
                 </Link>
               </nav>
               }
@@ -220,9 +230,9 @@ function LayoutInner({ children, currentPageName }) {
                   return (
                     <Link key={item.page} to={createPageUrl(item.page)}>
                       <Button
-                        variant={isActive(item.page) ? 'secondary' : 'ghost'}
+                        variant="ghost"
                         size="sm"
-                        className="text-xs flex items-center gap-1"
+                        className={getNavItemClassName(isActive(item.page))}
                         data-tour={item.tour}>
                         <Icon className="h-3 w-3" />
                         {item.label}
@@ -245,9 +255,9 @@ function LayoutInner({ children, currentPageName }) {
             return (
               <Link key={item.page} to={createPageUrl(item.page)}>
                 <Button
-                  variant={isActive(item.page) ? 'secondary' : 'ghost'}
+                  variant="ghost"
                   size="sm"
-                  className="text-xs whitespace-nowrap flex items-center gap-1"
+                  className={getMobileNavItemClassName(isActive(item.page))}
                   data-tour={item.tour}>
                   <Icon className="h-3 w-3" />
                   {item.label}
@@ -262,28 +272,28 @@ function LayoutInner({ children, currentPageName }) {
         {isAdmin &&
         <div className="md:hidden border-t border-slate-100 px-4 py-2 flex gap-1 overflow-x-auto">
             <Link to={createPageUrl('AdminDashboard')}>
-              <Button variant="ghost" size="sm" className="text-xs whitespace-nowrap flex items-center gap-1"><Home className="h-3 w-3" />Dashboard</Button>
+              <Button variant="ghost" size="sm" className={getMobileNavItemClassName(isActive('AdminDashboard'))}><Home className="h-3 w-3" />Dashboard</Button>
             </Link>
             <Link to={createPageUrl('AdminDispatches')}>
-              <Button variant="ghost" size="sm" className="text-xs whitespace-nowrap flex items-center gap-1"><Truck className="h-3 w-3" />Dispatches</Button>
+              <Button variant="ghost" size="sm" className={getMobileNavItemClassName(isActive('AdminDispatches'))}><Truck className="h-3 w-3" />Dispatches</Button>
             </Link>
             <Link to={createPageUrl('AdminAvailability')}>
-              <Button variant={isActive('AdminAvailability') ? 'secondary' : 'ghost'} size="sm" className="text-xs whitespace-nowrap flex items-center gap-1"><CalendarDays className="h-3 w-3" />Availability</Button>
+              <Button variant="ghost" size="sm" className={getMobileNavItemClassName(isActive('AdminAvailability'))}><CalendarDays className="h-3 w-3" />Availability</Button>
             </Link>
             <Link to={createPageUrl('AdminConfirmations')}>
-              <Button variant="ghost" size="sm" className="text-xs whitespace-nowrap flex items-center gap-1"><CheckCircle2 className="h-3 w-3" />Confirmations</Button>
+              <Button variant="ghost" size="sm" className={getMobileNavItemClassName(isActive('AdminConfirmations'))}><CheckCircle2 className="h-3 w-3" />Confirmations</Button>
             </Link>
             <Link to={createPageUrl('Incidents')}>
-              <Button variant={isActive('Incidents') ? 'secondary' : 'ghost'} size="sm" className="text-xs whitespace-nowrap flex items-center gap-1"><TriangleAlert className="h-3 w-3" />Incidents</Button>
+              <Button variant="ghost" size="sm" className={getMobileNavItemClassName(isActive('Incidents'))}><TriangleAlert className="h-3 w-3" />Incidents</Button>
             </Link>
             <Link to={createPageUrl('AdminAnnouncements')}>
-              <Button variant="ghost" size="sm" className="text-xs whitespace-nowrap flex items-center gap-1"><Megaphone className="h-3 w-3" />Announcements</Button>
+              <Button variant="ghost" size="sm" className={getMobileNavItemClassName(isActive('AdminAnnouncements'))}><Megaphone className="h-3 w-3" />Announcements</Button>
             </Link>
             <Link to={createPageUrl('AdminCompanies')}>
-              <Button variant="ghost" size="sm" className="text-xs whitespace-nowrap flex items-center gap-1"><Building2 className="h-3 w-3" />Companies</Button>
+              <Button variant="ghost" size="sm" className={getMobileNavItemClassName(isActive('AdminCompanies'))}><Building2 className="h-3 w-3" />Companies</Button>
             </Link>
             <Link to={createPageUrl('AdminAccessCodes')}>
-              <Button variant="ghost" size="sm" className="text-xs whitespace-nowrap flex items-center gap-1">
+              <Button variant="ghost" size="sm" className={getMobileNavItemClassName(isActive('AdminAccessCodes'))}>
                 <Shield className="h-3 w-3" />
                 <span>Access Codes</span>
                 {pendingDriverRequestsCount > 0 && (
@@ -294,7 +304,7 @@ function LayoutInner({ children, currentPageName }) {
               </Button>
             </Link>
             <Link to={createPageUrl('AdminTemplateNotes')}>
-              <Button variant="ghost" size="sm" className="text-xs whitespace-nowrap flex items-center gap-1"><FileText className="h-3 w-3" />Notes</Button>
+              <Button variant="ghost" size="sm" className={getMobileNavItemClassName(isActive('AdminTemplateNotes'))}><FileText className="h-3 w-3" />Notes</Button>
             </Link>
           </div>
         }

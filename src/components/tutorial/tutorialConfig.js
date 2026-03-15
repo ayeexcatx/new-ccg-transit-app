@@ -85,7 +85,7 @@ export const companyOwnerTutorialSteps = [
     target: '[data-tour="drivers-nav"]',
     title: 'Drivers',
     description:
-      'Use this section to add drivers and entering their information. Please read the instructions about the driver portal at the bottom of the page in full. Once you add a driver, you will need to request a password for them.',
+      'Use this section to add drivers and entering their information./n/nPlease read the instructions about the driver portal at the bottom of the page in full. Once you add a driver, you will need to request a password for them.',
   },
   {
     id: 'incidents-page',
@@ -102,7 +102,7 @@ export const dispatchDrawerTutorialSteps = [
     target: '[data-tour="dispatch-report-incident"]',
     title: 'Report Incident',
     description:
-      'Click here to report breakdowns, accidents, delays, or any other incident related to this dispatch.<br /><br />This should be done after informing the dispatcher of your incident and is for record-keeping purposes. We encourage you to create reports immediately and visit the Incidents page to record your updates as you resolve the incident.',
+      'Click here to report breakdowns, accidents, delays, or any other incident related to this dispatch./n/nThis should be done after informing the dispatcher of your incident and is for record-keeping purposes. We encourage you to create reports immediately and visit the Incidents page to record your updates as you resolve the incident.',
   },
   {
     id: 'screenshot-dispatch',

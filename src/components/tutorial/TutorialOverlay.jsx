@@ -22,13 +22,13 @@ export default function TutorialOverlay({
       <div className="fixed inset-0 z-[210] bg-slate-950/60 transition-opacity duration-200" />
       {targetRect && !isCompletion && (
         <div
-          className="pointer-events-none fixed z-[220] rounded-xl border-2 border-white shadow-[0_0_0_9999px_rgba(2,6,23,0.72),0_0_0_1px_rgba(255,255,255,0.98),0_0_42px_rgba(255,255,255,0.45)] transition-all duration-200"
+          className="pointer-events-none fixed z-[220] rounded-xl border-2 border-white/95 shadow-[0_0_0_9999px_rgba(2,6,23,0.78),0_0_0_2px_rgba(255,255,255,0.95),0_0_48px_rgba(255,255,255,0.55)] transition-all duration-200"
           style={{
             top: `${targetRect.top - 8}px`,
             left: `${targetRect.left - 8}px`,
             width: `${targetRect.width + 16}px`,
             height: `${targetRect.height + 16}px`,
-            backgroundColor: 'rgba(255,255,255,0.025)',
+            backgroundColor: 'transparent',
           }}
         />
       )}

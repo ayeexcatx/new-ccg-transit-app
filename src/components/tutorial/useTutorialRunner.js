@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const EDGE_MARGIN = 24;
-const CENTER_TOLERANCE = 64;
+const CENTER_TOLERANCE = 80;
+const SCROLL_SETTLE_TIMEOUT = 800;
 
 const resolveVisibleTarget = (selector) => {
   if (!selector) return null;
@@ -31,23 +32,34 @@ const getIsNearViewportCenter = (rect) => {
   return fullyVisible && closeToCenter;
 };
 
-const settleAfterScroll = () => new Promise((resolve) => {
-  let frameCount = 0;
-  const settle = () => {
-    frameCount += 1;
-    if (frameCount >= 2) {
-      resolve();
+const waitForCenteredTarget = (element, startedAt = performance.now()) => new Promise((resolve) => {
+  const checkPosition = () => {
+    const rect = element?.getBoundingClientRect();
+
+    if (!rect || (rect.width === 0 && rect.height === 0)) {
+      resolve(null);
       return;
     }
-    window.requestAnimationFrame(settle);
+
+    if (getIsNearViewportCenter(rect)) {
+      resolve(rect);
+      return;
+    }
+
+    if (performance.now() - startedAt >= SCROLL_SETTLE_TIMEOUT) {
+      resolve(rect);
+      return;
+    }
+
+    window.requestAnimationFrame(checkPosition);
   };
 
-  window.requestAnimationFrame(settle);
+  window.requestAnimationFrame(checkPosition);
 });
 
 const scrollTargetIntoView = async (element, rect) => {
   if (!element || !rect || getIsNearViewportCenter(rect)) {
-    return;
+    return rect;
   }
 
   element.scrollIntoView({
@@ -56,8 +68,7 @@ const scrollTargetIntoView = async (element, rect) => {
     inline: 'nearest',
   });
 
-  await settleAfterScroll();
-  await new Promise((resolve) => window.setTimeout(resolve, 180));
+  return waitForCenteredTarget(element);
 };
 
 // Shared runner for tutorial overlays to keep sequencing/target resolution behavior consistent.

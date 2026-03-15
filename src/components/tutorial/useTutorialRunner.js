@@ -365,6 +365,21 @@ export default function useTutorialRunner({
   const isCompletion = active && stepIndex >= totalSteps;
   const currentStep = !isCompletion ? steps[stepIndex] : null;
 
+  const getTooltipPositionStyle = useCallback((maxHeight = 230) => {
+    if (isCompletion || !targetRect) {
+      return { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' };
+    }
+
+    const margin = 16;
+    const placement = currentStep?.tooltipPlacement === 'top' ? 'top' : 'bottom';
+    const top = placement === 'top'
+      ? clamp(targetRect.top - maxHeight - 14, margin, window.innerHeight - maxHeight)
+      : clamp(targetRect.bottom + 14, margin, window.innerHeight - maxHeight);
+    const left = clamp(targetRect.left, margin, window.innerWidth - 400);
+
+    return { top: `${top}px`, left: `${left}px` };
+  }, [currentStep, isCompletion, targetRect]);
+
   const handleStepChange = useCallback((nextIndex) => {
     setStepIndex(clamp(nextIndex, 0, totalSteps));
   }, [totalSteps]);
@@ -482,26 +497,12 @@ export default function useTutorialRunner({
   }, [active, currentStep, getCurrentTarget, isCompletion]);
 
   const tooltipStyle = useMemo(() => {
-    if (isCompletion || !targetRect) {
-      return { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' };
-    }
-
-    const margin = 16;
-    const top = clamp(targetRect.bottom + 14, margin, window.innerHeight - 230);
-    const left = clamp(targetRect.left, margin, window.innerWidth - 400);
-    return { top: `${top}px`, left: `${left}px` };
-  }, [isCompletion, targetRect]);
+    return getTooltipPositionStyle(230);
+  }, [getTooltipPositionStyle]);
 
   const setTooltipVerticalLimit = useCallback((maxHeight) => {
-    if (isCompletion || !targetRect) {
-      return { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' };
-    }
-
-    const margin = 16;
-    const top = clamp(targetRect.bottom + 14, margin, window.innerHeight - maxHeight);
-    const left = clamp(targetRect.left, margin, window.innerWidth - 400);
-    return { top: `${top}px`, left: `${left}px` };
-  }, [isCompletion, targetRect]);
+    return getTooltipPositionStyle(maxHeight);
+  }, [getTooltipPositionStyle]);
 
   return {
     totalSteps,

@@ -68,6 +68,7 @@ export const companyOwnerTutorialSteps = [
     id: 'recurring-weekly-defaults',
     page: createPageUrl('Availability'),
     target: '[data-tour="recurring-weekly-defaults"]',
+    tooltipPlacement: 'top',
     title: 'Availability: Weekly Defaults',
     description:
       'Here you can set your default weekly availability. These settings will automatically apply to all future weeks unless changed.',
@@ -151,6 +152,7 @@ export const dispatchDrawerTutorialSteps = [
   {
     id: 'time-log',
     target: '[data-tour="dispatch-time-log"]',
+    tooltipPlacement: 'top',
     title: 'Time Log',
     description:
       'This is where you enter the check-in and check-out times for yourself or your drivers. The time log is for informational purposes only.',

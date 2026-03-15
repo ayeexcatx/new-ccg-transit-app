@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import AnnouncementCard from '@/components/announcements/AnnouncementCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Bell, Clock, Sun, Moon, ArrowRight, AlertCircle, Truck, Megaphone, CalendarDays } from 'lucide-react';
+import { Bell, Clock, Sun, Moon, ArrowRight, AlertCircle, Truck, Megaphone } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { getDispatchBucket } from '../components/portal/dispatchBuckets';
 import { createPageUrl } from '@/utils';
@@ -26,8 +26,8 @@ const statusColors = {
   Cancelled: 'bg-red-50 text-red-700 border-red-200',
 };
 
-const homeSectionCardClass = 'overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md';
-const homeSectionHeaderClass = 'flex min-h-14 items-center justify-between gap-3 border-b border-slate-200 bg-slate-50/70 px-5 py-3.5';
+const homeSectionCardClass = 'rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden';
+const homeSectionHeaderClass = 'flex min-h-14 items-center justify-between gap-2 border-b border-slate-200 px-4 py-3';
 
 const formatDispatchDate = (dateValue) => (dateValue ? format(parseISO(dateValue), 'EEE, MMM d, yyyy') : '');
 
@@ -288,7 +288,7 @@ export default function Home() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8 rounded-2xl bg-slate-50/70 p-4 md:p-6">
+    <div className="space-y-6 max-w-2xl mx-auto">
       <div>
         <h2 className="text-2xl font-semibold text-slate-900" data-tour="home-overview">{homeHeading}</h2>
       </div>
@@ -297,11 +297,10 @@ export default function Home() {
       {announcements.length > 0 && (
         <section data-tour="announcement-center">
           <Card className={homeSectionCardClass}>
-            <div className={homeSectionHeaderClass}>
+            <div className={`${homeSectionHeaderClass} bg-blue-700`}>
               <div className="flex items-center gap-2">
-                <span className="h-6 w-1 rounded-full bg-blue-500" />
-                <Megaphone className="h-4 w-4 text-blue-600" />
-                <h3 className="text-base font-semibold tracking-tight text-slate-900">Announcements Center</h3>
+                <Megaphone className="h-4 w-4 text-white" />
+                <h3 className="text-sm font-semibold text-white">Announcement Center</h3>
               </div>
             </div>
             <CardContent className="bg-white p-0">
@@ -319,16 +318,15 @@ export default function Home() {
       {session?.code_type === 'CompanyOwner' && (
         <section data-tour="action-needed">
           <Card className={homeSectionCardClass}>
-            <div className={homeSectionHeaderClass}>
+            <div className={`${homeSectionHeaderClass} bg-red-700`}>
               <div className="flex items-center gap-2 min-w-0">
-                <span className="h-6 w-1 rounded-full bg-red-500" />
-                <AlertCircle className="h-4 w-4 text-red-600 shrink-0" />
-                <h3 className="truncate text-base font-semibold tracking-tight text-slate-900">Action Needed</h3>
+                <AlertCircle className="h-4 w-4 text-white shrink-0" />
+                <h3 className="text-sm font-semibold text-white truncate">Action Needed</h3>
                 {unreadCount > 0 && (
-                  <Badge className="bg-red-100 text-red-700 text-xs px-1.5 py-0">{unreadCount}</Badge>
+                  <Badge className="bg-white text-red-700 text-xs px-1.5 py-0">{unreadCount}</Badge>
                 )}
               </div>
-              <Link to={createPageUrl('Notifications')} className="shrink-0 text-xs font-medium text-slate-500 transition-colors hover:text-slate-700">
+              <Link to={createPageUrl('Notifications')} className="text-xs text-red-100 hover:text-white shrink-0">
                 View all notifications
               </Link>
             </div>
@@ -342,13 +340,13 @@ export default function Home() {
                   return (
                     <div
                       key={n.id}
-                      className="flex cursor-pointer items-start gap-3 bg-slate-50/40 px-4 py-3 transition-colors hover:bg-slate-100/80"
+                      className="flex items-start gap-3 px-4 py-3 hover:bg-blue-50/40 cursor-pointer bg-blue-50/20"
                       onClick={() => handleNotificationClick(n)}
                     >
                       <Bell className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
                       <div className="flex-1 min-w-0">
-                        <p className={`truncate text-sm text-slate-800 ${display.isOwnerDispatchStatus ? 'font-semibold' : 'font-medium'}`}>{display.title}</p>
-                        <p className="mt-0.5 line-clamp-2 whitespace-pre-line text-xs text-slate-500">{display.message}</p>
+                        <p className={`text-sm text-slate-800 truncate ${display.isOwnerDispatchStatus ? 'font-semibold' : ''}`}>{display.title}</p>
+                        <p className="text-xs text-slate-600 mt-0.5 line-clamp-2 whitespace-pre-line">{display.message}</p>
                         {d && (
                           <div className="mt-1 flex items-center gap-1 flex-wrap">
                             <Truck className="h-3 w-3 text-slate-500" />
@@ -368,7 +366,7 @@ export default function Home() {
                           />
                         </div>
                       </div>
-                      <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-blue-400" />
+                      <div className="h-2 w-2 rounded-full bg-blue-500 shrink-0 mt-1.5" />
                     </div>
                   );
                 })
@@ -381,13 +379,12 @@ export default function Home() {
       {/* Today's Dispatches */}
       <section data-tour="dispatch-preview">
         <Card className={homeSectionCardClass}>
-          <div className={homeSectionHeaderClass}>
+          <div className={`${homeSectionHeaderClass} bg-green-700`}>
             <div className="flex items-center gap-2">
-              <span className="h-6 w-1 rounded-full bg-emerald-500" />
-              <Sun className="h-4 w-4 text-emerald-600" />
-              <h3 className="text-base font-semibold tracking-tight text-slate-900">Today's Dispatches</h3>
+              <Sun className="h-4 w-4 text-white" />
+              <h3 className="text-sm font-semibold text-white">Today's Dispatches</h3>
               {todayDispatches.length > 0 && (
-                <Badge className="bg-emerald-100 text-emerald-700 text-xs px-1.5 py-0">{todayDispatches.length}</Badge>
+                <Badge className="bg-white text-green-700 text-xs px-1.5 py-0">{todayDispatches.length}</Badge>
               )}
             </div>
           </div>
@@ -404,13 +401,12 @@ export default function Home() {
       {/* Upcoming Dispatches */}
       <section>
         <Card className={homeSectionCardClass}>
-          <div className={homeSectionHeaderClass}>
+          <div className={`${homeSectionHeaderClass} bg-indigo-700`}>
             <div className="flex items-center gap-2">
-              <span className="h-6 w-1 rounded-full bg-indigo-500" />
-              <CalendarDays className="h-4 w-4 text-indigo-600" />
-              <h3 className="text-base font-semibold tracking-tight text-slate-900">Upcoming Dispatches</h3>
+              <Clock className="h-4 w-4 text-white" />
+              <h3 className="text-sm font-semibold text-white">Upcoming Dispatches</h3>
               {upcomingDispatches.length > 0 && (
-                <Badge className="bg-indigo-100 text-indigo-700 text-xs px-1.5 py-0">{upcomingDispatches.length}</Badge>
+                <Badge className="bg-white text-indigo-700 text-xs px-1.5 py-0">{upcomingDispatches.length}</Badge>
               )}
             </div>
           </div>

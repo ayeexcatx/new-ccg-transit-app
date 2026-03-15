@@ -4,6 +4,22 @@ const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const EDGE_MARGIN = 24;
 const CENTER_TOLERANCE = 80;
 const SCROLL_SETTLE_TIMEOUT = 800;
+const DEBUG_TUTORIAL_SCROLL = true;
+
+const getDebugSequence = () => {
+  if (typeof window === 'undefined') return 0;
+  window.__tutorialScrollDebugSeq = (window.__tutorialScrollDebugSeq || 0) + 1;
+  return window.__tutorialScrollDebugSeq;
+};
+
+
+const logTutorialScroll = (...args) => {
+  if (!DEBUG_TUTORIAL_SCROLL) return;
+  // eslint-disable-next-line no-console
+  const sequence = getDebugSequence();
+  const now = typeof performance !== 'undefined' ? performance.now().toFixed(1) : 'n/a';
+  console.log(`[TutorialScroll][#${sequence}][t=${now}]`, ...args);
+};
 
 const resolveVisibleTarget = (selector) => {
   if (!selector) return null;
@@ -30,17 +46,71 @@ const isScrollableNode = (node) => {
   return supportsScroll && node.scrollHeight > node.clientHeight;
 };
 
-const getNearestScrollableAncestor = (element) => {
+const getNodeDescriptor = (node) => {
+  if (!node) return 'window';
+  const tag = node.tagName?.toLowerCase() || 'node';
+  const idPart = node.id ? `#${node.id}` : '';
+  const classPart = node.className && typeof node.className === 'string'
+    ? `.${node.className.trim().replace(/\s+/g, '.')}`
+    : '';
+  return `${tag}${idPart}${classPart}`;
+};
+
+const getScrollableAncestors = (element) => {
+  const candidates = [];
   let current = element?.parentElement;
 
   while (current) {
     if (isScrollableNode(current)) {
-      return current;
+      candidates.push(current);
     }
     current = current.parentElement;
   }
 
-  return null;
+  return candidates;
+};
+
+const getContainerScore = (container, targetRect) => {
+  const containerRect = container.getBoundingClientRect();
+  const viewportHeight = window.innerHeight;
+  const visibleTop = Math.max(containerRect.top, 0);
+  const visibleBottom = Math.min(containerRect.bottom, viewportHeight);
+  const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+  const targetCenter = targetRect.top + (targetRect.height / 2);
+  const containsTargetCenter = targetCenter >= containerRect.top && targetCenter <= containerRect.bottom;
+  const sizeWeight = Math.min(container.clientHeight, viewportHeight);
+  const viewportCoverage = visibleHeight;
+  const tinyPenalty = container.clientHeight < 220 ? 220 : 0;
+
+  return (containsTargetCenter ? 100000 : 0) + (sizeWeight * 10) + viewportCoverage - tinyPenalty;
+};
+
+const resolveScrollContainer = (element, rect) => {
+  const scrollableAncestors = getScrollableAncestors(element);
+
+  if (!scrollableAncestors.length) {
+    return null;
+  }
+
+  const scored = scrollableAncestors
+    .map((container) => ({
+      container,
+      score: getContainerScore(container, rect),
+    }))
+    .sort((a, b) => b.score - a.score);
+
+  const [best] = scored;
+
+  logTutorialScroll('scrollable ancestors ranked', scored.map((item) => ({
+    container: getNodeDescriptor(item.container),
+    score: item.score,
+    clientHeight: item.container.clientHeight,
+    scrollHeight: item.container.scrollHeight,
+  })));
+
+  if (!best) return null;
+
+  return best.container;
 };
 
 const getIsNearViewportCenter = (rect) => {
@@ -101,10 +171,28 @@ const waitForCenteredTarget = (element, scrollParent, startedAt = performance.no
 const centerInContainer = (element, container) => {
   const containerRect = container.getBoundingClientRect();
   const elementRect = element.getBoundingClientRect();
-  const elementCenterInContainer = (elementRect.top - containerRect.top) + container.scrollTop + (elementRect.height / 2);
+  const currentScrollTop = container.scrollTop;
+  const elementCenterInContainer = (elementRect.top - containerRect.top) + currentScrollTop + (elementRect.height / 2);
   const desiredScrollTop = elementCenterInContainer - (container.clientHeight / 2);
   const maxScrollTop = Math.max(container.scrollHeight - container.clientHeight, 0);
   const nextScrollTop = clamp(desiredScrollTop, 0, maxScrollTop);
+
+  logTutorialScroll('container centering', {
+    container: getNodeDescriptor(container),
+    currentScrollTop,
+    desiredScrollTop,
+    nextScrollTop,
+    targetRect: {
+      top: elementRect.top,
+      bottom: elementRect.bottom,
+      height: elementRect.height,
+    },
+    containerRect: {
+      top: containerRect.top,
+      bottom: containerRect.bottom,
+      height: containerRect.height,
+    },
+  });
 
   container.scrollTo({
     top: nextScrollTop,
@@ -118,34 +206,91 @@ const centerInViewport = (rect) => {
   const maxScrollTop = Math.max(document.documentElement.scrollHeight - window.innerHeight, 0);
   const nextTop = clamp(desiredTop, 0, maxScrollTop);
 
+  logTutorialScroll('viewport centering', {
+    currentScrollTop,
+    desiredTop,
+    nextTop,
+    targetRect: {
+      top: rect.top,
+      bottom: rect.bottom,
+      height: rect.height,
+    },
+  });
+
   window.scrollTo({
     top: nextTop,
     behavior: 'smooth',
   });
 };
 
-const scrollTargetIntoView = async (element, rect) => {
+const scrollTargetIntoView = async (element, rect, selector) => {
   if (!element || !rect) {
     return rect;
   }
 
-  const scrollParent = getNearestScrollableAncestor(element);
+  logTutorialScroll('resolving step target', {
+    selector,
+    target: getNodeDescriptor(element),
+    rect: {
+      top: rect.top,
+      bottom: rect.bottom,
+      height: rect.height,
+    },
+  });
+
+  const scrollParent = resolveScrollContainer(element, rect);
+
+  logTutorialScroll('chosen scroll container', scrollParent ? getNodeDescriptor(scrollParent) : 'window');
 
   if (scrollParent) {
-    if (getIsNearContainerCenter(element, scrollParent)) {
+    const alreadyCentered = getIsNearContainerCenter(element, scrollParent);
+    logTutorialScroll('container centered before scroll?', alreadyCentered, {
+      scrollTop: scrollParent.scrollTop,
+    });
+    if (alreadyCentered) {
       return rect;
     }
 
+    const beforeScrollTop = scrollParent.scrollTop;
     centerInContainer(element, scrollParent);
-    return waitForCenteredTarget(element, scrollParent);
+    const settledRect = await waitForCenteredTarget(element, scrollParent);
+    const afterScrollTop = scrollParent.scrollTop;
+    logTutorialScroll('container settled', {
+      beforeScrollTop,
+      afterScrollTop,
+      rect: settledRect ? {
+        top: settledRect.top,
+        bottom: settledRect.bottom,
+        height: settledRect.height,
+      } : null,
+      centered: getIsNearContainerCenter(element, scrollParent),
+    });
+    return settledRect;
   }
 
-  if (getIsNearViewportCenter(rect)) {
+  const alreadyCentered = getIsNearViewportCenter(rect);
+  logTutorialScroll('viewport centered before scroll?', alreadyCentered, {
+    scrollTop: window.scrollY,
+  });
+  if (alreadyCentered) {
     return rect;
   }
 
+  const beforeScrollTop = window.scrollY;
   centerInViewport(rect);
-  return waitForCenteredTarget(element, null);
+  const settledRect = await waitForCenteredTarget(element, null);
+  const afterScrollTop = window.scrollY;
+  logTutorialScroll('viewport settled', {
+    beforeScrollTop,
+    afterScrollTop,
+    rect: settledRect ? {
+      top: settledRect.top,
+      bottom: settledRect.bottom,
+      height: settledRect.height,
+    } : null,
+    centered: settledRect ? getIsNearViewportCenter(settledRect) : false,
+  });
+  return settledRect;
 };
 
 // Shared runner for tutorial overlays to keep sequencing/target resolution behavior consistent.
@@ -171,9 +316,10 @@ export default function useTutorialRunner({ steps, active, getCurrentTarget }) {
     const resolveTarget = async () => {
       if (cancelled) return;
 
-      const resolvedTarget = resolveVisibleTarget(getCurrentTarget(currentStep));
+      const targetSelector = getCurrentTarget(currentStep);
+      const resolvedTarget = resolveVisibleTarget(targetSelector);
       if (resolvedTarget) {
-        const centeredRect = await scrollTargetIntoView(resolvedTarget.element, resolvedTarget.rect);
+        const centeredRect = await scrollTargetIntoView(resolvedTarget.element, resolvedTarget.rect, targetSelector);
         if (cancelled) return;
 
         if (centeredRect) {

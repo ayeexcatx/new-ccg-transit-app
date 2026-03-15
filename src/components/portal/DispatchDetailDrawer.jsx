@@ -93,6 +93,32 @@ function formatLogTimestampWithActor(prefix, timestamp, actorLabel) {
   return actorLabel ? `${base} by ${actorLabel}` : base;
 }
 
+function getGeneralNoteLayout(note) {
+  const bullets = note.bullet_lines?.length > 0
+    ? note.bullet_lines
+    : note.note_text
+      ? [note.note_text]
+      : [];
+
+  const titleLength = (note.title || '').trim().length;
+  const bulletLengths = bullets.map((line) => String(line || '').trim().length);
+  const totalTextLength = titleLength + bulletLengths.reduce((sum, len) => sum + len, 0);
+  const longestBulletLength = Math.max(0, ...bulletLengths);
+  const bulletCount = bullets.length;
+
+  const shouldSpanWide = (
+    totalTextLength > 220
+    || bulletCount >= 5
+    || longestBulletLength > 90
+    || (Boolean(note.title) && bulletCount >= 3 && totalTextLength > 150)
+  );
+
+  return {
+    bullets,
+    shouldSpanWide,
+  };
+}
+
 function TruckTimeRow({
   truck,
   dispatch,
@@ -964,14 +990,14 @@ export default function DispatchDetailDrawer({
               )}
 
               {boxNotes.length > 0 && (
-                <div data-tour="dispatch-notes">
-                  <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Box Notes</p>
-                  <div className="space-y-2">
+                <div data-tour="dispatch-notes" className="space-y-1.5">
+                  <p className="text-xs text-slate-500 uppercase tracking-wide">Box Notes</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5 md:gap-2">
                     {boxNotes.map(n => (
-                      <div key={n.id} className="rounded-lg border p-3" style={{ borderColor: n.border_color, color: n.text_color }}>
-                        {n.title && <p className="text-sm font-semibold mb-1">{n.title}</p>}
+                      <div key={n.id} className="rounded-lg border p-2.5 md:p-3" style={{ borderColor: n.border_color, color: n.text_color }}>
+                        {n.title && <p className="text-sm font-semibold leading-snug mb-0.5">{n.title}</p>}
                         <p
-                          className="text-sm leading-relaxed"
+                          className="text-sm leading-snug"
                           dangerouslySetInnerHTML={{ __html: renderSimpleMarkupToHtml(n.box_content || n.note_text) }}
                         />
                       </div>
@@ -981,24 +1007,23 @@ export default function DispatchDetailDrawer({
               )}
 
               {generalNotes.length > 0 && (
-                <div data-tour="dispatch-notes">
-                  <p className="text-xs text-slate-500 uppercase tracking-wide mb-1.5">General Notes</p>
-                  <div className="space-y-3">
+                <div data-tour="dispatch-notes" className="space-y-1.5">
+                  <p className="text-xs text-slate-500 uppercase tracking-wide">General Notes</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-1.5 md:gap-2">
                     {generalNotes.map(n => {
-                      const bullets = n.bullet_lines?.length > 0
-                        ? n.bullet_lines
-                        : n.note_text
-                          ? [n.note_text]
-                          : [];
+                      const { bullets, shouldSpanWide } = getGeneralNoteLayout(n);
 
                       if (bullets.length === 0 && !n.title) return null;
 
                       return (
-                        <div key={n.id}>
-                          {n.title && <p className="text-sm text-slate-700 font-semibold underline">{n.title}</p>}
-                          <ul className="mt-1 space-y-1 list-disc ml-4">
+                        <div
+                          key={n.id}
+                          className={`rounded-lg border border-slate-200 bg-white/90 p-2.5 md:p-3 ${shouldSpanWide ? 'md:col-span-2' : ''}`}
+                        >
+                          {n.title && <p className="text-sm text-slate-700 font-semibold leading-snug mb-0.5">{n.title}</p>}
+                          <ul className="mt-0.5 space-y-0.5 list-disc ml-4">
                             {bullets.map((line, idx) => (
-                              <li key={`${n.id}-${idx}`} className="text-sm text-slate-600">{line}</li>
+                              <li key={`${n.id}-${idx}`} className="text-sm text-slate-600 leading-snug">{line}</li>
                             ))}
                           </ul>
                         </div>

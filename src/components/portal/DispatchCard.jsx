@@ -108,9 +108,6 @@ const DispatchCard = React.forwardRef(function DispatchCard({
                         Job #{dispatch.job_number}
                       </div>
                     )}
-                    {dispatch.reference_tag && (
-                      <p className="text-xs text-slate-400">Reference Tag: {dispatch.reference_tag}</p>
-                    )}
                   </div>
                 </>
               )}

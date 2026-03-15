@@ -125,9 +125,6 @@ function MiniDispatchCard({ dispatch, companyName, truckNumbers = [] }) {
             {dispatch.job_number && (
               <p className="text-xs text-slate-600 truncate">Job #{dispatch.job_number}</p>
             )}
-            {dispatch.reference_tag && (
-              <p className="text-xs text-slate-400 truncate">Reference Tag: {dispatch.reference_tag}</p>
-            )}
             {companyName && (
               <p className="text-xs text-slate-600 truncate">{companyName}</p>
             )}

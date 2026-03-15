@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import NotificationBell from '@/components/notifications/NotificationBell';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { TutorialProvider, TutorialRestartButton } from '@/components/tutorial/TutorialProvider';
 
 function LayoutInner({ children, currentPageName }) {
   const { session, loading, logout } = useSession();
@@ -80,7 +81,8 @@ function LayoutInner({ children, currentPageName }) {
   const isActive = (pageName) => location.pathname === createPageUrl(pageName);
 
   return (
-    <div className="bg-zinc-50 min-h-screen">
+    <TutorialProvider session={session}>
+      <div className="bg-zinc-50 min-h-screen">
       <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
         <div className="bg-slate-50 mx-auto max-w-7xl px-4 sm:px-6">
           <div className="h-16 flex items-center justify-between gap-3">
@@ -103,6 +105,7 @@ function LayoutInner({ children, currentPageName }) {
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
+              <TutorialRestartButton />
               {(isAdmin || session.code_type === 'CompanyOwner' || session.code_type === 'Driver') &&
               <NotificationBell session={session} />
               }
@@ -265,7 +268,8 @@ function LayoutInner({ children, currentPageName }) {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         {children}
       </main>
-    </div>);
+    </div>
+    </TutorialProvider>);
 
 }
 

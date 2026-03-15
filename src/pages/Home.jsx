@@ -286,7 +286,7 @@ export default function Home() {
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
-      <div>
+      <div data-tour="home-overview" className="rounded-xl">
         <h2 className="text-2xl font-semibold text-slate-900">{homeHeading}</h2>
       </div>
 

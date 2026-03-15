@@ -681,7 +681,7 @@ Would you like to swap ${outgoingTruck} with ${incomingTruck}?`;
           Dispatch no longer available.
         </div>
       )}
-      <div data-tour="dispatches-overview" className="rounded-xl">
+      <div>
         <div className="flex items-center gap-3 mb-1">
           <h2 className="text-2xl font-semibold text-slate-900">My Dispatches</h2>
         </div>

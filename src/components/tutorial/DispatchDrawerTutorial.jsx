@@ -2,54 +2,47 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { CircleHelp } from 'lucide-react';
 import TutorialOverlay from './TutorialOverlay';
-import {
-  DISPATCH_DRAWER_TUTORIAL_COMPLETED_KEY,
-  DISPATCH_DRAWER_TUTORIAL_SEEN_KEY,
-  dispatchDrawerTutorialSteps,
-} from './tutorialConfig';
-
-const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
-
-const getVisibleRect = (selector) => {
-  if (!selector) return null;
-  const targets = Array.from(document.querySelectorAll(selector));
-  const visible = targets.find((el) => {
-    const style = window.getComputedStyle(el);
-    const rect = el.getBoundingClientRect();
-    return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
-  });
-  return visible?.getBoundingClientRect() || null;
-};
+import useTutorialRunner from './useTutorialRunner';
+import { tutorialRegistry } from './tutorialConfig';
 
 export default function DispatchDrawerTutorial({ isOwner, drawerOpen }) {
-  const [isRunning, setIsRunning] = useState(false);
-  const [stepIndex, setStepIndex] = useState(0);
-  const [targetRect, setTargetRect] = useState(null);
+  const tutorialConfig = tutorialRegistry.dispatchDrawer;
+  const { seen: seenKey, completed: completedKey } = tutorialConfig.storageKeys;
 
-  const totalSteps = dispatchDrawerTutorialSteps.length;
-  const isCompletion = isRunning && stepIndex >= totalSteps;
-  const currentStep = !isCompletion ? dispatchDrawerTutorialSteps[stepIndex] : null;
+  const [isRunning, setIsRunning] = useState(false);
+
+  const {
+    totalSteps,
+    stepIndex,
+    targetRect,
+    isCompletion,
+    currentStep,
+    handleStepChange,
+    setStepIndex,
+    setTargetRect,
+    setTooltipVerticalLimit,
+  } = useTutorialRunner({
+    steps: tutorialConfig.steps,
+    active: isRunning,
+    getCurrentTarget: (step) => step?.target,
+  });
 
   const stopTutorial = useCallback(() => {
     setIsRunning(false);
     setTargetRect(null);
-  }, []);
+  }, [setTargetRect]);
 
   const startTutorial = useCallback(() => {
     if (!isOwner || !drawerOpen) return;
-    localStorage.setItem(DISPATCH_DRAWER_TUTORIAL_SEEN_KEY, 'true');
+    localStorage.setItem(seenKey, 'true');
     setStepIndex(0);
     setIsRunning(true);
-  }, [drawerOpen, isOwner]);
+  }, [drawerOpen, isOwner, seenKey, setStepIndex]);
 
   const handleFinish = useCallback(() => {
-    localStorage.setItem(DISPATCH_DRAWER_TUTORIAL_COMPLETED_KEY, 'true');
+    localStorage.setItem(completedKey, 'true');
     stopTutorial();
-  }, [stopTutorial]);
-
-  const handleStepChange = useCallback((nextIndex) => {
-    setStepIndex(clamp(nextIndex, 0, totalSteps));
-  }, [totalSteps]);
+  }, [completedKey, stopTutorial]);
 
   const goToNextStep = useCallback(() => {
     if (isCompletion) {
@@ -69,11 +62,11 @@ export default function DispatchDrawerTutorial({ isOwner, drawerOpen }) {
 
   useEffect(() => {
     if (!isOwner || !drawerOpen || isRunning) return;
-    const seen = localStorage.getItem(DISPATCH_DRAWER_TUTORIAL_SEEN_KEY) === 'true';
+    const seen = localStorage.getItem(seenKey) === 'true';
     if (!seen) {
       startTutorial();
     }
-  }, [drawerOpen, isOwner, isRunning, startTutorial]);
+  }, [drawerOpen, isOwner, isRunning, seenKey, startTutorial]);
 
   useEffect(() => {
     if (!drawerOpen) {
@@ -81,63 +74,7 @@ export default function DispatchDrawerTutorial({ isOwner, drawerOpen }) {
     }
   }, [drawerOpen, stopTutorial]);
 
-  useEffect(() => {
-    if (!isRunning || isCompletion || !currentStep) return;
-
-    let cancelled = false;
-    let attempts = 0;
-
-    const resolveTarget = () => {
-      if (cancelled) return;
-      const rect = getVisibleRect(currentStep.target);
-      if (rect) {
-        setTargetRect(rect);
-        return;
-      }
-
-      attempts += 1;
-      if (attempts >= 8) {
-        handleStepChange(stepIndex + 1);
-        return;
-      }
-
-      window.setTimeout(resolveTarget, 120);
-    };
-
-    window.setTimeout(resolveTarget, 80);
-
-    return () => {
-      cancelled = true;
-    };
-  }, [currentStep, handleStepChange, isCompletion, isRunning, stepIndex]);
-
-  useEffect(() => {
-    if (!isRunning || isCompletion) return;
-
-    const updatePosition = () => {
-      const rect = getVisibleRect(currentStep?.target);
-      if (rect) setTargetRect(rect);
-    };
-
-    updatePosition();
-    window.addEventListener('resize', updatePosition);
-    window.addEventListener('scroll', updatePosition, true);
-    return () => {
-      window.removeEventListener('resize', updatePosition);
-      window.removeEventListener('scroll', updatePosition, true);
-    };
-  }, [currentStep?.target, isCompletion, isRunning]);
-
-  const tooltipStyle = useMemo(() => {
-    if (isCompletion || !targetRect) {
-      return { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' };
-    }
-
-    const margin = 16;
-    const top = clamp(targetRect.bottom + 14, margin, window.innerHeight - 260);
-    const left = clamp(targetRect.left, margin, window.innerWidth - 400);
-    return { top: `${top}px`, left: `${left}px` };
-  }, [isCompletion, targetRect]);
+  const tooltipStyle = useMemo(() => setTooltipVerticalLimit(260), [setTooltipVerticalLimit]);
 
   return (
     <>
@@ -159,12 +96,7 @@ export default function DispatchDrawerTutorial({ isOwner, drawerOpen }) {
         active={isRunning}
         targetRect={targetRect}
         tooltipStyle={tooltipStyle}
-        step={isCompletion
-          ? {
-            title: 'Dispatch Tutorial Complete',
-            description: 'You can replay this tutorial anytime using the Tutorial button in the dispatch drawer.',
-          }
-          : currentStep}
+        step={isCompletion ? tutorialConfig.completionStep : currentStep}
         stepIndex={stepIndex}
         totalSteps={totalSteps}
         isCompletion={isCompletion}

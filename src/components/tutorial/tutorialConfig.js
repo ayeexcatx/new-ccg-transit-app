@@ -6,6 +6,16 @@ export const COMPANY_OWNER_TUTORIAL_COMPLETED_KEY = 'companyOwnerTutorialComplet
 export const DISPATCH_DRAWER_TUTORIAL_SEEN_KEY = 'dispatchDrawerTutorialSeen';
 export const DISPATCH_DRAWER_TUTORIAL_COMPLETED_KEY = 'dispatchDrawerTutorialCompleted';
 
+const COMPANY_OWNER_TUTORIAL_COMPLETION_STEP = {
+  title: "You're all set",
+  description: 'You can replay this tutorial anytime using the Tutorial button.',
+};
+
+const DISPATCH_DRAWER_TUTORIAL_COMPLETION_STEP = {
+  title: 'Dispatch Tutorial Complete',
+  description: 'You can replay this tutorial anytime using the Tutorial button in the dispatch drawer.',
+};
+
 export const companyOwnerTutorialSteps = [
   {
     id: 'home-screen',
@@ -141,3 +151,22 @@ export const dispatchDrawerTutorialSteps = [
       'This is where you enter the check-in and check-out times for yourself or your drivers. The time log is for informational purposes only.',
   },
 ];
+
+export const tutorialRegistry = {
+  [COMPANY_OWNER_TUTORIAL_ID]: {
+    steps: companyOwnerTutorialSteps,
+    completionStep: COMPANY_OWNER_TUTORIAL_COMPLETION_STEP,
+    storageKeys: {
+      dismissed: COMPANY_OWNER_TUTORIAL_DISMISSED_KEY,
+      completed: COMPANY_OWNER_TUTORIAL_COMPLETED_KEY,
+    },
+  },
+  dispatchDrawer: {
+    steps: dispatchDrawerTutorialSteps,
+    completionStep: DISPATCH_DRAWER_TUTORIAL_COMPLETION_STEP,
+    storageKeys: {
+      seen: DISPATCH_DRAWER_TUTORIAL_SEEN_KEY,
+      completed: DISPATCH_DRAWER_TUTORIAL_COMPLETED_KEY,
+    },
+  },
+};

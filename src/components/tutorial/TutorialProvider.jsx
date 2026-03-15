@@ -4,58 +4,58 @@ import { Button } from '@/components/ui/button';
 import { CircleHelp } from 'lucide-react';
 import TutorialOverlay from './TutorialOverlay';
 import TutorialWelcomeModal from './TutorialWelcomeModal';
+import useTutorialRunner from './useTutorialRunner';
 import {
-  COMPANY_OWNER_TUTORIAL_COMPLETED_KEY,
-  COMPANY_OWNER_TUTORIAL_DISMISSED_KEY,
-  companyOwnerTutorialSteps,
+  COMPANY_OWNER_TUTORIAL_ID,
+  tutorialRegistry,
 } from './tutorialConfig';
 
 const TutorialContext = createContext({
   startTutorial: () => {},
 });
 
-const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
-
-const getVisibleRect = (selector) => {
-  if (!selector) return null;
-  const targets = Array.from(document.querySelectorAll(selector));
-  const visible = targets.find((el) => {
-    const style = window.getComputedStyle(el);
-    const rect = el.getBoundingClientRect();
-    return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
-  });
-  return visible?.getBoundingClientRect() || null;
-};
-
 export default function TutorialProvider({ session, children }) {
   const navigate = useNavigate();
   const location = useLocation();
   const isCompanyOwner = session?.code_type === 'CompanyOwner';
 
+  const tutorialConfig = tutorialRegistry[COMPANY_OWNER_TUTORIAL_ID];
+  const { completed: completedKey, dismissed: dismissedKey } = tutorialConfig.storageKeys;
+
   const [isRunning, setIsRunning] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
-  const [stepIndex, setStepIndex] = useState(0);
-  const [targetRect, setTargetRect] = useState(null);
 
-  const totalSteps = companyOwnerTutorialSteps.length;
-  const isCompletion = isRunning && stepIndex >= totalSteps;
-  const currentStep = !isCompletion ? companyOwnerTutorialSteps[stepIndex] : null;
+  const {
+    totalSteps,
+    stepIndex,
+    targetRect,
+    isCompletion,
+    currentStep,
+    tooltipStyle,
+    handleStepChange,
+    setStepIndex,
+    setTargetRect,
+  } = useTutorialRunner({
+    steps: tutorialConfig.steps,
+    active: isRunning,
+    getCurrentTarget: (step) => step?.target,
+  });
 
   const stopTutorial = useCallback(() => {
     setIsRunning(false);
     setTargetRect(null);
-  }, []);
+  }, [setTargetRect]);
 
   const startTutorial = useCallback(() => {
     if (!isCompanyOwner) return;
     setShowWelcome(false);
     setStepIndex(0);
     setIsRunning(true);
-  }, [isCompanyOwner]);
+  }, [isCompanyOwner, setStepIndex]);
 
   const markCompleted = useCallback(() => {
-    localStorage.setItem(COMPANY_OWNER_TUTORIAL_COMPLETED_KEY, 'true');
-  }, []);
+    localStorage.setItem(completedKey, 'true');
+  }, [completedKey]);
 
   const handleSkipForNow = useCallback(() => {
     setShowWelcome(false);
@@ -63,19 +63,15 @@ export default function TutorialProvider({ session, children }) {
   }, [stopTutorial]);
 
   const handleDismissPermanently = useCallback(() => {
-    localStorage.setItem(COMPANY_OWNER_TUTORIAL_DISMISSED_KEY, 'true');
+    localStorage.setItem(dismissedKey, 'true');
     setShowWelcome(false);
     stopTutorial();
-  }, [stopTutorial]);
+  }, [dismissedKey, stopTutorial]);
 
   const handleFinish = useCallback(() => {
     markCompleted();
     stopTutorial();
   }, [markCompleted, stopTutorial]);
-
-  const handleStepChange = useCallback((nextIndex) => {
-    setStepIndex(clamp(nextIndex, 0, totalSteps));
-  }, [totalSteps]);
 
   const goToNextStep = useCallback(() => {
     if (isCompletion) {
@@ -100,13 +96,13 @@ export default function TutorialProvider({ session, children }) {
       return;
     }
 
-    const dismissed = localStorage.getItem(COMPANY_OWNER_TUTORIAL_DISMISSED_KEY) === 'true';
-    const completed = localStorage.getItem(COMPANY_OWNER_TUTORIAL_COMPLETED_KEY) === 'true';
+    const dismissed = localStorage.getItem(dismissedKey) === 'true';
+    const completed = localStorage.getItem(completedKey) === 'true';
 
     if (!dismissed && !completed) {
       setShowWelcome(true);
     }
-  }, [isCompanyOwner, stopTutorial]);
+  }, [completedKey, dismissedKey, isCompanyOwner, stopTutorial]);
 
   useEffect(() => {
     if (!isRunning || isCompletion || !currentStep?.page) return;
@@ -114,64 +110,6 @@ export default function TutorialProvider({ session, children }) {
       navigate(currentStep.page);
     }
   }, [currentStep?.page, isCompletion, isRunning, location.pathname, navigate]);
-
-  useEffect(() => {
-    if (!isRunning || isCompletion || !currentStep) return;
-
-    let cancelled = false;
-    let attempts = 0;
-
-    const resolveTarget = () => {
-      if (cancelled) return;
-      const rect = getVisibleRect(currentStep.target);
-      if (rect) {
-        setTargetRect(rect);
-        return;
-      }
-
-      attempts += 1;
-      if (attempts >= 8) {
-        handleStepChange(stepIndex + 1);
-        return;
-      }
-
-      window.setTimeout(resolveTarget, 120);
-    };
-
-    window.setTimeout(resolveTarget, 80);
-
-    return () => {
-      cancelled = true;
-    };
-  }, [currentStep, handleStepChange, isCompletion, isRunning, stepIndex]);
-
-  useEffect(() => {
-    if (!isRunning || isCompletion) return;
-
-    const updatePosition = () => {
-      const rect = getVisibleRect(currentStep?.target);
-      if (rect) setTargetRect(rect);
-    };
-
-    updatePosition();
-    window.addEventListener('resize', updatePosition);
-    window.addEventListener('scroll', updatePosition, true);
-    return () => {
-      window.removeEventListener('resize', updatePosition);
-      window.removeEventListener('scroll', updatePosition, true);
-    };
-  }, [currentStep?.target, isCompletion, isRunning]);
-
-  const tooltipStyle = useMemo(() => {
-    if (isCompletion || !targetRect) {
-      return { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' };
-    }
-
-    const margin = 16;
-    const top = clamp(targetRect.bottom + 14, margin, window.innerHeight - 230);
-    const left = clamp(targetRect.left, margin, window.innerWidth - 400);
-    return { top: `${top}px`, left: `${left}px` };
-  }, [isCompletion, targetRect]);
 
   const value = useMemo(() => ({ startTutorial }), [startTutorial]);
 
@@ -203,7 +141,7 @@ export default function TutorialProvider({ session, children }) {
         active={isRunning}
         targetRect={targetRect}
         tooltipStyle={tooltipStyle}
-        step={isCompletion ? { title: "You're all set", description: 'You can replay this tutorial anytime using the Tutorial button.' } : currentStep}
+        step={isCompletion ? tutorialConfig.completionStep : currentStep}
         stepIndex={stepIndex}
         totalSteps={totalSteps}
         isCompletion={isCompletion}

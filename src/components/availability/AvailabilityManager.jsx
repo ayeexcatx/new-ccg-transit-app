@@ -355,10 +355,14 @@ export default function AvailabilityManager({ companyId, canSelectCompany = fals
   const renderWeeklyDefaultsMatrix = () =>
   <Card data-tour="recurring-weekly-defaults">
       <CardContent className="p-4 space-y-3">
-        <h3 className="text-sm font-semibold text-slate-800">Recurring Weekly Defaults</h3>
-        <p className="text-slate-500 text-sm font-medium opacity-100">Select your default availability that is the same every week.
-
-      </p>
+        <div className="space-y-1">
+          <h3 className="text-sm font-semibold text-slate-800">Recurring Weekly Defaults</h3>
+          <p className="text-slate-500 text-sm font-medium opacity-100">Select your default availability that is the same every week.</p>
+        </div>
+        <div className="space-y-1 text-xs text-slate-500">
+          <p>(Ex.: All day shifts + Mon/Wed/Fri night shifts)</p>
+          <p>If you need off on a day that when you are usually available (default), use the availability chart ABOVE to select Unavailable.</p>
+        </div>
         <div className="overflow-x-auto">
           <div className="min-w-[320px] divide-y divide-slate-200 rounded border border-slate-200">
             <div className="grid grid-cols-[1.6fr_1fr_1fr] bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">

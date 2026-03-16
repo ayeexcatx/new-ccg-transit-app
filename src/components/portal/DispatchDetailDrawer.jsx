@@ -28,6 +28,7 @@ const tollColors = {
 };
 
 const UNASSIGNED_DRIVER_VALUE = '__unassigned__';
+const DRIVER_SHIFT_CONFLICT_MESSAGE = 'That driver is already assigned on a different dispatch for the same shift. Please remove the driver from that assignment or select a different driver.';
 let openDispatchDrawerCount = 0;
 
 function getActivityActorName(session) {
@@ -301,6 +302,7 @@ export default function DispatchDetailDrawer({
   const [truckEditMessage, setTruckEditMessage] = useState(null);
   const [isCreatingScreenshot, setIsCreatingScreenshot] = useState(false);
   const [selectedDriverByTruck, setSelectedDriverByTruck] = useState({});
+  const [driverAssignmentErrors, setDriverAssignmentErrors] = useState({});
   const screenshotSectionRef = React.useRef(null);
   const queryClient = useQueryClient();
 
@@ -408,13 +410,79 @@ export default function DispatchDetailDrawer({
       next[truckNumber] = assignment?.driver_id || UNASSIGNED_DRIVER_VALUE;
     });
     setSelectedDriverByTruck(next);
+    setDriverAssignmentErrors({});
   }, [isOwner, dispatch?.id, dispatch?.trucks_assigned, driverAssignments]);
+
+  const { data: conflictingDriverAssignmentsById = {} } = useQuery({
+    queryKey: ['driver-shift-conflicts', dispatch?.id, dispatch?.company_id, dispatch?.date, dispatch?.shift_time],
+    enabled: open && isOwner && !!dispatch?.id && !!dispatch?.company_id && !!dispatch?.date && !!dispatch?.shift_time,
+    queryFn: async () => {
+      const sameShiftDispatches = await base44.entities.Dispatch.filter({
+        company_id: dispatch.company_id,
+        date: dispatch.date,
+        shift_time: dispatch.shift_time,
+      }, '-created_date', 500);
+
+      const conflictingDispatches = (sameShiftDispatches || []).filter((candidate) => (
+        candidate?.id
+        && candidate.id !== dispatch.id
+        && candidate.status !== 'Cancelled'
+      ));
+
+      if (!conflictingDispatches.length) return {};
+
+      const dispatchIds = new Set(conflictingDispatches.map((candidate) => candidate.id));
+      const assignmentsByDispatch = await Promise.all(
+        conflictingDispatches.map((candidate) =>
+          base44.entities.DriverDispatchAssignment.filter({
+            dispatch_id: candidate.id,
+            active_flag: true,
+          }, '-assigned_datetime', 200)
+        )
+      );
+
+      return assignmentsByDispatch.flat().reduce((map, assignment) => {
+        if (!assignment?.driver_id || !dispatchIds.has(assignment.dispatch_id)) return map;
+        if (!map[assignment.driver_id]) map[assignment.driver_id] = assignment;
+        return map;
+      }, {});
+    },
+  });
 
   const assignDriverMutation = useMutation({
     mutationFn: async ({ truckNumber, driverId }) => {
       const previousAssignments = [...driverAssignments];
       const driver = eligibleDrivers.find((entry) => entry.id === driverId);
       if (!driver) throw new Error('Selected driver was not found.');
+
+      const sameShiftDispatches = await base44.entities.Dispatch.filter({
+        company_id: dispatch.company_id,
+        date: dispatch.date,
+        shift_time: dispatch.shift_time,
+      }, '-created_date', 500);
+
+      const conflictingDispatchIds = new Set((sameShiftDispatches || [])
+        .filter((candidate) => (
+          candidate?.id
+          && candidate.id !== dispatch.id
+          && candidate.status !== 'Cancelled'
+        ))
+        .map((candidate) => candidate.id));
+
+      if (conflictingDispatchIds.size > 0) {
+        const driverActiveAssignments = await base44.entities.DriverDispatchAssignment.filter({
+          driver_id: driverId,
+          active_flag: true,
+        }, '-assigned_datetime', 500);
+
+        const hasConflict = (driverActiveAssignments || []).some((assignment) =>
+          conflictingDispatchIds.has(assignment.dispatch_id)
+        );
+
+        if (hasConflict) {
+          throw new Error(DRIVER_SHIFT_CONFLICT_MESSAGE);
+        }
+      }
 
       const existing = driverAssignments.find((entry) => entry.truck_number === truckNumber);
       const previousAssignment = existing && existing.active_flag !== false ? existing : null;
@@ -469,7 +537,9 @@ export default function DispatchDetailDrawer({
   });
 
   const handleDriverSelection = async (truckNumber, driverId) => {
+    const previousDriverId = selectedDriverByTruck[truckNumber] || UNASSIGNED_DRIVER_VALUE;
     setSelectedDriverByTruck((prev) => ({ ...prev, [truckNumber]: driverId }));
+    setDriverAssignmentErrors((prev) => ({ ...prev, [truckNumber]: null }));
 
     if (driverId === UNASSIGNED_DRIVER_VALUE) {
       const existing = driverAssignments.find((entry) => entry.truck_number === truckNumber && entry.active_flag !== false);
@@ -498,7 +568,14 @@ export default function DispatchDetailDrawer({
       return;
     }
 
-    await assignDriverMutation.mutateAsync({ truckNumber, driverId });
+    try {
+      await assignDriverMutation.mutateAsync({ truckNumber, driverId });
+    } catch (error) {
+      setSelectedDriverByTruck((prev) => ({ ...prev, [truckNumber]: previousDriverId }));
+      if (error?.message === DRIVER_SHIFT_CONFLICT_MESSAGE) {
+        setDriverAssignmentErrors((prev) => ({ ...prev, [truckNumber]: DRIVER_SHIFT_CONFLICT_MESSAGE }));
+      }
+    }
   };
 
   if (!dispatch) return null;
@@ -1311,24 +1388,35 @@ export default function DispatchDetailDrawer({
                     </p>
                   )}
                   {(dispatch.trucks_assigned || []).map((truckNumber) => (
-                    <div key={`driver-${truckNumber}`} className="grid grid-cols-[70px,1fr] items-center gap-2">
+                    <div key={`driver-${truckNumber}`} className="grid grid-cols-[70px,1fr] items-start gap-2">
                       <span className="text-xs font-mono text-slate-600">{truckNumber}</span>
                       {eligibleDrivers.length > 0 ? (
-                        <Select
-                          value={selectedDriverByTruck[truckNumber] || UNASSIGNED_DRIVER_VALUE}
-                          onValueChange={(value) => handleDriverSelection(truckNumber, value)}
-                          disabled={assignDriverMutation.isPending}
-                        >
-                          <SelectTrigger className="h-8 text-xs">
-                            <SelectValue placeholder="Assign driver" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value={UNASSIGNED_DRIVER_VALUE}>No driver assigned</SelectItem>
-                            {eligibleDrivers.map((driver) => (
-                              <SelectItem key={driver.id} value={driver.id}>{driver.driver_name}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <div className="space-y-1">
+                          <Select
+                            value={selectedDriverByTruck[truckNumber] || UNASSIGNED_DRIVER_VALUE}
+                            onValueChange={(value) => handleDriverSelection(truckNumber, value)}
+                            disabled={assignDriverMutation.isPending}
+                          >
+                            <SelectTrigger className="h-8 text-xs">
+                              <SelectValue placeholder="Assign driver" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value={UNASSIGNED_DRIVER_VALUE}>No driver assigned</SelectItem>
+                              {eligibleDrivers.map((driver) => {
+                                const isCurrentTruckSelection = selectedDriverByTruck[truckNumber] === driver.id;
+                                const hasConflict = Boolean(conflictingDriverAssignmentsById[driver.id]) && !isCurrentTruckSelection;
+                                return (
+                                  <SelectItem key={driver.id} value={driver.id} disabled={hasConflict}>
+                                    {driver.driver_name}{hasConflict ? ' (Already assigned this shift)' : ''}
+                                  </SelectItem>
+                                );
+                              })}
+                            </SelectContent>
+                          </Select>
+                          {driverAssignmentErrors[truckNumber] && (
+                            <p className="text-xs text-red-600">{driverAssignmentErrors[truckNumber]}</p>
+                          )}
+                        </div>
                       ) : (
                         <p className="text-xs text-slate-500 italic">No eligible drivers available</p>
                       )}

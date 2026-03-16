@@ -177,8 +177,8 @@ export default function Drivers() {
             <h3 className="text-lg font-semibold text-slate-900">Assigning Drivers</h3>
             <ul className="list-disc pl-5 space-y-2 text-sm leading-6 text-slate-700">
               <li>
-                A driver can only see a dispatch and receive notifications <span className="font-medium">IF</span> and <span className="font-medium">WHEN</span> you assign them to a truck number on a
-                dispatch.
+                A driver can only see a dispatch and receive notifications <span className="font-medium">IF</span> and <span className="font-medium">WHEN</span> you assign them to a 
+                truck number on a dispatch.
               </li>
               <li>
                 When you  <span className="font-medium">select a driver</span> on a dispatch, a copy of the dispatch and a notification will be sent to the

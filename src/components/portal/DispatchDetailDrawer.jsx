@@ -215,8 +215,9 @@ function TruckTimeRow({
 
 export default function DispatchDetailDrawer({
   dispatch, session, confirmations, timeEntries, templateNotes,
-  onConfirm, onTimeEntry, onOwnerTruckUpdate, companyName, open, onClose
+  onConfirm, onTimeEntry, onOwnerTruckUpdate, companyName: _companyName, open, onClose
 }) {
+  const jobNumberBadgeClassName = 'bg-black px-2 py-0.5 text-[11px] font-semibold text-white hover:bg-black';
   const [draftTimeEntries, setDraftTimeEntries] = useState({});
   const [isSavingAll, setIsSavingAll] = useState(false);
   const drawerScrollRef = React.useRef(null);
@@ -774,17 +775,17 @@ export default function DispatchDetailDrawer({
               </div>
             ) : (
               <div className="space-y-4">
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 {dispatch.client_name && (
-                  <h2 className="text-base font-semibold text-slate-800">{dispatch.client_name}</h2>
+                  <h2 className="text-lg font-semibold text-slate-800">{dispatch.client_name}</h2>
                 )}
                 {!hasAdditional && (
                   <div className="grid grid-cols-1 text-sm">
                     {dispatch.job_number && (
                       <div className="flex items-center gap-2 text-slate-700">
                         <FileText className="h-4 w-4 text-slate-400 shrink-0" />
-                        <span className="font-semibold">Job #</span>
-                        <Badge className="bg-black px-2 py-0.5 text-xs font-semibold text-white hover:bg-black">
+                        <span className="font-bold">Job #</span>
+                        <Badge className={jobNumberBadgeClassName}>
                           {dispatch.job_number}
                         </Badge>
                       </div>
@@ -793,10 +794,8 @@ export default function DispatchDetailDrawer({
                 )}
               </div>
 
-              <div className="space-y-2.5">
-              {companyName && (
-                <p className="text-xs font-semibold text-slate-400">{companyName}</p>
-              )}
+              <div className="space-y-2.5 pt-1">
+                <p className="text-xs font-bold text-slate-400">Working for CCG Transit</p>
 
               {/* Trucks */}
               <div className="space-y-2">
@@ -917,9 +916,9 @@ export default function DispatchDetailDrawer({
                     <div className="space-y-0.5">
                       <div className="flex items-center gap-2 text-sm text-slate-700">
                         <FileText className="h-4 w-4 text-slate-400 shrink-0" />
-                        <span className="font-semibold">Job #</span>
+                        <span className="font-bold">Job #</span>
                         {dispatch.job_number && (
-                          <Badge className="bg-black px-2 py-0.5 text-xs font-semibold text-white hover:bg-black">
+                          <Badge className={jobNumberBadgeClassName}>
                             {dispatch.job_number}
                           </Badge>
                         )}
@@ -970,8 +969,8 @@ export default function DispatchDetailDrawer({
                             <div className="space-y-0.5">
                               <div className="flex items-center gap-2 text-slate-700">
                                 <FileText className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                                <span className="font-semibold">Job #</span>
-                                <Badge className="bg-black px-2 py-0.5 text-xs font-semibold text-white hover:bg-black">
+                                <span className="font-bold">Job #</span>
+                                <Badge className={jobNumberBadgeClassName}>
                                   {a.job_number}
                                 </Badge>
                               </div>

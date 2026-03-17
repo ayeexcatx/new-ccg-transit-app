@@ -11,9 +11,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Plus, Pencil, Trash2, Copy, FileText,
-  Sun, Moon, Truck, Filter, ChevronDown, ChevronUp, Eye, CheckCircle2, XCircle, History, Archive, ArchiveX, Lock } from
+  Sun, Moon, Truck, Filter, ChevronDown, ChevronUp, Eye, CheckCircle2, XCircle, History, Archive, ArchiveX, Lock, ChevronLeft, ChevronRight, Search } from
 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { addDays, format, parseISO, startOfDay, subDays } from 'date-fns';
 import { getDispatchBucket } from '../components/portal/dispatchBuckets';
 import DispatchForm from '../components/admin/DispatchForm';
 import DispatchDetailDrawer from '../components/portal/DispatchDetailDrawer';
@@ -25,6 +25,9 @@ import { syncDispatchHtmlToDrive } from '@/lib/dispatchDriveSync';
 import { toast } from 'sonner';
 
 const STATUS_ORDER = ['Scheduled', 'Dispatch', 'Amended', 'Cancelled'];
+const ACTIVE_LIVE_EXCLUDED_STATUSES = new Set(['Cancelled', 'Scheduled']);
+const LIVE_STATUS_OPTIONS = ['Running', 'Broken Down', 'Delayed', 'At Plant', 'Switched', 'Waiting', 'Off Route', 'Other'];
+
 
 const getAdminDisplayName = (session) => {
   if (!session) return 'Admin';
@@ -176,6 +179,16 @@ const formatDispatchTime = (startTime) => {
   return `${hours12}:${minutes} ${meridiem}`;
 };
 
+const buildLiveLineKey = (dispatchId, truckNumber) => `${dispatchId}:${truckNumber || 'unassigned'}`;
+
+const deriveTruckStartTime = (dispatch, truckNumber) => {
+  const assignments = Array.isArray(dispatch?.assignments) ? dispatch.assignments : Array.isArray(dispatch?.additional_assignments) ? dispatch.additional_assignments : [];
+  const match = assignments.find((entry) => String(entry?.truck_number || '').trim() === String(truckNumber || '').trim());
+  return formatDispatchTime(match?.start_time || match?.startTime || dispatch?.start_time);
+};
+
+const getShiftSort = (shift) => shift === 'Night Shift' ? 1 : 0;
+
 function AdminConfirmationsPanel({ dispatch, confirmations }) {
   const [historyOpen, setHistoryOpen] = useState(false);
   const trucks = dispatch.trucks_assigned || [];
@@ -273,6 +286,125 @@ function AdminConfirmationsPanel({ dispatch, confirmations }) {
 
 }
 
+
+function LiveDispatchBoard({
+  groupedDates,
+  rangeStart,
+  rangeEnd,
+  onMoveWindow,
+  boardSearch,
+  onBoardSearch,
+  onOpenDispatch,
+  onChangeLiveStatus,
+  onAdjustRequestedCount,
+  statusUpdatingKey,
+  requestUpdatingKey
+}) {
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardContent className="p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" onClick={() => onMoveWindow(-1)} className="h-8 w-8">
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <div>
+              <p className="text-xs text-slate-500">Visible range</p>
+              <p className="text-sm font-semibold text-slate-900">{format(rangeStart, 'EEE, MMM d')} - {format(rangeEnd, 'EEE, MMM d, yyyy')}</p>
+            </div>
+            <Button variant="outline" size="icon" onClick={() => onMoveWindow(1)} className="h-8 w-8">
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="relative w-full sm:w-80">
+            <Search className="h-4 w-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+            <Input className="pl-8 text-xs" value={boardSearch} onChange={(e) => onBoardSearch(e.target.value)} placeholder="Filter job #, truck #, or driver" />
+          </div>
+        </CardContent>
+      </Card>
+
+      {groupedDates.length === 0 ? (
+        <div className="text-center py-12 text-sm text-slate-500">No live dispatch activity in this window.</div>
+      ) : (
+        <div className="space-y-4">
+          {groupedDates.map((dateGroup) => (
+            <Card key={dateGroup.date}>
+              <CardContent className="p-4 space-y-4">
+                <div className="border-b border-slate-200 pb-2">
+                  <h3 className="text-sm font-semibold text-slate-900">{format(parseISO(dateGroup.date), 'EEEE, MMM d, yyyy')}</h3>
+                </div>
+                {dateGroup.shifts.map((shiftGroup) => (
+                  <div key={`${dateGroup.date}-${shiftGroup.shift}`} className="space-y-2">
+                    <div className="flex items-center gap-1.5 text-xs font-medium text-slate-600">
+                      {shiftGroup.shift === 'Day Shift' ? <Sun className="h-3 w-3 text-amber-500" /> : <Moon className="h-3 w-3 text-slate-500" />}
+                      {shiftGroup.shift}
+                    </div>
+                    <div className="space-y-2">
+                      {shiftGroup.jobs.map((job) => (
+                        <div key={job.groupKey} className="rounded-lg border border-slate-200 bg-slate-50/70 p-3">
+                          <div className="flex items-start justify-between gap-3 mb-2">
+                            <div>
+                              <p className="text-sm font-semibold text-slate-900">{job.clientName || 'Unknown Client'} • #{job.jobNumber || 'No Job #'}</p>
+                              <p className="text-xs text-slate-500">{job.shift}{job.startLocation ? ` • ${job.startLocation}` : ''} • {job.assignedCount}/{job.requestedCount} filled</p>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Button variant="outline" size="sm" className="h-7 px-2 text-xs" disabled={requestUpdatingKey===`${job.groupKey}:down`} onClick={() => onAdjustRequestedCount(job, -1)}>- Slot</Button>
+                              <Button variant="outline" size="sm" className="h-7 px-2 text-xs" disabled={requestUpdatingKey===`${job.groupKey}:up`} onClick={() => onAdjustRequestedCount(job, 1)}>+ Slot</Button>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            {job.lines.map((line) => (
+                              <div key={line.lineKey} className={`rounded-md border px-3 py-2 ${line.isPlaceholder ? 'border-dashed border-slate-300 bg-white/60' : 'border-slate-200 bg-white'}`}>
+                                {line.isPlaceholder ? (
+                                  <div className="flex items-center justify-between">
+                                    <p className="text-xs font-medium text-slate-500">Requested Truck Slot • Unassigned</p>
+                                    <Badge variant="outline" className="text-[10px] border-dashed">Open Slot</Badge>
+                                  </div>
+                                ) : (
+                                  <div className="space-y-1.5">
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                      <button type="button" className="text-left" onClick={() => onOpenDispatch(line.dispatch)}>
+                                        <p className="text-sm font-semibold text-slate-900">Truck {line.truckNumber || 'Unassigned'} {line.driverName ? `• ${line.driverName}` : ''}</p>
+                                        <p className="text-xs text-slate-500">Start {line.startTime || 'TBD'} • {line.dispatch.status}</p>
+                                      </button>
+                                      <Select value={line.liveStatus} onValueChange={(value) => onChangeLiveStatus(line, value)}>
+                                        <SelectTrigger className="h-8 w-[150px] text-xs">
+                                          <SelectValue placeholder="Live status" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          {LIVE_STATUS_OPTIONS.map((option) => <SelectItem key={option} value={option}>{option}</SelectItem>)}
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                    {statusUpdatingKey === line.statusKey && <p className="text-[10px] text-slate-400">Saving status...</p>}
+                                    {line.secondaryAssignments.length > 0 && (
+                                      <div className="pl-2 border-l-2 border-indigo-200 space-y-1">
+                                        {line.secondaryAssignments.map((assignment) => (
+                                          <button key={assignment.lineKey} type="button" className="block text-left text-xs text-indigo-700 hover:underline" onClick={() => onOpenDispatch(assignment.dispatch)}>
+                                            Also assigned: Job #{assignment.jobNumber || 'No Job #'} • {assignment.startTime || 'TBD'}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AdminDispatches() {
   const queryClient = useQueryClient();
   const { session } = useSession();
@@ -289,7 +421,11 @@ export default function AdminDispatches() {
   const [deleteError, setDeleteError] = useState('');
   const [filters, setFilters] = useState({ status: 'all', company_id: 'all', truck: '', dateFrom: '', dateTo: '', query: '' });
   const [showFilters, setShowFilters] = useState(false);
-  const [tab, setTab] = useState('today');
+  const [tab, setTab] = useState('live-board');
+  const [liveBoardCenterDate, setLiveBoardCenterDate] = useState(() => startOfDay(new Date()));
+  const [boardSearch, setBoardSearch] = useState('');
+  const [statusUpdatingKey, setStatusUpdatingKey] = useState('');
+  const [requestUpdatingKey, setRequestUpdatingKey] = useState('');
   const dispatchRefs = useRef({});
   const pendingOpenIdRef = useRef(null);
   const activeEditLockDispatchIdRef = useRef(null);
@@ -322,6 +458,16 @@ export default function AdminDispatches() {
   const { data: timeEntries = [] } = useQuery({
     queryKey: ['time-entries-admin'],
     queryFn: () => base44.entities.TimeEntry.list('-created_date', 500)
+  });
+
+  const { data: liveBoardRequests = [] } = useQuery({
+    queryKey: ['live-dispatch-board-requests'],
+    queryFn: () => base44.entities.LiveDispatchBoardRequest.list('-created_date', 500)
+  });
+
+  const { data: driverAssignments = [] } = useQuery({
+    queryKey: ['driver-dispatch-assignments-admin'],
+    queryFn: () => base44.entities.DriverDispatchAssignment.list('-assigned_datetime', 2000)
   });
 
   const openDrawer = async (d) => {
@@ -618,6 +764,60 @@ export default function AdminDispatches() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['dispatches-admin'] })
   });
 
+
+  const updateLiveStatusMutation = useMutation({
+    mutationFn: async ({ dispatch, truckNumber, liveStatus }) => {
+      const key = buildLiveLineKey(dispatch.id, truckNumber);
+      setStatusUpdatingKey(key);
+      const nextStatuses = {
+        ...(dispatch.live_truck_statuses || {}),
+        [truckNumber || 'unassigned']: liveStatus
+      };
+      await base44.entities.Dispatch.update(dispatch.id, { live_truck_statuses: nextStatuses });
+      return key;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['dispatches-admin'] }),
+    onSettled: () => setStatusUpdatingKey('')
+  });
+
+  const adjustLiveRequestMutation = useMutation({
+    mutationFn: async ({ job, delta }) => {
+      const direction = delta > 0 ? 'up' : 'down';
+      setRequestUpdatingKey(`${job.groupKey}:${direction}`);
+      const nextCount = Math.max(job.assignedCount, (job.requestedCount || 0) + delta);
+      const existing = liveBoardRequests.find((entry) =>
+        entry.date === job.date &&
+        (entry.shift_time || 'Day Shift') === job.shift &&
+        String(entry.job_number || '') === String(job.jobNumber || '')
+      );
+
+      if (existing) {
+        if (nextCount === job.assignedCount) {
+          await base44.entities.LiveDispatchBoardRequest.delete(existing.id);
+          return;
+        }
+        await base44.entities.LiveDispatchBoardRequest.update(existing.id, {
+          requested_count: nextCount,
+          client_name: job.clientName || existing.client_name || '',
+          start_location: job.startLocation || existing.start_location || ''
+        });
+        return;
+      }
+
+      if (delta < 0) return;
+      await base44.entities.LiveDispatchBoardRequest.create({
+        date: job.date,
+        shift_time: job.shift,
+        job_number: job.jobNumber || '',
+        client_name: job.clientName || '',
+        start_location: job.startLocation || '',
+        requested_count: nextCount
+      });
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['live-dispatch-board-requests'] }),
+    onSettled: () => setRequestUpdatingKey('')
+  });
+
   const companyMap = {};
   companies.forEach((c) => {companyMap[c.id] = c.name;});
 
@@ -664,6 +864,156 @@ export default function AdminDispatches() {
   [filtered]);
 
   const currentList = tab === 'upcoming' ? upcomingDispatches : tab === 'today' ? todayDispatches : historyDispatches;
+
+  const liveBoardRangeStart = useMemo(() => subDays(startOfDay(liveBoardCenterDate), 3), [liveBoardCenterDate]);
+  const liveBoardRangeEnd = useMemo(() => addDays(startOfDay(liveBoardCenterDate), 3), [liveBoardCenterDate]);
+
+  const liveBoardDateKeys = useMemo(() => {
+    const keys = [];
+    for (let i = 0; i < 7; i += 1) {
+      keys.push(format(addDays(liveBoardRangeStart, i), 'yyyy-MM-dd'));
+    }
+    return new Set(keys);
+  }, [liveBoardRangeStart]);
+
+  const liveBoardGroupedDates = useMemo(() => {
+    const search = boardSearch.trim().toLowerCase();
+    const byDispatchTruckDriver = driverAssignments
+      .filter((assignment) => assignment.active_flag !== false)
+      .reduce((acc, assignment) => {
+        const key = buildLiveLineKey(assignment.dispatch_id, assignment.truck_number);
+        acc[key] = assignment.driver_name || acc[key] || '';
+        return acc;
+      }, {});
+
+    const filteredDispatches = dispatches
+      .filter((dispatch) => !ACTIVE_LIVE_EXCLUDED_STATUSES.has(dispatch.status))
+      .filter((dispatch) => liveBoardDateKeys.has(dispatch.date));
+
+    const dateMap = new Map();
+    const allJobMap = new Map();
+
+    filteredDispatches.forEach((dispatch) => {
+      const shift = dispatch.shift_time || 'Day Shift';
+      const dateKey = dispatch.date;
+      const jobKey = `${dateKey}|${shift}|${dispatch.job_number || ''}`;
+      if (!allJobMap.has(jobKey)) {
+        allJobMap.set(jobKey, {
+          groupKey: jobKey,
+          date: dateKey,
+          shift,
+          jobNumber: dispatch.job_number || '',
+          clientName: dispatch.client_name || '',
+          startLocation: dispatch.start_location || '',
+          lines: []
+        });
+      }
+
+      const job = allJobMap.get(jobKey);
+      (dispatch.trucks_assigned || []).forEach((truckNumber, index) => {
+        const statusKey = buildLiveLineKey(dispatch.id, truckNumber);
+        job.lines.push({
+          lineKey: `${statusKey}:${index}`,
+          statusKey,
+          dispatch,
+          isPlaceholder: false,
+          truckNumber,
+          driverName: byDispatchTruckDriver[statusKey] || '',
+          startTime: deriveTruckStartTime(dispatch, truckNumber),
+          liveStatus: dispatch.live_truck_statuses?.[truckNumber] || 'Running'
+        });
+      });
+    });
+
+    liveBoardRequests.forEach((request) => {
+      if (!liveBoardDateKeys.has(request.date)) return;
+      const shift = request.shift_time || 'Day Shift';
+      const jobKey = `${request.date}|${shift}|${request.job_number || ''}`;
+      if (!allJobMap.has(jobKey)) {
+        allJobMap.set(jobKey, {
+          groupKey: jobKey,
+          date: request.date,
+          shift,
+          jobNumber: request.job_number || '',
+          clientName: request.client_name || '',
+          startLocation: request.start_location || '',
+          lines: []
+        });
+      }
+    });
+
+    const truckAssignmentsByTruck = filteredDispatches.reduce((acc, dispatch) => {
+      (dispatch.trucks_assigned || []).forEach((truck) => {
+        const key = String(truck || '').trim();
+        if (!key) return;
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(dispatch);
+      });
+      return acc;
+    }, {});
+
+    allJobMap.forEach((job) => {
+      const requestEntry = liveBoardRequests.find((entry) =>
+        entry.date === job.date &&
+        (entry.shift_time || 'Day Shift') === job.shift &&
+        String(entry.job_number || '') === String(job.jobNumber || '')
+      );
+
+      job.lines.sort((a, b) => (a.startTime || 'zz').localeCompare(b.startTime || 'zz'));
+
+      job.lines = job.lines.map((line) => {
+        if (line.isPlaceholder) return line;
+        const siblingDispatches = (truckAssignmentsByTruck[line.truckNumber] || [])
+          .filter((dispatch) => dispatch.id !== line.dispatch.id)
+          .sort((a, b) => `${a.date} ${a.start_time || ''}`.localeCompare(`${b.date} ${b.start_time || ''}`));
+
+        return {
+          ...line,
+          secondaryAssignments: siblingDispatches.slice(0, 2).map((dispatch) => ({
+            lineKey: `${line.lineKey}:${dispatch.id}`,
+            dispatch,
+            jobNumber: dispatch.job_number,
+            startTime: formatDispatchTime(dispatch.start_time)
+          }))
+        };
+      });
+
+      job.assignedCount = job.lines.length;
+      job.requestedCount = Math.max(job.assignedCount, Number(requestEntry?.requested_count || job.assignedCount));
+      const openSlots = Math.max(0, job.requestedCount - job.assignedCount);
+      for (let i = 0; i < openSlots; i += 1) {
+        job.lines.push({
+          lineKey: `${job.groupKey}:placeholder:${i}`,
+          isPlaceholder: true
+        });
+      }
+
+      if (search) {
+        const hasJobMatch = `${job.jobNumber} ${job.clientName}`.toLowerCase().includes(search);
+        const hasLineMatch = job.lines.some((line) =>
+          line.isPlaceholder ? false : `${line.truckNumber || ''} ${line.driverName || ''}`.toLowerCase().includes(search)
+        );
+        if (!hasJobMatch && !hasLineMatch) return;
+      }
+
+      if (!dateMap.has(job.date)) dateMap.set(job.date, new Map());
+      const shiftMap = dateMap.get(job.date);
+      if (!shiftMap.has(job.shift)) shiftMap.set(job.shift, []);
+      shiftMap.get(job.shift).push(job);
+    });
+
+    return Array.from(dateMap.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([date, shiftMap]) => ({
+        date,
+        shifts: Array.from(shiftMap.entries())
+          .sort((a, b) => getShiftSort(a[0]) - getShiftSort(b[0]))
+          .map(([shift, jobs]) => ({
+            shift,
+            jobs: jobs.sort((a, b) => String(a.jobNumber || '').localeCompare(String(b.jobNumber || '')))
+          }))
+      }));
+  }, [boardSearch, dispatches, driverAssignments, liveBoardDateKeys, liveBoardRequests]);
 
   const openNew = () => {
     setEditing(null);
@@ -763,6 +1113,16 @@ export default function AdminDispatches() {
     navigate({ search: nextParams.toString() ? `?${nextParams.toString()}` : '' }, { replace: true });
   };
 
+  const liveBoardDispatchCount = useMemo(() => liveBoardGroupedDates.reduce((sum, dateGroup) =>
+    sum + dateGroup.shifts.reduce((shiftSum, shiftGroup) => shiftSum + shiftGroup.jobs.reduce((jobSum, job) => jobSum + job.assignedCount, 0), 0),
+  0), [liveBoardGroupedDates]);
+
+  const dispatchCountLabel = tab === 'live-board' ? `${liveBoardDispatchCount} active truck lines` : `${currentList.length} dispatches`;
+
+  const shiftLiveBoardWindow = (direction) => {
+    setLiveBoardCenterDate((prev) => addDays(prev, direction * 7));
+  };
+
   const handleSave = (formData) => {
     return new Promise((resolve, reject) => {
       saveMutation.mutate(formData, {
@@ -800,7 +1160,7 @@ export default function AdminDispatches() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-2xl font-semibold text-slate-900 text-left">Dispatches</h2>
-          <p className="text-sm text-slate-500">{currentList.length} dispatches</p>
+          <p className="text-sm text-slate-500">{dispatchCountLabel}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setShowFilters(!showFilters)} className="text-xs">
@@ -844,7 +1204,8 @@ export default function AdminDispatches() {
       }
 
       <Tabs value={tab} onValueChange={setTab} className="bg-slate-600 rounded">
-        <TabsList className="bg-slate-700 text-violet-50 p-1 rounded-[10007px] inline-flex h-9 items-center justify-center">
+        <TabsList className="bg-slate-700 text-violet-50 p-1 rounded-[10007px] inline-flex h-9 items-center justify-center flex-wrap h-auto">
+          <TabsTrigger value="live-board" className="text-xs">Live Dispatch Board</TabsTrigger>
           <TabsTrigger value="today" className="text-xs">Today ({todayDispatches.length})</TabsTrigger>
           <TabsTrigger value="upcoming" className="text-xs">Upcoming ({upcomingDispatches.length})</TabsTrigger>
           <TabsTrigger value="history" className="text-xs">History ({historyDispatches.length})</TabsTrigger>
@@ -854,11 +1215,25 @@ export default function AdminDispatches() {
       {isLoading ?
       <div className="flex justify-center py-12">
           <div className="animate-spin h-6 w-6 border-2 border-slate-300 border-t-slate-700 rounded-full" />
-        </div> :
+        </div> : tab === 'live-board' ?
+      <LiveDispatchBoard
+        groupedDates={liveBoardGroupedDates}
+        rangeStart={liveBoardRangeStart}
+        rangeEnd={liveBoardRangeEnd}
+        onMoveWindow={shiftLiveBoardWindow}
+        boardSearch={boardSearch}
+        onBoardSearch={setBoardSearch}
+        onOpenDispatch={openDrawer}
+        onChangeLiveStatus={(line, value) => updateLiveStatusMutation.mutate({ dispatch: line.dispatch, truckNumber: line.truckNumber, liveStatus: value })}
+        onAdjustRequestedCount={(job, delta) => adjustLiveRequestMutation.mutate({ job, delta })}
+        statusUpdatingKey={statusUpdatingKey}
+        requestUpdatingKey={requestUpdatingKey}
+      /> :
       currentList.length === 0 ?
       <div className="text-center py-16 text-slate-500 text-sm">No dispatches found</div> :
 
       <div className="grid gap-3">
+
           {currentList.map((d) => {
           const assignmentList = Array.isArray(d.assignments) ?
           d.assignments :

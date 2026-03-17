@@ -78,3 +78,36 @@ export function getActiveCompanyId(session) {
   }
   return null;
 }
+
+function getBaseLabelName(session) {
+  const rawLabel = typeof session?.label === 'string' ? session.label.trim() : '';
+  if (!rawLabel) return '';
+
+  const withoutWorkspaceSuffix = rawLabel.replace(/\s*\([^)]*\)\s*$/, '').trim();
+  return withoutWorkspaceSuffix || rawLabel;
+}
+
+export function getWorkspaceDisplayLabel(session, activeCompanyName) {
+  if (!session) return '';
+
+  const effectiveView = getEffectiveView(session);
+  const baseName =
+    getBaseLabelName(session) ||
+    (typeof session?.name === 'string' ? session.name.trim() : '') ||
+    '';
+
+  if (effectiveView === ADMIN_VIEW) {
+    if (!baseName) return 'Admin';
+    return `${baseName} (Admin)`;
+  }
+
+  if (effectiveView === OWNER_VIEW) {
+    const companyLabel =
+      (typeof activeCompanyName === 'string' ? activeCompanyName.trim() : '') ||
+      'Company';
+    if (!baseName) return companyLabel;
+    return `${baseName} (${companyLabel})`;
+  }
+
+  return session.label || effectiveView || session.code_type || '';
+}

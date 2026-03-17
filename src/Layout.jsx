@@ -9,7 +9,7 @@ import NotificationBell from '@/components/notifications/NotificationBell';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import TutorialProvider from '@/components/tutorial/TutorialProvider';
-import { getActiveCompanyId, getAvailableWorkspaces, getEffectiveView } from '@/components/session/workspaceUtils';
+import { getActiveCompanyId, getAvailableWorkspaces, getEffectiveView, getWorkspaceDisplayLabel } from '@/components/session/workspaceUtils';
 
 function LayoutInner({ children, currentPageName }) {
   const { session, rawAccessCode, loading, logout, setActiveWorkspace } = useSession();
@@ -54,6 +54,7 @@ function LayoutInner({ children, currentPageName }) {
     (typeof session?.company === 'object' ? session.company?.name : null) ||
     (!session?.company_id && typeof session?.company === 'string' ? session.company : null);
   const headerTitle = isAdmin ? 'CCG Transit' : activeCompany?.name || sessionCompanyName || 'CCG Transit';
+  const workspaceDisplayLabel = getWorkspaceDisplayLabel(session, activeCompany?.name || sessionCompanyName);
 
   useEffect(() => {
     if (loading) return;
@@ -134,7 +135,7 @@ function LayoutInner({ children, currentPageName }) {
                     {isOwner && <Building2 className="h-3 w-3 shrink-0" />}
                     {isTruck && <Truck className="h-3 w-3 shrink-0" />}
                     {isDriver && <UserRound className="h-3 w-3 shrink-0" />}
-                    <span className="truncate">{session.label || effectiveView}</span>
+                    <span className="truncate">{workspaceDisplayLabel || effectiveView}</span>
                   </p>
                 </div>
               </div>

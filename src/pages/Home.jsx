@@ -15,6 +15,7 @@ import { useOwnerNotifications } from '../components/notifications/useOwnerNotif
 import NotificationStatusBadge from '../components/notifications/NotificationStatusBadge';
 import { getNotificationDisplay } from '../components/notifications/formatNotificationDetailsMessage';
 import { useConfirmationsQuery } from '../components/notifications/useConfirmationsQuery';
+import { getWorkspaceDisplayLabel } from '../components/session/workspaceUtils';
 
 const dateOnly = (v) => (typeof v === 'string' ? v.slice(0, 10) : v);
 const normalizeId = (value) => String(value ?? '');
@@ -149,8 +150,20 @@ function MiniDispatchCard({ dispatch, companyName, truckNumbers = [] }) {
 export default function Home() {
   const { session } = useSession();
   const navigate = useNavigate();
-  const userName = session?.label || session?.code_type;
-  const homeHeading = getHomeGreeting(userName);
+  const { data: companies = [] } = useQuery({
+    queryKey: ['companies-home-workspace-label'],
+    queryFn: () => base44.entities.Company.list(),
+    enabled: !!session,
+  });
+
+  const activeCompanyName =
+    companies.find((company) => String(company.id) === String(session?.company_id))?.name ||
+    session?.company_name ||
+    (typeof session?.company === 'object' ? session.company?.name : null) ||
+    (!session?.company_id && typeof session?.company === 'string' ? session.company : null);
+
+  const workspaceDisplayLabel = getWorkspaceDisplayLabel(session, activeCompanyName);
+  const homeHeading = getHomeGreeting(workspaceDisplayLabel || session?.code_type);
   const allowedTrucks = session?.allowed_trucks || [];
   const isDriver = session?.code_type === 'Driver';
 

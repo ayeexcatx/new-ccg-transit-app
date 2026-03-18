@@ -624,16 +624,21 @@ export default function DispatchDetailDrawer({
     return map;
   }, {});
 
+  const companyHasDrivers = companyDrivers.length > 0;
+  const shouldShowUnassignedDriverLabel = !isOwner || companyHasDrivers;
+
   const getTruckDriverSummaryLabel = (truckNumber) => {
     if (!isOwner) return assignedDriverNameByTruck[truckNumber] || 'Unassigned';
 
     const selectedDriverId = selectedDriverByTruck[truckNumber];
-    if (selectedDriverId === UNASSIGNED_DRIVER_VALUE) return 'No driver assigned';
+    if (selectedDriverId === UNASSIGNED_DRIVER_VALUE) {
+      return shouldShowUnassignedDriverLabel ? 'No driver assigned' : null;
+    }
     if (selectedDriverId && eligibleDriverNameById[selectedDriverId]) {
       return eligibleDriverNameById[selectedDriverId];
     }
 
-    return assignedDriverNameByTruck[truckNumber] || 'No driver assigned';
+    return assignedDriverNameByTruck[truckNumber] || (shouldShowUnassignedDriverLabel ? 'No driver assigned' : null);
   };
 
   const currentConfType = dispatch.status;
@@ -1067,21 +1072,27 @@ export default function DispatchDetailDrawer({
                   <Truck className="h-3.5 w-3.5 text-slate-400 mt-1 shrink-0" />
                   {(isAdmin || isOwner) ? (
                     <div className="min-w-0 flex-1 space-y-1.5">
-                      {visibleTrucks.map((t) => (
-                        <div key={t} className="flex items-start gap-2">
-                          <Badge variant="outline" className="text-xs border-slate-900 text-slate-900 font-medium shrink-0">
-                            {t}
-                          </Badge>
-                          <span className="text-xs text-slate-500 min-w-0 break-words leading-5">
-                            {getTruckDriverSummaryLabel(t)}
-                          </span>
-                          {hasTruckReceiptConfirmation(t) && (
-                            <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-semibold py-0 px-1.5">
-                              Confirmed
+                      {visibleTrucks.map((t) => {
+                        const truckDriverSummaryLabel = getTruckDriverSummaryLabel(t);
+
+                        return (
+                          <div key={t} className="flex items-start gap-2">
+                            <Badge variant="outline" className="text-xs border-slate-900 text-slate-900 font-medium shrink-0">
+                              {t}
                             </Badge>
-                          )}
-                        </div>
-                      ))}
+                            {truckDriverSummaryLabel && (
+                              <span className="text-xs text-slate-500 min-w-0 break-words leading-5">
+                                {truckDriverSummaryLabel}
+                              </span>
+                            )}
+                            {hasTruckReceiptConfirmation(t) && (
+                              <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-semibold py-0 px-1.5">
+                                Confirmed
+                              </Badge>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   ) : (
                     <div className="flex items-center gap-1.5 flex-wrap">

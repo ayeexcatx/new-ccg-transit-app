@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { notifyDriverAssignmentChanges } from '@/components/notifications/createNotifications';
 import html2canvas from 'html2canvas';
 import DispatchDrawerTutorial from '@/components/tutorial/DispatchDrawerTutorial';
+import DispatchConfirmReceiptLogSection from './DispatchConfirmReceiptLogSection';
 
 const tollColors = {
   Authorized: 'bg-green-50 text-green-700',
@@ -1327,62 +1328,16 @@ export default function DispatchDetailDrawer({
 
               {/* CompanyOwner confirm */}
               {isOwner && myTrucks.length > 0 && (
-                <div data-tour="dispatch-confirm-receipt">
-                  <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">
-                    Confirm Receipt — <span className="text-slate-700">{currentConfType}</span>
-                  </p>
-                  <div className="space-y-2">
-                    {myTrucks.map(truck => {
-                      const confirmed = isTruckConfirmedForCurrent(truck);
-                      const conf = getTruckCurrentConfirmation(truck);
-                      const priorConfs = getTruckPriorConfirmations(truck);
-                      return (
-                        <div key={truck} className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-                          <div className="flex items-center justify-between px-3 py-2">
-                            <div className="flex items-center gap-2">
-                              <Truck className="h-3.5 w-3.5 text-slate-400" />
-                              <span className="text-sm font-mono font-medium">{truck}</span>
-                            </div>
-                            {confirmed ? (
-                              <div className="flex items-center gap-1.5 text-emerald-600">
-                                <CheckCircle2 className="h-4 w-4" />
-                                <span className="text-xs font-medium">Confirmed</span>
-                                {conf?.confirmed_at && (
-                                  <span className="text-xs text-slate-400 ml-1">
-                                    {format(new Date(conf.confirmed_at), 'MMM d, h:mm a')}
-                                  </span>
-                                )}
-                              </div>
-                            ) : (
-                              <Button
-                                size="sm"
-                                className="bg-slate-900 hover:bg-slate-800 h-7 text-xs"
-                                onClick={() => handleConfirmTruck(truck)}
-                              >
-                                <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
-                                Confirm Receipt
-                              </Button>
-                            )}
-                          </div>
-                          {priorConfs.length > 0 && (
-                            <div className="border-t border-slate-100 px-3 py-2 bg-slate-50">
-                              <p className="text-xs text-slate-400 mb-1">Prior confirmations:</p>
-                              {priorConfs.map((c, i) => (
-                                <div key={i} className="flex items-center gap-2 text-xs text-slate-500">
-                                  <CheckCircle2 className="h-3 w-3 text-slate-400" />
-                                  <span className="font-medium">{c.confirmation_type}</span>
-                                  {c.confirmed_at && (
-                                    <span className="text-slate-400 text-right">{formatLogTimestampWithActor('Confirmed', c.confirmed_at, getEntryActorLabel(c) || 'Unknown')}</span>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+                <DispatchConfirmReceiptLogSection
+                  myTrucks={myTrucks}
+                  currentConfType={currentConfType}
+                  isTruckConfirmedForCurrent={isTruckConfirmedForCurrent}
+                  getTruckCurrentConfirmation={getTruckCurrentConfirmation}
+                  getTruckPriorConfirmations={getTruckPriorConfirmations}
+                  handleConfirmTruck={handleConfirmTruck}
+                  formatLogTimestampWithActor={formatLogTimestampWithActor}
+                  getEntryActorLabel={getEntryActorLabel}
+                />
               )}
 
               {isOwner && (dispatch.trucks_assigned || []).length > 0 && (

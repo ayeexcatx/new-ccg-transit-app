@@ -7,7 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   CheckCircle2, Clock, Truck, Sun, Moon,
-  FileText, AlertTriangle, Save, History, ArrowLeft, Pencil, Camera
+  FileText, AlertTriangle, History, ArrowLeft, Pencil, Camera
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format, parseISO } from 'date-fns';
@@ -22,6 +22,7 @@ import html2canvas from 'html2canvas';
 import DispatchDrawerTutorial from '@/components/tutorial/DispatchDrawerTutorial';
 import DispatchConfirmReceiptLogSection from './DispatchConfirmReceiptLogSection';
 import DispatchActivityLogSection from './DispatchActivityLogSection';
+import DispatchTimeLogSection from './DispatchTimeLogSection';
 
 const tollColors = {
   Authorized: 'bg-green-50 text-green-700',
@@ -1388,56 +1389,26 @@ export default function DispatchDetailDrawer({
                 </div>
               )}
 
-              {/* Time Log — CompanyOwner (editable) — only for non-canceled */}
-              {isOwner && myTrucks.length > 0 && dispatch.status !== 'Cancelled' && (
-                <div id="time-log-section" ref={timeLogSectionRef} data-tour="dispatch-time-log">
-                  <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Time Log</p>
-                  <div className="space-y-2">
-                    {myTrucks.map(truck => (
-                      <TruckTimeRow
-                        key={truck}
-                        truck={truck}
-                        dispatch={dispatch}
-                        timeEntries={timeEntries}
-                        readOnly={false}
-                        draft={draftTimeEntries[truck]}
-                        onChangeDraft={handleChangeDraft}
-                        onCopyToAll={handleCopyToAll}
-                        isFirstRow={truck === myTrucks[0]}
-                      />
-                    ))}
-                  </div>
-                  <div className="pt-3">
-                    <Button
-                      type="button"
-                      onClick={handleSaveAll}
-                      disabled={!hasUnsavedChanges || isSavingAll || entriesToSave.length === 0}
-                      className="w-full bg-slate-900 hover:bg-slate-800"
-                    >
-                      <Save className="h-4 w-4 mr-2" />
-                      {isSavingAll ? 'Saving…' : 'Save All Time Logs'}
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-
-              {isDriverUser && visibleTrucks.length > 0 && dispatch.status !== 'Cancelled' && (
-                <div>
-                  <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Time Log</p>
-                  <div className="space-y-1.5">
-                    {visibleTrucks.map(truck => (
-                      <TruckTimeRow
-                        key={truck}
-                        truck={truck}
-                        dispatch={dispatch}
-                        timeEntries={timeEntries}
-                        readOnly={true}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
+              <DispatchTimeLogSection
+                isOwner={isOwner}
+                isDriverUser={isDriverUser}
+                isAdmin={isAdmin}
+                dispatchStatus={dispatch.status}
+                myTrucks={myTrucks}
+                visibleTrucks={visibleTrucks}
+                assignedTrucks={dispatch.trucks_assigned || []}
+                timeLogSectionRef={timeLogSectionRef}
+                draftTimeEntries={draftTimeEntries}
+                timeEntries={timeEntries}
+                dispatch={dispatch}
+                onChangeDraft={handleChangeDraft}
+                onCopyToAll={handleCopyToAll}
+                onSaveAll={handleSaveAll}
+                hasUnsavedChanges={hasUnsavedChanges}
+                isSavingAll={isSavingAll}
+                entriesToSave={entriesToSave}
+                TruckTimeRow={TruckTimeRow}
+              />
 
               {/* Confirmations — Admin (read-only) */}
               {isAdmin && (dispatch.trucks_assigned || []).length > 0 && (
@@ -1479,26 +1450,6 @@ export default function DispatchDetailDrawer({
                   </div>
                 </div>
               )}
-
-              {/* Time Log — Admin (read-only) */}
-              {isAdmin && (dispatch.trucks_assigned || []).length > 0 && (
-                <div>
-                  <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Time Log</p>
-                  <div className="space-y-1.5">
-                    {(dispatch.trucks_assigned || []).map(truck => (
-                      <TruckTimeRow
-                        key={truck}
-                        truck={truck}
-                        dispatch={dispatch}
-                        timeEntries={timeEntries}
-                        readOnly={true}
-                        showActor={true}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
 
               {/* Activity — Admin */}
               {isAdmin && (

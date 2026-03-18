@@ -115,6 +115,7 @@ export default function Portal() {
   const pendingOpenIdRef = useRef('');
   const lastHandledDispatchIdRef = useRef('');
   const drawerDispatchIdRef = useRef('');
+  const pendingOwnerConfirmationKeysRef = useRef(new Set());
 
   const urlParams = new URLSearchParams(location.search);
   const targetDispatchId = normalizeId(urlParams.get('dispatchId'));
@@ -545,15 +546,19 @@ Would you like to swap ${outgoingTruck} with ${incomingTruck}?`;
   const companyMap = {};
   companies.forEach(c => { companyMap[c.id] = c.name; });
 
-  const handleConfirm = (dispatch, truck, confType) => {
+  const handleConfirm = async (dispatch, truck, confType) => {
+    const confirmationKey = `${dispatch.id}:${truck}:${confType}`;
     const alreadyConfirmed = confirmations.some(c =>
       c.dispatch_id === dispatch.id &&
       c.truck_number === truck &&
       c.confirmation_type === confType
     );
-    if (alreadyConfirmed) return;
+    if (alreadyConfirmed || pendingOwnerConfirmationKeysRef.current.has(confirmationKey)) return;
 
-    confirmMutation.mutate({
+    pendingOwnerConfirmationKeysRef.current.add(confirmationKey);
+
+    try {
+      await confirmMutation.mutateAsync({
       dispatch_id: dispatch.id,
       access_code_id: session.id,
       truck_number: truck,
@@ -563,18 +568,16 @@ Would you like to swap ${outgoingTruck} with ${incomingTruck}?`;
       confirmed_by_type: actorMetadata.actorType || undefined,
     });
 
-    const companyName = companyMap[dispatch.company_id];
-    notifyTruckConfirmation(dispatch, truck, companyName);
+      const companyName = companyMap[dispatch.company_id];
+      notifyTruckConfirmation(dispatch, truck, companyName);
 
-    const updatedConfirmations = [
-      ...confirmations,
-      { dispatch_id: dispatch.id, truck_number: truck, confirmation_type: confType }
-    ];
-
-    if (session?.code_type === 'CompanyOwner') {
-      resolveOwnerNotificationIfComplete(dispatch, updatedConfirmations, session.id);
+      if (session?.code_type === 'CompanyOwner') {
+        await resolveOwnerNotificationIfComplete(dispatch, null, session.id);
+        await queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      }
+    } finally {
+      pendingOwnerConfirmationKeysRef.current.delete(confirmationKey);
     }
-
   };
 
   const handleTimeEntry = async (dispatch, entries) => timeEntryMutation.mutateAsync({ dispatch, entries });

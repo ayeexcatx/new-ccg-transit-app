@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { useConfirmationsQuery } from './useConfirmationsQuery';
+import { getOwnerNotificationActionStatus } from './ownerActionStatus';
 
 export function useOwnerNotifications(session) {
   const queryClient = useQueryClient();
@@ -30,6 +32,9 @@ export function useOwnerNotifications(session) {
     enabled: session?.code_type === 'Driver' && !!session?.driver_id,
   });
 
+
+  const { data: confirmations = [] } = useConfirmationsQuery(session?.code_type === 'CompanyOwner');
+
   const { data: dispatches = [] } = useQuery({
     queryKey: ['portal-dispatches', session?.company_id],
     queryFn: () => base44.entities.Dispatch.filter({ company_id: session.company_id }, '-date', 200),
@@ -59,7 +64,19 @@ export function useOwnerNotifications(session) {
     return new Date(b.created_date) - new Date(a.created_date);
   });
 
-  const unreadCount = notifications.filter(n => !n.read_flag).length;
+  const notificationsWithStatus = notifications.map((notification) => ({
+    ...notification,
+    effectiveReadFlag: session?.code_type === 'CompanyOwner'
+      ? getOwnerNotificationActionStatus({
+          notification,
+          dispatch: notification.related_dispatch_id ? dispatches.find((dispatch) => dispatch.id === notification.related_dispatch_id) || null : null,
+          confirmations,
+          ownerAllowedTrucks: session?.allowed_trucks || [],
+        }).effectiveReadFlag
+      : Boolean(notification.read_flag),
+  }));
+
+  const unreadCount = notificationsWithStatus.filter((notification) => !notification.effectiveReadFlag).length;
 
   const markReadMutation = useMutation({
     mutationFn: (id) => {
@@ -108,7 +125,7 @@ export function useOwnerNotifications(session) {
   const markAllRead = () => markAllReadMutation.mutate();
 
   return {
-    notifications,
+    notifications: notificationsWithStatus,
     unreadCount,
     isLoading,
     refresh,

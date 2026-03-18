@@ -12,6 +12,7 @@ import NotificationStatusBadge from './NotificationStatusBadge';
 import { useOwnerNotifications } from './useOwnerNotifications';
 import { getNotificationDisplay } from './formatNotificationDetailsMessage';
 import { useConfirmationsQuery } from './useConfirmationsQuery';
+import { getOwnerNotificationActionStatus } from './ownerActionStatus';
 
 const normalizeId = (value) => String(value ?? '');
 
@@ -130,24 +131,38 @@ export default function NotificationBell({ session }) {
                 : null;
               const display = getNotificationDisplay(n, dispatch);
 
+              const effectiveReadFlag = session?.code_type === 'CompanyOwner'
+                ? getOwnerNotificationActionStatus({
+                    notification: n,
+                    dispatch,
+                    confirmations,
+                    ownerAllowedTrucks: session?.allowed_trucks || [],
+                  }).effectiveReadFlag
+                : n.read_flag;
+
               return (
                 <div
                   key={n.id}
-                  className={`group relative cursor-pointer border-b border-slate-100/90 px-4 py-3.5 transition-all duration-200 last:border-b-0 ${!n.read_flag ? 'bg-blue-50/40' : 'bg-white/40'} hover:bg-slate-50/80 focus-within:bg-slate-50/80`}
+                  className={`group relative cursor-pointer border-b border-slate-100/90 px-4 py-3.5 transition-all duration-200 last:border-b-0 ${!effectiveReadFlag ? 'bg-blue-50/40' : 'bg-white/40'} hover:bg-slate-50/80 focus-within:bg-slate-50/80`}
                   onClick={() => handleNotificationClick(n)}
                 >
-                  {!n.read_flag && (
+                  {!effectiveReadFlag && (
                     <span className="absolute left-2.5 top-5 h-2 w-2 rounded-full bg-blue-500 shadow-[0_0_0_4px_rgba(59,130,246,0.12)]" aria-hidden="true" />
                   )}
                   <div className="flex items-start justify-between gap-3">
-                    <div className={`min-w-0 flex-1 ${!n.read_flag ? 'pl-4' : ''}`}>
+                    <div className={`min-w-0 flex-1 ${!effectiveReadFlag ? 'pl-4' : ''}`}>
                       <p className={`text-sm leading-5 text-slate-800 ${display.isOwnerDispatchStatus ? 'font-semibold' : 'font-medium'}`}>
                         {display.title}
                       </p>
                       <p className="mt-1 whitespace-pre-line text-sm leading-5 text-slate-600">{display.message}</p>
                       {n.required_trucks?.length > 0 && (
                         <div className="mt-2">
-                          <NotificationStatusBadge notification={n} confirmations={confirmations} />
+                          <NotificationStatusBadge
+                            notification={n}
+                            confirmations={confirmations}
+                            dispatch={dispatch}
+                            ownerAllowedTrucks={session?.allowed_trucks || []}
+                          />
                         </div>
                       )}
                       <p className="mt-2 text-xs text-slate-400">

@@ -575,7 +575,14 @@ export async function resolveOwnerNotificationIfComplete(dispatch, confirmations
 
     if (!ownerNotifs || ownerNotifs.length === 0) return;
 
-    const confirmedTrucksForStatus = confirmations
+    const authoritativeConfirmations = Array.isArray(confirmations) && confirmations.length > 0
+      ? confirmations
+      : await base44.entities.Confirmation.filter({
+          dispatch_id: dispatch.id,
+          confirmation_type: status,
+        }, '-confirmed_at', 500);
+
+    const confirmedTrucksForStatus = authoritativeConfirmations
       .filter(c => c.dispatch_id === dispatch.id && c.confirmation_type === status)
       .map(c => c.truck_number);
 

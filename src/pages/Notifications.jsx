@@ -13,6 +13,7 @@ import NotificationStatusBadge from '@/components/notifications/NotificationStat
 import { useOwnerNotifications } from '@/components/notifications/useOwnerNotifications';
 import { getNotificationDisplay } from '@/components/notifications/formatNotificationDetailsMessage';
 import { useConfirmationsQuery } from '@/components/notifications/useConfirmationsQuery';
+import { getOwnerNotificationActionStatus } from '@/components/notifications/ownerActionStatus';
 
 export default function Notifications() {
   const { session } = useSession();
@@ -92,12 +93,21 @@ export default function Notifications() {
       ) : (
         <div className="space-y-2">
           {filteredNotifications.map(n => {
-            const display = getNotificationDisplay(n, dispatchMap[n.related_dispatch_id] || null);
+            const dispatch = dispatchMap[n.related_dispatch_id] || null;
+            const display = getNotificationDisplay(n, dispatch);
+            const effectiveReadFlag = session?.code_type === 'CompanyOwner'
+              ? getOwnerNotificationActionStatus({
+                  notification: n,
+                  dispatch,
+                  confirmations,
+                  ownerAllowedTrucks: allowedTrucks,
+                }).effectiveReadFlag
+              : n.read_flag;
 
             return (
               <Card
                 key={n.id}
-                className={`hover:shadow-sm transition-shadow cursor-pointer ${!n.read_flag ? 'border-blue-200 bg-blue-50/30' : ''}`}
+                className={`hover:shadow-sm transition-shadow cursor-pointer ${!effectiveReadFlag ? 'border-blue-200 bg-blue-50/30' : ''}`}
                 onClick={() => handleNotificationClick(n)}
               >
                 <CardContent className="p-4">
@@ -105,7 +115,7 @@ export default function Notifications() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className={`text-sm text-slate-900 ${display.isOwnerDispatchStatus ? 'font-semibold' : ''}`}>{display.title}</h3>
-                        {!n.read_flag && <Badge className="bg-blue-500 text-xs">New</Badge>}
+                        {!effectiveReadFlag && <Badge className="bg-blue-500 text-xs">New</Badge>}
                         {n.related_dispatch_id && (
                           <ExternalLink className="h-3.5 w-3.5 text-slate-400 ml-auto shrink-0" />
                         )}

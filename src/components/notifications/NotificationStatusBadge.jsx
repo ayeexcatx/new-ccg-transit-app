@@ -1,5 +1,6 @@
 import React from 'react';
 import { Clock, CheckCircle2 } from 'lucide-react';
+import { getOwnerNotificationActionStatus } from './ownerActionStatus';
 
 /**
  * Shows "Pending confirmations: X/Y trucks" for owner notifications,
@@ -13,33 +14,16 @@ export default function NotificationStatusBadge({
   dispatch = null,
   ownerAllowedTrucks = [],
 }) {
-  const dispatchId = notification.related_dispatch_id;
-  const dedupKey = notification.dispatch_status_key || '';
-  const parts = dedupKey.split(':');
-  const status = parts.length >= 2 ? parts[1] : '';
+  const { total, done, isOwnerConfirmationNotification, needsAction } = getOwnerNotificationActionStatus({
+    notification,
+    dispatch,
+    confirmations,
+    ownerAllowedTrucks,
+  });
 
-  if (!dispatchId || !status) return null;
+  if (!isOwnerConfirmationNotification || total === 0) return null;
 
-  const requiredFromDispatch = dispatch
-    ? (dispatch.trucks_assigned || []).filter((truck) =>
-      (ownerAllowedTrucks || []).includes(truck)
-    )
-    : null;
-
-  const required = requiredFromDispatch || notification.required_trucks || [];
-  if (!required.length) return null;
-
-  const confirmed = required.filter(truck =>
-    confirmations.some(c =>
-      c.dispatch_id === dispatchId &&
-      c.truck_number === truck &&
-      c.confirmation_type === status
-    )
-  );
-
-  const total = required.length;
-  const done = confirmed.length;
-  const isResolved = total > 0 && done === total;
+  const isResolved = !needsAction;
 
   if (isResolved) {
     return (

@@ -16,6 +16,7 @@ import NotificationStatusBadge from '../components/notifications/NotificationSta
 import { getNotificationDisplay } from '../components/notifications/formatNotificationDetailsMessage';
 import { useConfirmationsQuery } from '../components/notifications/useConfirmationsQuery';
 import { getWorkspaceDisplayLabel } from '../components/session/workspaceUtils';
+import { getOwnerNotificationActionStatus } from '../components/notifications/ownerActionStatus';
 
 const dateOnly = (v) => (typeof v === 'string' ? v.slice(0, 10) : v);
 const normalizeId = (value) => String(value ?? '');
@@ -261,7 +262,15 @@ export default function Home() {
 
     return notifications
       .filter((notification) => {
-        if (notification.read_flag) return false;
+        const effectiveReadFlag = session?.code_type === 'CompanyOwner'
+          ? getOwnerNotificationActionStatus({
+              notification,
+              dispatch: notification.related_dispatch_id ? dispatchMap[normalizeId(notification.related_dispatch_id)] : null,
+              confirmations,
+              ownerAllowedTrucks: allowedTrucks,
+            }).effectiveReadFlag
+          : notification.read_flag;
+        if (effectiveReadFlag) return false;
         if (!notification.related_dispatch_id) return true;
         return Boolean(dispatchMap[normalizeId(notification.related_dispatch_id)]);
       })
@@ -270,7 +279,7 @@ export default function Home() {
         notification,
         dispatch: notification.related_dispatch_id ? dispatchMap[normalizeId(notification.related_dispatch_id)] : null,
       }));
-  }, [notifications, filteredDispatches]);
+  }, [notifications, filteredDispatches, session?.code_type, confirmations, allowedTrucks]);
 
   const isInformationalUpdateNotification = (notification) =>
     notification?.notification_category === 'dispatch_update_info';

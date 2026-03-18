@@ -105,8 +105,7 @@ export function getWorkspaceDisplayLabel(session, activeCompanyName) {
     const companyLabel =
       (typeof activeCompanyName === 'string' ? activeCompanyName.trim() : '') ||
       'Company';
-    if (!baseName) return companyLabel;
-    return `${baseName} (${companyLabel})`;
+    return baseName || companyLabel;
   }
 
   return session.label || effectiveView || session.code_type || '';

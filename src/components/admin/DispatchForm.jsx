@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Copy, Plus, Trash2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from "@/components/ui/use-toast";
 import {
   notifyDispatchChange,
   notifyDispatchInformationalUpdate,
@@ -346,7 +346,10 @@ export default function DispatchForm({ dispatch, dispatches = [], companies, acc
   const handleSubmit = async () => {
     const missingFields = validateRequiredFields();
     if (missingFields.length > 0) {
-      toast.error(`Please complete the required fields: ${missingFields.join(', ')}`);
+      toast({
+        variant: 'destructive',
+        description: `Please complete the required fields: ${missingFields.join(', ')}`
+      });
       return;
     }
 

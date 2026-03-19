@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Building2, Plus, Pencil, Trash2, X, Truck, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Building2, Plus, Pencil, Trash2, X, Truck, TrendingUp, TrendingDown, Minus, UserRound, Check } from 'lucide-react';
 import { format } from 'date-fns';
 import { calculateCompanyScore, SCORING_EVENT_TYPES, SCORING_PERIODS } from '@/lib/companyScoring';
 
@@ -333,6 +333,14 @@ export default function AdminCompanies() {
   }, [dispatches, selectedCompany, eventForm.event_date]);
   const selectedCompanyDrivers = useMemo(() => drivers.filter((driver) => driver.company_id === selectedCompany?.id), [drivers, selectedCompany]);
 
+  const driversByCompany = useMemo(() => drivers.reduce((map, driver) => {
+    const companyId = driver.company_id;
+    if (!companyId) return map;
+    if (!map.has(companyId)) map.set(companyId, []);
+    map.get(companyId).push(driver);
+    return map;
+  }, new Map()), [drivers]);
+
   const sortedCompanies = useMemo(() => companies.slice().sort((a, b) => (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" })), [companies]);
 
   const openNew = () => {
@@ -426,6 +434,26 @@ export default function AdminCompanies() {
                             <div className="mt-1.5 space-y-0.5">{c.contact_methods.filter((method) => method?.value).map((method, index) => <p key={`${c.id}-contact-${index}`} className="text-sm text-slate-500"><span className="font-medium text-slate-600">{method.type}:</span> {method.value}</p>)}</div>
                           ) : c.contact_info && <p className="text-sm text-slate-500 mt-0.5">{c.contact_info}</p>}
                           <div className="flex items-center gap-1.5 mt-2 flex-wrap"><Truck className="h-3.5 w-3.5 text-slate-400" />{(c.trucks || []).length === 0 ? <span className="text-xs text-slate-400">No trucks</span> : (c.trucks || []).map((t) => <Badge key={t} variant="outline" className="text-xs font-mono">{t}</Badge>)}</div>
+                          {(() => {
+                            const companyDrivers = (driversByCompany.get(c.id) || []).slice().sort((a, b) => (a.driver_name || '').localeCompare(b.driver_name || ''));
+                            if (companyDrivers.length === 0) return null;
+                            return (
+                              <div className="mt-2 space-y-1.5">
+                                <p className="text-xs font-medium text-slate-500">Drivers</p>
+                                <div className="space-y-1.5">
+                                  {companyDrivers.map((driver) => (
+                                    <div key={driver.id} className="flex items-start justify-between gap-3 rounded-md border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs">
+                                      <div className="min-w-0">
+                                        <p className="font-medium text-slate-700 flex items-center gap-1.5"><UserRound className="h-3.5 w-3.5 text-slate-400" />{driver.driver_name || 'Unnamed driver'}</p>
+                                        <p className="text-slate-500 mt-0.5">{driver.phone || 'No phone number'}</p>
+                                      </div>
+                                      <Badge variant={driver.sms_enabled ? 'default' : 'secondary'} className="shrink-0 text-[11px]">{driver.sms_enabled ? <><Check className="h-3 w-3 mr-1" />SMS</> : 'No SMS'}</Badge>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
                       <div className="flex gap-1">

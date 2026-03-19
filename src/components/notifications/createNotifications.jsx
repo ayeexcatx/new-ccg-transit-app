@@ -72,6 +72,64 @@ function getUniqueDriverIds(assignments = []) {
     .filter(Boolean))];
 }
 
+function normalizeComparableValue(value) {
+  if (Array.isArray(value)) {
+    return value.map((entry) => normalizeComparableValue(entry));
+  }
+
+  if (value && typeof value === 'object') {
+    return Object.keys(value)
+      .sort()
+      .reduce((accumulator, key) => {
+        accumulator[key] = normalizeComparableValue(value[key]);
+        return accumulator;
+      }, {});
+  }
+
+  return value ?? null;
+}
+
+function buildDispatchComparableShape(dispatch = {}) {
+  const {
+    trucks_assigned,
+    admin_activity_log,
+    edit_locked,
+    edit_locked_by_session_id,
+    edit_locked_by_name,
+    edit_locked_at,
+    dispatch_html_drive_last_sync_status,
+    dispatch_html_drive_last_sync_error,
+    dispatch_html_drive_last_synced_at,
+    dispatch_html_drive_sync_finalized_at,
+    updated_date,
+    updated_at,
+    created_date,
+    created_at,
+    ...relevantDispatchFields
+  } = dispatch || {};
+
+  return normalizeComparableValue(relevantDispatchFields);
+}
+
+function didOnlyTruckAssignmentsChange(previousDispatch, nextDispatch) {
+  return JSON.stringify(buildDispatchComparableShape(previousDispatch)) === JSON.stringify(buildDispatchComparableShape(nextDispatch));
+}
+
+function getDriverAssignedTrucks(assignments = [], driverId) {
+  return [...new Set((assignments || [])
+    .filter((assignment) => assignment?.active_flag !== false && assignment?.driver_id === driverId)
+    .map((assignment) => String(assignment?.truck_number || '').trim())
+    .filter(Boolean))].sort();
+}
+
+function areAssignedTruckListsEqual(previousAssignments = [], nextAssignments = [], driverId) {
+  const previousTrucks = getDriverAssignedTrucks(previousAssignments, driverId);
+  const nextTrucks = getDriverAssignedTrucks(nextAssignments, driverId);
+
+  if (previousTrucks.length !== nextTrucks.length) return false;
+  return previousTrucks.every((truck, index) => truck === nextTrucks[index]);
+}
+
 async function buildDriverAccessCodeMap(driverIds = []) {
   const uniqueIds = [...new Set((driverIds || []).filter(Boolean))];
   if (!uniqueIds.length) return new Map();
@@ -302,6 +360,7 @@ export async function notifyDriversForDispatchUpdate(dispatch, driverAssignments
 export async function notifyDriversForDispatchEdit({
   previousDispatch,
   nextDispatch,
+  previousDriverAssignments = [],
   driverAssignments = [],
 }) {
   try {
@@ -313,7 +372,14 @@ export async function notifyDriversForDispatchEdit({
     const assignedDriverIds = getUniqueDriverIds(driverAssignments);
     if (!assignedDriverIds.length) return;
 
-    const driverAccessCodeMap = await buildDriverAccessCodeMap(assignedDriverIds);
+    const truckOnlyEdit = !statusChanged && didOnlyTruckAssignmentsChange(previousDispatch, nextDispatch);
+    const driverIdsToNotify = truckOnlyEdit
+      ? assignedDriverIds.filter((driverId) => !areAssignedTruckListsEqual(previousDriverAssignments, driverAssignments, driverId))
+      : assignedDriverIds;
+
+    if (!driverIdsToNotify.length) return;
+
+    const driverAccessCodeMap = await buildDriverAccessCodeMap(driverIdsToNotify);
 
     if (statusChanged) {
       const normalizedNextStatus = String(nextStatus || '').toLowerCase();
@@ -321,7 +387,7 @@ export async function notifyDriversForDispatchEdit({
       if (normalizedNextStatus === 'amended' || isDispatchCanceledStatus(nextStatus)) {
         const { title, message, notificationType } = getDriverDispatchStatusNotification(nextStatus);
 
-        await Promise.all(assignedDriverIds.map((driverId) => createDriverDispatchNotification({
+        await Promise.all(driverIdsToNotify.map((driverId) => createDriverDispatchNotification({
           dispatch: nextDispatch,
           driverAccessCodeId: driverAccessCodeMap.get(driverId),
           title,
@@ -337,7 +403,7 @@ export async function notifyDriversForDispatchEdit({
       return;
     }
 
-    await Promise.all(assignedDriverIds.map((driverId) => createDriverDispatchNotification({
+    await Promise.all(driverIdsToNotify.map((driverId) => createDriverDispatchNotification({
       dispatch: nextDispatch,
       driverAccessCodeId: driverAccessCodeMap.get(driverId),
       title: 'Dispatch Updated',

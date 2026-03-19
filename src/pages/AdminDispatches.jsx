@@ -723,6 +723,10 @@ export default function AdminDispatches() {
           edit_locked_by_name: null,
           edit_locked_at: null
         });
+        const previousActiveDriverAssignments = await base44.entities.DriverDispatchAssignment.filter({
+          dispatch_id: editing.id,
+          active_flag: true
+        }, '-assigned_datetime', 500);
         const savedDispatch = await base44.entities.Dispatch.filter({ id: editing.id }, '-created_date', 1).then((r) => r[0]);
 
         if (savedDispatch) {
@@ -758,6 +762,7 @@ export default function AdminDispatches() {
           await notifyDriversForDispatchEdit({
             previousDispatch: editing,
             nextDispatch: savedDispatch,
+            previousDriverAssignments: previousActiveDriverAssignments,
             driverAssignments: activeDriverAssignments
           });
 

@@ -1,14 +1,24 @@
 import { createPageUrl } from '@/utils';
 
 export const COMPANY_OWNER_TUTORIAL_ID = 'companyOwnerMainPortal';
+export const COMPANY_OWNER_TUTORIAL_LANGUAGE = {
+  ENGLISH: 'en',
+  PORTUGUESE: 'pt',
+};
 export const COMPANY_OWNER_TUTORIAL_DISMISSED_KEY = 'companyOwnerTutorialDismissed';
 export const COMPANY_OWNER_TUTORIAL_COMPLETED_KEY = 'companyOwnerTutorialCompleted';
 export const DISPATCH_DRAWER_TUTORIAL_SEEN_KEY = 'dispatchDrawerTutorialSeen';
 export const DISPATCH_DRAWER_TUTORIAL_COMPLETED_KEY = 'dispatchDrawerTutorialCompleted';
 
-const COMPANY_OWNER_TUTORIAL_COMPLETION_STEP = {
-  title: "You're all set",
-  description: 'You can replay this tutorial anytime using the Tutorial button.',
+const COMPANY_OWNER_TUTORIAL_COMPLETION_STEPS = {
+  [COMPANY_OWNER_TUTORIAL_LANGUAGE.ENGLISH]: {
+    title: "You're all set",
+    description: 'You can replay this tutorial anytime using the Tutorial button.',
+  },
+  [COMPANY_OWNER_TUTORIAL_LANGUAGE.PORTUGUESE]: {
+    title: 'title11',
+    description: 'description',
+  },
 };
 
 const DISPATCH_DRAWER_TUTORIAL_COMPLETION_STEP = {
@@ -16,89 +26,167 @@ const DISPATCH_DRAWER_TUTORIAL_COMPLETION_STEP = {
   description: 'You can replay this tutorial anytime using the Tutorial button in the dispatch drawer.',
 };
 
-export const companyOwnerTutorialSteps = [
-  {
-    id: 'home-screen',
-    page: createPageUrl('Home'),
-    target: '[data-tour="home-overview"]',
-    title: 'Home Page',
-    description:
-      'The Home Screen provides a quick snapshot of your pending actions and upcoming dispatches.',
-  },
-  {
-    id: 'announcement-center',
-    page: createPageUrl('Home'),
-    target: '[data-tour="announcement-center"]',
-    title: 'Home: Announcement Center',
-    description:
-      'This is where you will receive general communications and advisories from CCG Transit.',
-  },
-  {
-    id: 'action-needed',
-    page: createPageUrl('Home'),
-    target: '[data-tour="action-needed"]',
-    title: 'Home: Action Needed',
-    description:
-      'This section highlights dispatches that require your immediate attention, such as confirming receipt.',
-    warningText: 'Items will remain in this section until you confirm receipt of your dispatch.',
-  },
-  {
-    id: 'dispatch-preview',
-    page: createPageUrl('Home'),
-    target: '[data-tour="dispatch-preview"]',
-    title: 'Home: Dispatch Preview',
-    description: 'This area provides a quick view of your next few assigned dispatches.',
-  },
-  {
-    id: 'dispatches-page',
-    page: createPageUrl('Home'),
-    target: '[data-tour="dispatches-nav"]',
-    title: 'Dispatches Page',
-    description: 'The Dispatches page shows your full dispatch history as well as all upcoming dispatches.',
-  },
-  {
-    id: 'availability-page',
-    page: createPageUrl('Home'),
-    target: '[data-tour="availability-nav"]',
-    title: 'Availability Page',
-    description:
-      'The Availability page allows you to indicate whether you are available for a specific shift and how many trucks you have available.',
-  },
-  {
-    id: 'recurring-weekly-defaults',
-    page: createPageUrl('Availability'),
-    target: '[data-tour="recurring-weekly-defaults"]',
-    tooltipPlacement: 'top',
-    title: 'Availability: Weekly Defaults',
-    description:
-      'Here you can set your default weekly availability. These settings will automatically apply to all future weeks unless changed.',
-  },
-  {
-    id: 'availability-controls',
-    page: createPageUrl('Availability'),
-    target: '[data-tour="availability-controls"]',
-    title: 'Availability: Daily Controls',
-    description:
-      'This section allows you to actively select the number of trucks you have available for each shift.',
-    warningText: 'We recommend you visit this section daily or weekly to update the amount of trucks you have available for every upcoming shift.',
-  },
-  {
-    id: 'drivers-page',
-    page: createPageUrl('Home'),
-    target: '[data-tour="drivers-nav"]',
-    title: 'Drivers Page',
-    description:
-      'Use this page to add drivers and enter their information.',
-    useWarning: 'Please read the instructions about the driver portal at the bottom of the page in full. Once you add a driver, you will need to request a password for them.',
-  },
-  {
-    id: 'incidents-page',
-    page: createPageUrl('Home'),
-    target: '[data-tour="incidents-nav"]',
-    title: 'Incidents Page',
-    description: 'This is where you can create a new incident report or view your incident history.',
-  },
-];
+export const companyOwnerTutorialSteps = {
+  [COMPANY_OWNER_TUTORIAL_LANGUAGE.ENGLISH]: [
+    {
+      id: 'home-screen',
+      page: createPageUrl('Home'),
+      target: '[data-tour="home-overview"]',
+      title: 'Home Page',
+      description:
+        'The Home Screen provides a quick snapshot of your pending actions and upcoming dispatches.',
+    },
+    {
+      id: 'announcement-center',
+      page: createPageUrl('Home'),
+      target: '[data-tour="announcement-center"]',
+      title: 'Home: Announcement Center',
+      description:
+        'This is where you will receive general communications and advisories from CCG Transit.',
+    },
+    {
+      id: 'action-needed',
+      page: createPageUrl('Home'),
+      target: '[data-tour="action-needed"]',
+      title: 'Home: Action Needed',
+      description:
+        'This section highlights dispatches that require your immediate attention, such as confirming receipt.',
+      warningText: 'Items will remain in this section until you confirm receipt of your dispatch.',
+    },
+    {
+      id: 'dispatch-preview',
+      page: createPageUrl('Home'),
+      target: '[data-tour="dispatch-preview"]',
+      title: 'Home: Dispatch Preview',
+      description: 'This area provides a quick view of your next few assigned dispatches.',
+    },
+    {
+      id: 'dispatches-page',
+      page: createPageUrl('Home'),
+      target: '[data-tour="dispatches-nav"]',
+      title: 'Dispatches Page',
+      description: 'The Dispatches page shows your full dispatch history as well as all upcoming dispatches.',
+    },
+    {
+      id: 'availability-page',
+      page: createPageUrl('Home'),
+      target: '[data-tour="availability-nav"]',
+      title: 'Availability Page',
+      description:
+        'The Availability page allows you to indicate whether you are available for a specific shift and how many trucks you have available.',
+    },
+    {
+      id: 'recurring-weekly-defaults',
+      page: createPageUrl('Availability'),
+      target: '[data-tour="recurring-weekly-defaults"]',
+      tooltipPlacement: 'top',
+      title: 'Availability: Weekly Defaults',
+      description:
+        'Here you can set your default weekly availability. These settings will automatically apply to all future weeks unless changed.',
+    },
+    {
+      id: 'availability-controls',
+      page: createPageUrl('Availability'),
+      target: '[data-tour="availability-controls"]',
+      title: 'Availability: Daily Controls',
+      description:
+        'This section allows you to actively select the number of trucks you have available for each shift.',
+      warningText: 'We recommend you visit this section daily or weekly to update the amount of trucks you have available for every upcoming shift.',
+    },
+    {
+      id: 'drivers-page',
+      page: createPageUrl('Home'),
+      target: '[data-tour="drivers-nav"]',
+      title: 'Drivers Page',
+      description:
+        'Use this page to add drivers and enter their information.',
+      warningText: 'Please read the instructions about the driver portal at the bottom of the page in full. Once you add a driver, you will need to request a password for them.',
+    },
+    {
+      id: 'incidents-page',
+      page: createPageUrl('Home'),
+      target: '[data-tour="incidents-nav"]',
+      title: 'Incidents Page',
+      description: 'This is where you can create a new incident report or view your incident history.',
+    },
+  ],
+  [COMPANY_OWNER_TUTORIAL_LANGUAGE.PORTUGUESE]: [
+    {
+      id: 'home-screen',
+      page: createPageUrl('Home'),
+      target: '[data-tour="home-overview"]',
+      title: 'title1',
+      description: 'description',
+    },
+    {
+      id: 'announcement-center',
+      page: createPageUrl('Home'),
+      target: '[data-tour="announcement-center"]',
+      title: 'title2',
+      description: 'description',
+    },
+    {
+      id: 'action-needed',
+      page: createPageUrl('Home'),
+      target: '[data-tour="action-needed"]',
+      title: 'title3',
+      description: 'description',
+      warningText: 'description',
+    },
+    {
+      id: 'dispatch-preview',
+      page: createPageUrl('Home'),
+      target: '[data-tour="dispatch-preview"]',
+      title: 'title4',
+      description: 'description',
+    },
+    {
+      id: 'dispatches-page',
+      page: createPageUrl('Home'),
+      target: '[data-tour="dispatches-nav"]',
+      title: 'title5',
+      description: 'description',
+    },
+    {
+      id: 'availability-page',
+      page: createPageUrl('Home'),
+      target: '[data-tour="availability-nav"]',
+      title: 'title6',
+      description: 'description',
+    },
+    {
+      id: 'recurring-weekly-defaults',
+      page: createPageUrl('Availability'),
+      target: '[data-tour="recurring-weekly-defaults"]',
+      tooltipPlacement: 'top',
+      title: 'title7',
+      description: 'description',
+    },
+    {
+      id: 'availability-controls',
+      page: createPageUrl('Availability'),
+      target: '[data-tour="availability-controls"]',
+      title: 'title8',
+      description: 'description',
+      warningText: 'description',
+    },
+    {
+      id: 'drivers-page',
+      page: createPageUrl('Home'),
+      target: '[data-tour="drivers-nav"]',
+      title: 'title9',
+      description: 'description',
+      warningText: 'description',
+    },
+    {
+      id: 'incidents-page',
+      page: createPageUrl('Home'),
+      target: '[data-tour="incidents-nav"]',
+      title: 'title10',
+      description: 'description',
+    },
+  ],
+};
 
 export const dispatchDrawerTutorialSteps = [
   {
@@ -161,8 +249,9 @@ export const dispatchDrawerTutorialSteps = [
 
 export const tutorialRegistry = {
   [COMPANY_OWNER_TUTORIAL_ID]: {
-    steps: companyOwnerTutorialSteps,
-    completionStep: COMPANY_OWNER_TUTORIAL_COMPLETION_STEP,
+    stepsByLanguage: companyOwnerTutorialSteps,
+    completionStepsByLanguage: COMPANY_OWNER_TUTORIAL_COMPLETION_STEPS,
+    defaultLanguage: COMPANY_OWNER_TUTORIAL_LANGUAGE.ENGLISH,
     storageKeys: {
       dismissed: COMPANY_OWNER_TUTORIAL_DISMISSED_KEY,
       completed: COMPANY_OWNER_TUTORIAL_COMPLETED_KEY,

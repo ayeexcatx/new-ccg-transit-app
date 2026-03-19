@@ -7,11 +7,13 @@ import TutorialWelcomeModal from './TutorialWelcomeModal';
 import useTutorialRunner from './useTutorialRunner';
 import {
   COMPANY_OWNER_TUTORIAL_ID,
+  COMPANY_OWNER_TUTORIAL_LANGUAGE,
   tutorialRegistry,
 } from './tutorialConfig';
 
 const TutorialContext = createContext({
   startTutorial: () => {},
+  openTutorialWelcome: () => {},
 });
 
 const DEBUG_TUTORIAL_SCROLL = true;
@@ -39,9 +41,14 @@ export default function TutorialProvider({ session, children }) {
 
   const [isRunning, setIsRunning] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState(tutorialConfig.defaultLanguage);
   const [isDispatchDrawerOpen, setIsDispatchDrawerOpen] = useState(() => (
     typeof window !== 'undefined' && window.__dispatchDetailDrawerOpen === true
   ));
+
+  const activeSteps = tutorialConfig.stepsByLanguage[selectedLanguage] || tutorialConfig.stepsByLanguage[tutorialConfig.defaultLanguage];
+  const activeCompletionStep = tutorialConfig.completionStepsByLanguage[selectedLanguage]
+    || tutorialConfig.completionStepsByLanguage[tutorialConfig.defaultLanguage];
 
   const {
     totalSteps,
@@ -54,7 +61,7 @@ export default function TutorialProvider({ session, children }) {
     setStepIndex,
     setTargetRect,
   } = useTutorialRunner({
-    steps: tutorialConfig.steps,
+    steps: activeSteps,
     active: isRunning,
     getCurrentTarget: (step) => step?.target,
     getScrollContainer: (step) => step?.scrollContainer || null,
@@ -65,12 +72,27 @@ export default function TutorialProvider({ session, children }) {
     setTargetRect(null);
   }, [setTargetRect]);
 
-  const startTutorial = useCallback(() => {
+  const startTutorial = useCallback((language = tutorialConfig.defaultLanguage) => {
     if (!isCompanyOwner) return;
+    setSelectedLanguage(language);
     setShowWelcome(false);
     setStepIndex(0);
     setIsRunning(true);
-  }, [isCompanyOwner, setStepIndex]);
+  }, [isCompanyOwner, setStepIndex, tutorialConfig.defaultLanguage]);
+
+  const openTutorialWelcome = useCallback(() => {
+    if (!isCompanyOwner) return;
+    stopTutorial();
+    setShowWelcome(true);
+  }, [isCompanyOwner, stopTutorial]);
+
+  const startEnglishTutorial = useCallback(() => {
+    startTutorial(COMPANY_OWNER_TUTORIAL_LANGUAGE.ENGLISH);
+  }, [startTutorial]);
+
+  const startPortugueseTutorial = useCallback(() => {
+    startTutorial(COMPANY_OWNER_TUTORIAL_LANGUAGE.PORTUGUESE);
+  }, [startTutorial]);
 
   const markCompleted = useCallback(() => {
     localStorage.setItem(completedKey, 'true');
@@ -108,7 +130,6 @@ export default function TutorialProvider({ session, children }) {
     handleStepChange(stepIndex - 1);
   }, [handleStepChange, isCompletion, stepIndex, totalSteps]);
 
-
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
 
@@ -145,13 +166,13 @@ export default function TutorialProvider({ session, children }) {
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
     window.__tutorialActive = isRunning;
-    logTutorialScroll('tutorial active state updated', { isRunning, stepIndex, page: currentStep?.page || null });
+    logTutorialScroll('tutorial active state updated', { isRunning, stepIndex, page: currentStep?.page || null, language: selectedLanguage });
 
     return () => {
       window.__tutorialActive = false;
       logTutorialScroll('tutorial active state cleared');
     };
-  }, [currentStep?.page, isRunning, stepIndex]);
+  }, [currentStep?.page, isRunning, selectedLanguage, stepIndex]);
 
   useEffect(() => {
     if (!isRunning || isCompletion || !currentStep?.page) return;
@@ -160,7 +181,7 @@ export default function TutorialProvider({ session, children }) {
     }
   }, [currentStep?.page, isCompletion, isRunning, location.pathname, navigate]);
 
-  const value = useMemo(() => ({ startTutorial }), [startTutorial]);
+  const value = useMemo(() => ({ startTutorial, openTutorialWelcome }), [openTutorialWelcome, startTutorial]);
 
   return (
     <TutorialContext.Provider value={value}>
@@ -171,7 +192,7 @@ export default function TutorialProvider({ session, children }) {
           type="button"
           size="sm"
           variant="default"
-          onClick={startTutorial}
+          onClick={openTutorialWelcome}
           className="fixed bottom-5 right-5 z-[180] border border-blue-700 bg-blue-600 text-white shadow-lg hover:bg-blue-700 focus-visible:ring-blue-500"
         >
           <CircleHelp className="mr-1 h-4 w-4" />
@@ -181,7 +202,8 @@ export default function TutorialProvider({ session, children }) {
 
       <TutorialWelcomeModal
         open={showWelcome}
-        onStart={startTutorial}
+        onStart={startEnglishTutorial}
+        onStartPortuguese={startPortugueseTutorial}
         onSkip={handleSkipForNow}
         onDismiss={handleDismissPermanently}
       />
@@ -190,7 +212,7 @@ export default function TutorialProvider({ session, children }) {
         active={isRunning}
         targetRect={targetRect}
         tooltipStyle={tooltipStyle}
-        step={isCompletion ? tutorialConfig.completionStep : currentStep}
+        step={isCompletion ? activeCompletionStep : currentStep}
         stepIndex={stepIndex}
         totalSteps={totalSteps}
         isCompletion={isCompletion}
@@ -198,7 +220,7 @@ export default function TutorialProvider({ session, children }) {
         onNext={goToNextStep}
         onSkip={handleSkipForNow}
         onFinish={handleFinish}
-        onReplay={startTutorial}
+        onReplay={openTutorialWelcome}
       />
     </TutorialContext.Provider>
   );

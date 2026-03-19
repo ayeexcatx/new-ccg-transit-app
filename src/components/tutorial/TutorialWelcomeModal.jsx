@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 
-export default function TutorialWelcomeModal({ open, onStart, onSkip, onDismiss }) {
+export default function TutorialWelcomeModal({ open, onStart, onStartPortuguese, onSkip, onDismiss }) {
   if (!open) return null;
 
   return (
@@ -13,8 +13,9 @@ export default function TutorialWelcomeModal({ open, onStart, onSkip, onDismiss 
           announcements, availability, drivers, and incidents.
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-end gap-2">
-          <Button variant="outline" onClick={onDismiss}>Don&apos;t show again</Button>
+          <Button variant="outline" onClick={onDismiss}>Don't show again</Button>
           <Button variant="ghost" onClick={onSkip}>Skip for Now</Button>
+          <Button variant="secondary" onClick={onStartPortuguese}>Inciar Tour em Português</Button>
           <Button onClick={onStart}>Start Tour</Button>
         </div>
       </div>

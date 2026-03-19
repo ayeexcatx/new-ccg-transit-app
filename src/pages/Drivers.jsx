@@ -10,13 +10,27 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
-import { UserRound, Plus, Pencil, KeyRound } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { UserRound, Plus, Pencil, KeyRound, Trash2, Check } from 'lucide-react';
 
 const defaultForm = {
   driver_name: '',
   phone: '',
+  sms_enabled: false,
   notes: '',
   status: 'Active',
+};
+
+const formatPhoneNumber = (value) => {
+  const rawDigits = String(value || '').replace(/\D/g, '');
+  const digits = rawDigits.length === 11 && rawDigits.startsWith('1')
+    ? rawDigits.slice(1)
+    : rawDigits.slice(0, 10);
+
+  if (!digits) return '';
+  if (digits.length < 4) return `(${digits}`;
+  if (digits.length < 7) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
 };
 
 export default function Drivers() {
@@ -25,6 +39,8 @@ export default function Drivers() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(defaultForm);
+  const [errors, setErrors] = useState({});
+  const [driverToDelete, setDriverToDelete] = useState(null);
 
   const { data: drivers = [], isLoading } = useQuery({
     queryKey: ['drivers', session?.company_id],
@@ -53,6 +69,15 @@ export default function Drivers() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id) => base44.entities.Driver.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['drivers', session?.company_id] });
+      queryClient.invalidateQueries({ queryKey: ['drivers-all'] });
+      setDriverToDelete(null);
+    },
+  });
+
   const requestCodeMutation = useMutation({
     mutationFn: (driver) => base44.entities.Driver.update(driver.id, {
       access_code_status: 'Pending',
@@ -67,6 +92,7 @@ export default function Drivers() {
   const openCreate = () => {
     setEditing(null);
     setForm(defaultForm);
+    setErrors({});
     setOpen(true);
   };
 
@@ -74,18 +100,26 @@ export default function Drivers() {
     setEditing(driver);
     setForm({
       driver_name: driver.driver_name || '',
-      phone: driver.phone || '',
+      phone: formatPhoneNumber(driver.phone || ''),
+      sms_enabled: driver.sms_enabled === true,
       notes: driver.notes || '',
       status: driver.status || 'Active',
     });
+    setErrors({});
     setOpen(true);
   };
 
   const handleSave = () => {
-    if (!form.driver_name.trim()) return;
+    const nextErrors = {};
+    if (!form.driver_name.trim()) nextErrors.driver_name = 'Driver name is required.';
+    if (!form.phone.trim()) nextErrors.phone = 'Phone number is required.';
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
+
     saveMutation.mutate({
       driver_name: form.driver_name.trim(),
       phone: form.phone.trim(),
+      sms_enabled: form.sms_enabled === true,
       notes: form.notes,
       status: form.status,
       active_flag: form.status === 'Active',
@@ -136,12 +170,15 @@ export default function Drivers() {
                         <Badge variant={status === 'Active' ? 'default' : 'secondary'}>{status}</Badge>
                         <Badge variant="outline">{driver.access_code_status || 'Not Requested'}</Badge>
                       </div>
-                      {driver.phone && <p className="text-sm text-slate-600">Phone: {driver.phone}</p>}
+                      {driver.phone && <p className="text-sm text-slate-600 flex items-center gap-2 flex-wrap">Phone: {driver.phone}<Badge variant={driver.sms_enabled ? 'default' : 'secondary'} className="text-[11px]">{driver.sms_enabled ? <><Check className="h-3 w-3 mr-1" />SMS On</> : 'SMS Off'}</Badge></p>}
                       {driver.notes && <p className="text-sm text-slate-500">{driver.notes}</p>}
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       <Button variant="ghost" size="icon" onClick={() => openEdit(driver)} className="h-8 w-8">
                         <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => setDriverToDelete(driver)} className="h-8 w-8 text-red-500 hover:text-red-600">
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                       <Button
                         variant="outline"
@@ -274,13 +311,37 @@ export default function Drivers() {
               <Label>Driver Name *</Label>
               <Input
                 value={form.driver_name}
-                onChange={(e) => setForm((prev) => ({ ...prev, driver_name: e.target.value }))}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setForm((prev) => ({ ...prev, driver_name: value }));
+                  if (errors.driver_name && value.trim()) setErrors((prev) => ({ ...prev, driver_name: '' }));
+                }}
                 placeholder="Driver name"
               />
+              {errors.driver_name && <p className="mt-1 text-xs text-red-600">{errors.driver_name}</p>}
             </div>
             <div>
-              <Label>Phone</Label>
-              <Input value={form.phone} onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))} placeholder="Phone number" />
+              <Label>Phone Number *</Label>
+              <Input
+                value={form.phone}
+                onChange={(e) => {
+                  const value = formatPhoneNumber(e.target.value);
+                  setForm((prev) => ({ ...prev, phone: value }));
+                  if (errors.phone && value.trim()) setErrors((prev) => ({ ...prev, phone: '' }));
+                }}
+                placeholder="Phone number"
+              />
+              {errors.phone && <p className="mt-1 text-xs text-red-600">{errors.phone}</p>}
+            </div>
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div>
+                <Label>Receive SMS notifications</Label>
+                <p className="text-xs text-slate-500">Enable SMS opt-in for this driver.</p>
+              </div>
+              <Switch
+                checked={form.sms_enabled === true}
+                onCheckedChange={(checked) => setForm((prev) => ({ ...prev, sms_enabled: checked }))}
+              />
             </div>
             <div>
               <Label>Notes</Label>
@@ -306,6 +367,19 @@ export default function Drivers() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!driverToDelete} onOpenChange={(openState) => !openState && setDriverToDelete(null)}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Driver</AlertDialogTitle>
+            <AlertDialogDescription>Are you sure you want to delete this driver?</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => driverToDelete && deleteMutation.mutate(driverToDelete.id)} disabled={deleteMutation.isPending}>OK</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -155,7 +155,7 @@ export default function AdminAccessCodes() {
       company_id: driver.company_id || '',
       allowed_trucks: [],
       driver_id: driver.id || '',
-      sms_enabled: false,
+      sms_enabled: driver.sms_enabled === true,
       sms_phone: formatPhoneNumber(driver.phone || ''),
       available_views: [],
       linked_company_ids: [],

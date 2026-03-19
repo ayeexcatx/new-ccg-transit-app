@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import DeleteConfirmationDialog from '@/components/admin/DeleteConfirmationDialog';
 import { Building2, Plus, Pencil, Trash2, X, Truck, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { format } from 'date-fns';
 import { calculateCompanyScore, SCORING_EVENT_TYPES, SCORING_PERIODS } from '@/lib/companyScoring';
@@ -273,6 +274,7 @@ export default function AdminCompanies() {
   const [periodKey, setPeriodKey] = useState('last30');
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [eventForm, setEventForm] = useState(initialEventForm);
+  const [companyPendingDelete, setCompanyPendingDelete] = useState(null);
 
   const { data: companies = [], isLoading } = useQuery({ queryKey: ['companies'], queryFn: () => base44.entities.Company.list() });
   const { data: dispatches = [] } = useQuery({ queryKey: ['scoring-dispatches'], queryFn: () => base44.entities.Dispatch.list('-date', 1000) });
@@ -390,6 +392,13 @@ export default function AdminCompanies() {
     }));
   };
 
+  const confirmDeleteCompany = () => {
+    if (!companyPendingDelete) return;
+    deleteMutation.mutate(companyPendingDelete.id, {
+      onSuccess: () => setCompanyPendingDelete(null),
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -430,7 +439,7 @@ export default function AdminCompanies() {
                       </div>
                       <div className="flex gap-1">
                         <Button variant="ghost" size="icon" onClick={() => openEdit(c)} className="h-8 w-8"><Pencil className="h-3.5 w-3.5" /></Button>
-                        <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(c.id)} className="h-8 w-8 text-red-500 hover:text-red-600"><Trash2 className="h-3.5 w-3.5" /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => setCompanyPendingDelete(c)} className="h-8 w-8 text-red-500 hover:text-red-600"><Trash2 className="h-3.5 w-3.5" /></Button>
                       </div>
                     </div>
                   </CardContent>
@@ -480,6 +489,16 @@ export default function AdminCompanies() {
           </div>
         </TabsContent>
       </Tabs>
+
+
+      <DeleteConfirmationDialog
+        open={!!companyPendingDelete}
+        onOpenChange={(openState) => !openState && setCompanyPendingDelete(null)}
+        title="Delete Company?"
+        description="Are you sure you want to delete this company? This action cannot be undone."
+        onConfirm={confirmDeleteCompany}
+        isDeleting={deleteMutation.isPending}
+      />
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">

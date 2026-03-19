@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import DeleteConfirmationDialog from '@/components/admin/DeleteConfirmationDialog';
 import { Key, Plus, Pencil, Trash2, Truck, Building2, Shield, Copy, UserRound } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -47,6 +48,7 @@ export default function AdminAccessCodes() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [accessCodePendingDelete, setAccessCodePendingDelete] = useState(null);
   const [form, setForm] = useState({
     code: '',
     label: '',
@@ -274,6 +276,13 @@ export default function AdminAccessCodes() {
 
   const codeTypeIcons = { Truck, CompanyOwner: Building2, Admin: Shield, Driver: UserRound };
 
+  const confirmDeleteAccessCode = () => {
+    if (!accessCodePendingDelete) return;
+    deleteMutation.mutate(accessCodePendingDelete.id, {
+      onSuccess: () => setAccessCodePendingDelete(null),
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -395,7 +404,7 @@ export default function AdminAccessCodes() {
                       <Button variant="ghost" size="icon" onClick={() => openEdit(c)} className="h-8 w-8">
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(c.id)} className="h-8 w-8 text-red-500 hover:text-red-600">
+                      <Button variant="ghost" size="icon" onClick={() => setAccessCodePendingDelete(c)} className="h-8 w-8 text-red-500 hover:text-red-600">
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
@@ -406,6 +415,16 @@ export default function AdminAccessCodes() {
           })}
         </div>
       )}
+
+
+      <DeleteConfirmationDialog
+        open={!!accessCodePendingDelete}
+        onOpenChange={(openState) => !openState && setAccessCodePendingDelete(null)}
+        title="Delete Access Code?"
+        description="Are you sure you want to delete this access code? This action cannot be undone."
+        onConfirm={confirmDeleteAccessCode}
+        isDeleting={deleteMutation.isPending}
+      />
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-md">

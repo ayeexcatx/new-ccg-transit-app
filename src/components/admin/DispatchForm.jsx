@@ -109,7 +109,6 @@ export default function DispatchForm({ dispatch, dispatches = [], companies, acc
   companies.forEach((c) => {companyMap[c.id] = c.name;});
 
   const isConfirmed = form.status === 'Scheduled';
-  const isFullDispatch = form.status === 'Dispatch' || form.status === 'Amended';
   const normalizedStatus = String(form.status || '').toLowerCase();
   const isCanceled = normalizedStatus === 'cancelled' || normalizedStatus === 'canceled';
   const isAmended = normalizedStatus === 'amended';
@@ -271,6 +270,40 @@ export default function DispatchForm({ dispatch, dispatches = [], companies, acc
     setForm({ ...form, additional_assignments: form.additional_assignments.filter((_, i) => i !== idx) });
   };
 
+  const hasValue = (value) => String(value || '').trim().length > 0;
+
+  const validateRequiredFields = () => {
+    const missingFields = [];
+
+    if (!hasValue(form.company_id)) missingFields.push('Company');
+    if (!hasValue(form.date)) missingFields.push('Date');
+    if (!hasValue(form.shift_time)) missingFields.push('Shift');
+    if ((form.trucks_assigned || []).length === 0) missingFields.push('Trucks Assigned');
+
+    if (!isConfirmed) {
+      if (!hasValue(form.client_name)) missingFields.push('Client Name');
+      if (!hasValue(form.job_number)) missingFields.push('Job Number');
+      if (!hasValue(form.start_time)) missingFields.push('Start Time');
+      if (!hasValue(form.start_location)) missingFields.push('Start Location');
+      if (!hasValue(form.instructions)) missingFields.push('Instructions');
+      if (!hasValue(form.toll_status)) missingFields.push('Toll Status');
+
+      for (const [index, assignment] of (form.additional_assignments || []).entries()) {
+        const assignmentNumber = index + 2;
+        if (!hasValue(assignment?.job_number)) missingFields.push(`Assignment ${assignmentNumber}: Job Number`);
+        if (!hasValue(assignment?.start_time)) missingFields.push(`Assignment ${assignmentNumber}: Start Time`);
+        if (!hasValue(assignment?.start_location)) missingFields.push(`Assignment ${assignmentNumber}: Start Location`);
+        if (!hasValue(assignment?.instructions)) missingFields.push(`Assignment ${assignmentNumber}: Instructions`);
+        if (!hasValue(assignment?.toll_status)) missingFields.push(`Assignment ${assignmentNumber}: Toll Status`);
+      }
+    }
+
+    if (isCanceled && !hasValue(form.canceled_reason)) missingFields.push('Cancellation Reason');
+    if (isAmended && !hasValue(form.canceled_reason)) missingFields.push('Amendment Reason');
+
+    return missingFields;
+  };
+
   const finalizeSubmit = async (finalForm, customUpdateMessage = '') => {
     const oldStatus = dispatch && !dispatch._isCopy ? dispatch.status : null;
     const newStatus = finalForm.status;
@@ -310,32 +343,15 @@ export default function DispatchForm({ dispatch, dispatches = [], companies, acc
   };
 
   const handleSubmit = async () => {
-    // Base validation
-    if (!form.company_id || !form.date || !form.shift_time || form.trucks_assigned.length === 0) {
-      alert('Please fill in Company, Date, Shift Time, and assign at least one truck');
+    const missingFields = validateRequiredFields();
+    if (missingFields.length > 0) {
+      alert(`Please complete the required field${missingFields.length === 1 ? '' : 's'}: ${missingFields.join(', ')}`);
       return;
     }
 
     if (form.trucks_assigned.some((truckNumber) => unavailableTrucks.has(truckNumber))) {
       alert('One or more selected trucks are already assigned for this company, date, and shift.');
       return;
-    }
-
-    // Status-specific validation
-    if (isFullDispatch && !form.start_location) {
-      alert('Start Location is required for Dispatch/Amended status');
-      return;
-    }
-
-    if (isCanceled && !form.canceled_reason) {
-      alert('Cancellation reason is required for Cancelled status');
-      return;
-    }
-
-    // Warnings for recommended fields
-    if (isFullDispatch) {
-      if (!form.start_time && !window.confirm('Start Time is blank. Continue anyway?')) return;
-      if (!form.instructions && !window.confirm('Instructions are blank. Continue anyway?')) return;
     }
 
     // Track amendments
@@ -420,12 +436,12 @@ export default function DispatchForm({ dispatch, dispatches = [], companies, acc
         {!isConfirmed &&
         <>
             <div>
-              <Label>Client Name</Label>
+              <Label>Client Name *</Label>
               <Input value={form.client_name} onChange={(e) => setForm({ ...form, client_name: e.target.value })} />
             </div>
             {showStatusReasonField &&
           <div>
-                <Label>{isCanceled ? 'Cancellation Reason' : 'Amendment Reason'}{isCanceled ? ' *' : ''}</Label>
+                <Label>{isCanceled ? 'Cancellation Reason *' : 'Amendment Reason *'}</Label>
                 <Textarea
               value={form.canceled_reason}
               onChange={(e) => setForm({ ...form, canceled_reason: e.target.value })}
@@ -470,7 +486,7 @@ export default function DispatchForm({ dispatch, dispatches = [], companies, acc
             <p className="text-xs text-slate-500 uppercase tracking-wide">Assignment 1 (Primary)</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs">Job Number</Label>
+                <Label className="text-xs">Job Number *</Label>
                 <Input placeholder="Job #" value={form.job_number || ''} onChange={(e) => handlePrimaryJobNumberChange(e.target.value)} />
               </div>
               <div>
@@ -478,16 +494,16 @@ export default function DispatchForm({ dispatch, dispatches = [], companies, acc
                 <Input placeholder="Spoken name" value={form.reference_tag || ''} onChange={(e) => handlePrimaryReferenceTagChange(e.target.value)} maxLength={40} />
               </div>
               <div>
-                <Label className="text-xs">Start Time</Label>
+                <Label className="text-xs">Start Time *</Label>
                 <Input type="time" value={form.start_time} onChange={(e) => setForm({ ...form, start_time: e.target.value })} />
               </div>
             </div>
             <div>
-              <Label>Start Location {isFullDispatch && '*'}</Label>
+              <Label>Start Location *</Label>
               <Textarea value={form.start_location} onChange={(e) => setForm({ ...form, start_location: e.target.value })} rows={2} placeholder="Enter address (multi-line supported)" />
             </div>
             <div>
-              <Label>Instructions {isFullDispatch && '(recommended)'}</Label>
+              <Label>Instructions *</Label>
               <Textarea value={form.instructions} onChange={(e) => setForm({ ...form, instructions: e.target.value })} rows={2} />
             </div>
             <div>
@@ -495,7 +511,7 @@ export default function DispatchForm({ dispatch, dispatches = [], companies, acc
               <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} />
             </div>
             <div>
-              <Label className="text-xs">Toll Status</Label>
+              <Label className="text-xs">Toll Status *</Label>
               <Select value={form.toll_status} onValueChange={(v) => setForm({ ...form, toll_status: v })}>
                 <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                 <SelectContent>
@@ -577,7 +593,7 @@ export default function DispatchForm({ dispatch, dispatches = [], companies, acc
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <Label className="text-xs">Job Number</Label>
+                  <Label className="text-xs">Job Number *</Label>
                   <Input placeholder="Job #" value={a.job_number || ''} onChange={(e) => updateAssignment(i, 'job_number', e.target.value)} />
                 </div>
                 <div>
@@ -587,16 +603,16 @@ export default function DispatchForm({ dispatch, dispatches = [], companies, acc
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <Label className="text-xs">Start Time</Label>
+                  <Label className="text-xs">Start Time *</Label>
                   <Input type="time" value={a.start_time} onChange={(e) => updateAssignment(i, 'start_time', e.target.value)} />
                 </div>
               </div>
               <div>
-                <Label className="text-xs">Start Location</Label>
+                <Label className="text-xs">Start Location *</Label>
                 <Textarea placeholder="Enter address (multi-line supported)" value={a.start_location} onChange={(e) => updateAssignment(i, 'start_location', e.target.value)} rows={2} />
               </div>
               <div>
-                <Label className="text-xs">Instructions</Label>
+                <Label className="text-xs">Instructions *</Label>
                 <Textarea placeholder="Instructions" value={a.instructions} onChange={(e) => updateAssignment(i, 'instructions', e.target.value)} rows={2} />
               </div>
               <div>
@@ -604,7 +620,7 @@ export default function DispatchForm({ dispatch, dispatches = [], companies, acc
                 <Textarea placeholder="Notes" value={a.notes || ''} onChange={(e) => updateAssignment(i, 'notes', e.target.value)} rows={2} />
               </div>
               <div>
-                <Label className="text-xs">Toll Status</Label>
+                <Label className="text-xs">Toll Status *</Label>
                 <Select value={a.toll_status || ''} onValueChange={(v) => updateAssignment(i, 'toll_status', v)}>
                   <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                   <SelectContent>

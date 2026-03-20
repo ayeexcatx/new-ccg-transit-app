@@ -223,7 +223,7 @@ export default function AdminConfirmations() {
             <p className="text-sm text-slate-500 py-6 text-center">No open confirmations.</p>
           ) : (
             <>
-              <div className="space-y-3 md:hidden">
+              <div className="space-y-3 lg:hidden">
                 {openRows.map((row) => (
                   <OpenConfirmationMobileCard
                     key={row.id}
@@ -233,7 +233,7 @@ export default function AdminConfirmations() {
                 ))}
               </div>
 
-              <div className="hidden md:block overflow-x-auto border border-slate-200 rounded-lg">
+              <div className="hidden lg:block overflow-x-auto border border-slate-200 rounded-lg">
                 <table className="w-full text-sm">
                   <thead className="bg-slate-50 text-slate-600">
                     <tr>
@@ -296,7 +296,7 @@ export default function AdminConfirmations() {
             <p className="text-sm text-slate-500 py-6 text-center">No confirmation history found.</p>
           ) : (
             <>
-              <div className="space-y-3 md:hidden">
+              <div className="space-y-3 lg:hidden">
                 {historyRows.map((row) => (
                   <HistoryMobileCard
                     key={row.id}
@@ -306,7 +306,7 @@ export default function AdminConfirmations() {
                 ))}
               </div>
 
-              <div className="hidden md:block overflow-x-auto border border-slate-200 rounded-lg">
+              <div className="hidden lg:block overflow-x-auto border border-slate-200 rounded-lg">
                 <table className="w-full text-sm">
                   <thead className="bg-slate-50 text-slate-600">
                     <tr>

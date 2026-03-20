@@ -30,6 +30,77 @@ function formatDispatchDate(value) {
   return format(parsed, 'MM-dd-yyyy');
 }
 
+function MobileField({ label, value, mono = false }) {
+  return (
+    <div className="min-w-0 space-y-1">
+      <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">{label}</p>
+      <p className={`text-sm text-slate-700 break-words ${mono ? 'font-mono' : ''}`}>{value || '—'}</p>
+    </div>
+  );
+}
+
+function OpenConfirmationMobileCard({ row, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full rounded-lg border border-slate-200 bg-white p-4 text-left transition hover:border-slate-300 hover:bg-slate-50"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-slate-900 break-words">{row.companyName}</p>
+        </div>
+        <Badge className={`${statusBadgeColors[row.status] || 'bg-slate-100 text-slate-700 border-slate-200'} border shrink-0`}>
+          {row.status || '—'}
+        </Badge>
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3">
+        <MobileField label="Date" value={formatDispatchDate(row.dispatchDate)} />
+        <MobileField label="Truck" value={row.truckNumber} mono />
+        <MobileField label="Client" value={row.clientName} />
+        <MobileField label="Job Number" value={row.jobNumber} />
+        <MobileField label="Reference" value={row.referenceTag} />
+        <MobileField label="Notification" value={formatDateTime(row.createdAt)} />
+      </div>
+
+      <div className="mt-3 border-t border-slate-100 pt-3">
+        <MobileField label="Pending" value={formatPendingAge(row.createdAt)} />
+      </div>
+    </button>
+  );
+}
+
+function HistoryMobileCard({ row, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full rounded-lg border border-slate-200 bg-white p-4 text-left transition hover:border-slate-300 hover:bg-slate-50"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <p className="min-w-0 text-sm font-semibold text-slate-900 break-words">{row.companyName}</p>
+        <Badge className={`${statusBadgeColors[row.confirmationType] || 'bg-slate-100 text-slate-700 border-slate-200'} border shrink-0`}>
+          {row.confirmationType || '—'}
+        </Badge>
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3">
+        <MobileField label="Date" value={formatDispatchDate(row.dispatchDate)} />
+        <MobileField label="Truck" value={row.truckNumber} mono />
+        <MobileField label="Client" value={row.clientName} />
+        <MobileField label="Job Number" value={row.jobNumber} />
+        <MobileField label="Reference" value={row.referenceTag} />
+        <MobileField label="Confirmed By" value={row.confirmedBy} />
+      </div>
+
+      <div className="mt-3 border-t border-slate-100 pt-3">
+        <MobileField label="Confirmed At" value={formatDateTime(row.confirmedAt)} />
+      </div>
+    </button>
+  );
+}
+
 export default function AdminConfirmations() {
   const navigate = useNavigate();
 
@@ -136,12 +207,12 @@ export default function AdminConfirmations() {
 
       <Card>
         <CardContent className="p-5 space-y-4">
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h3 className="text-sm font-semibold text-slate-700">Open Confirmations</h3>
               <p className="text-xs text-slate-500">Outstanding truck confirmations derived from unresolved owner notifications.</p>
             </div>
-            <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">{openRows.length} open</Badge>
+            <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100 self-start sm:self-auto">{openRows.length} open</Badge>
           </div>
 
           {isLoading ? (
@@ -151,58 +222,70 @@ export default function AdminConfirmations() {
           ) : openRows.length === 0 ? (
             <p className="text-sm text-slate-500 py-6 text-center">No open confirmations.</p>
           ) : (
-            <div className="overflow-x-auto border border-slate-200 rounded-lg">
-              <table className="w-full text-sm">
-                <thead className="bg-slate-50 text-slate-600">
-                  <tr>
-                    <th className="text-left font-medium px-3 py-2">Company</th>
-                    <th className="text-left font-medium px-3 py-2">Dispatch Date</th>
-                    <th className="text-left font-medium px-3 py-2">Type</th>
-                    <th className="text-left font-medium px-3 py-2">Truck</th>
-                    <th className="text-left font-medium px-3 py-2">Client</th>
-                    <th className="text-left font-medium px-3 py-2">Job Number</th>
-                    <th className="text-left font-medium px-3 py-2">Reference</th>
-                    <th className="text-left font-medium px-3 py-2">Notification Time</th>
-                    <th className="text-left font-medium px-3 py-2">Pending</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {openRows.map((row) => (
-                    <tr
-                      key={row.id}
-                      className="border-t border-slate-100 hover:bg-slate-50 cursor-pointer"
-                      onClick={() => openDispatch(row.dispatchId)}
-                    >
-                      <td className="px-3 py-2">{row.companyName}</td>
-                      <td className="px-3 py-2">{formatDispatchDate(row.dispatchDate)}</td>
-                      <td className="px-3 py-2">
-                        <Badge className={`${statusBadgeColors[row.status] || 'bg-slate-100 text-slate-700 border-slate-200'} border`}>
-                          {row.status || '—'}
-                        </Badge>
-                      </td>
-                      <td className="px-3 py-2 font-mono">{row.truckNumber}</td>
-                      <td className="px-3 py-2">{row.clientName || '—'}</td>
-                      <td className="px-3 py-2">{row.jobNumber || '—'}</td>
-                      <td className="px-3 py-2">{row.referenceTag || '—'}</td>
-                      <td className="px-3 py-2">{formatDateTime(row.createdAt)}</td>
-                      <td className="px-3 py-2">{formatPendingAge(row.createdAt)}</td>
+            <>
+              <div className="space-y-3 md:hidden">
+                {openRows.map((row) => (
+                  <OpenConfirmationMobileCard
+                    key={row.id}
+                    row={row}
+                    onClick={() => openDispatch(row.dispatchId)}
+                  />
+                ))}
+              </div>
+
+              <div className="hidden md:block overflow-x-auto border border-slate-200 rounded-lg">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 text-slate-600">
+                    <tr>
+                      <th className="text-left font-medium px-3 py-2">Company</th>
+                      <th className="text-left font-medium px-3 py-2">Dispatch Date</th>
+                      <th className="text-left font-medium px-3 py-2">Type</th>
+                      <th className="text-left font-medium px-3 py-2">Truck</th>
+                      <th className="text-left font-medium px-3 py-2">Client</th>
+                      <th className="text-left font-medium px-3 py-2">Job Number</th>
+                      <th className="text-left font-medium px-3 py-2">Reference</th>
+                      <th className="text-left font-medium px-3 py-2">Notification Time</th>
+                      <th className="text-left font-medium px-3 py-2">Pending</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {openRows.map((row) => (
+                      <tr
+                        key={row.id}
+                        className="border-t border-slate-100 hover:bg-slate-50 cursor-pointer"
+                        onClick={() => openDispatch(row.dispatchId)}
+                      >
+                        <td className="px-3 py-2">{row.companyName}</td>
+                        <td className="px-3 py-2">{formatDispatchDate(row.dispatchDate)}</td>
+                        <td className="px-3 py-2">
+                          <Badge className={`${statusBadgeColors[row.status] || 'bg-slate-100 text-slate-700 border-slate-200'} border`}>
+                            {row.status || '—'}
+                          </Badge>
+                        </td>
+                        <td className="px-3 py-2 font-mono">{row.truckNumber}</td>
+                        <td className="px-3 py-2">{row.clientName || '—'}</td>
+                        <td className="px-3 py-2">{row.jobNumber || '—'}</td>
+                        <td className="px-3 py-2">{row.referenceTag || '—'}</td>
+                        <td className="px-3 py-2">{formatDateTime(row.createdAt)}</td>
+                        <td className="px-3 py-2">{formatPendingAge(row.createdAt)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
 
       <Card>
         <CardContent className="p-5 space-y-4">
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h3 className="text-sm font-semibold text-slate-700">Confirmation Log / History</h3>
               <p className="text-xs text-slate-500">Completed confirmations from confirmation records.</p>
             </div>
-            <Badge variant="secondary">{historyRows.length} records</Badge>
+            <Badge variant="secondary" className="self-start sm:self-auto">{historyRows.length} records</Badge>
           </div>
 
           {isLoading ? (
@@ -212,46 +295,58 @@ export default function AdminConfirmations() {
           ) : historyRows.length === 0 ? (
             <p className="text-sm text-slate-500 py-6 text-center">No confirmation history found.</p>
           ) : (
-            <div className="overflow-x-auto border border-slate-200 rounded-lg">
-              <table className="w-full text-sm">
-                <thead className="bg-slate-50 text-slate-600">
-                  <tr>
-                    <th className="text-left font-medium px-3 py-2">Company</th>
-                    <th className="text-left font-medium px-3 py-2">Dispatch Date</th>
-                    <th className="text-left font-medium px-3 py-2">Truck</th>
-                    <th className="text-left font-medium px-3 py-2">Client</th>
-                    <th className="text-left font-medium px-3 py-2">Job Number</th>
-                    <th className="text-left font-medium px-3 py-2">Reference</th>
-                    <th className="text-left font-medium px-3 py-2">Type</th>
-                    <th className="text-left font-medium px-3 py-2">Confirmed At</th>
-                    <th className="text-left font-medium px-3 py-2">Confirmed By</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {historyRows.map((row) => (
-                    <tr
-                      key={row.id}
-                      className="border-t border-slate-100 hover:bg-slate-50 cursor-pointer"
-                      onClick={() => openDispatch(row.dispatchId)}
-                    >
-                      <td className="px-3 py-2">{row.companyName}</td>
-                      <td className="px-3 py-2">{formatDispatchDate(row.dispatchDate)}</td>
-                      <td className="px-3 py-2 font-mono">{row.truckNumber || '—'}</td>
-                      <td className="px-3 py-2">{row.clientName || '—'}</td>
-                      <td className="px-3 py-2">{row.jobNumber || '—'}</td>
-                      <td className="px-3 py-2">{row.referenceTag || '—'}</td>
-                      <td className="px-3 py-2">
-                        <Badge className={`${statusBadgeColors[row.confirmationType] || 'bg-slate-100 text-slate-700 border-slate-200'} border`}>
-                          {row.confirmationType || '—'}
-                        </Badge>
-                      </td>
-                      <td className="px-3 py-2">{formatDateTime(row.confirmedAt)}</td>
-                      <td className="px-3 py-2">{row.confirmedBy}</td>
+            <>
+              <div className="space-y-3 md:hidden">
+                {historyRows.map((row) => (
+                  <HistoryMobileCard
+                    key={row.id}
+                    row={row}
+                    onClick={() => openDispatch(row.dispatchId)}
+                  />
+                ))}
+              </div>
+
+              <div className="hidden md:block overflow-x-auto border border-slate-200 rounded-lg">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 text-slate-600">
+                    <tr>
+                      <th className="text-left font-medium px-3 py-2">Company</th>
+                      <th className="text-left font-medium px-3 py-2">Dispatch Date</th>
+                      <th className="text-left font-medium px-3 py-2">Truck</th>
+                      <th className="text-left font-medium px-3 py-2">Client</th>
+                      <th className="text-left font-medium px-3 py-2">Job Number</th>
+                      <th className="text-left font-medium px-3 py-2">Reference</th>
+                      <th className="text-left font-medium px-3 py-2">Type</th>
+                      <th className="text-left font-medium px-3 py-2">Confirmed At</th>
+                      <th className="text-left font-medium px-3 py-2">Confirmed By</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {historyRows.map((row) => (
+                      <tr
+                        key={row.id}
+                        className="border-t border-slate-100 hover:bg-slate-50 cursor-pointer"
+                        onClick={() => openDispatch(row.dispatchId)}
+                      >
+                        <td className="px-3 py-2">{row.companyName}</td>
+                        <td className="px-3 py-2">{formatDispatchDate(row.dispatchDate)}</td>
+                        <td className="px-3 py-2 font-mono">{row.truckNumber || '—'}</td>
+                        <td className="px-3 py-2">{row.clientName || '—'}</td>
+                        <td className="px-3 py-2">{row.jobNumber || '—'}</td>
+                        <td className="px-3 py-2">{row.referenceTag || '—'}</td>
+                        <td className="px-3 py-2">
+                          <Badge className={`${statusBadgeColors[row.confirmationType] || 'bg-slate-100 text-slate-700 border-slate-200'} border`}>
+                            {row.confirmationType || '—'}
+                          </Badge>
+                        </td>
+                        <td className="px-3 py-2">{formatDateTime(row.confirmedAt)}</td>
+                        <td className="px-3 py-2">{row.confirmedBy}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

@@ -9,18 +9,60 @@ import { createPageUrl } from '../utils';
 import { buildOpenConfirmationRows } from '@/components/notifications/openConfirmations';
 import { statusBadgeColors } from '@/components/portal/statusConfig';
 
-function formatDateTime(value) {
+const EASTERN_TIMEZONE = 'America/New_York';
+
+function parseUtcTimestamp(value) {
+  if (!value) return null;
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+
+  if (typeof value === 'number') {
+    const parsedNumber = new Date(value);
+    return Number.isNaN(parsedNumber.getTime()) ? null : parsedNumber;
+  }
+
+  if (typeof value !== 'string') return null;
+
+  const trimmedValue = value.trim();
+  if (!trimmedValue) return null;
+
+  const hasTimezone = /([zZ]|[+-]\d{2}:?\d{2})$/.test(trimmedValue);
+  const normalizedValue = hasTimezone
+    ? trimmedValue
+    : `${trimmedValue.replace(' ', 'T')}Z`;
+
+  const parsed = new Date(normalizedValue);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function formatNotificationDateTime(value) {
+  const parsed = parseUtcTimestamp(value);
+  if (!parsed) return '—';
+
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: EASTERN_TIMEZONE,
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZoneName: 'short',
+  }).format(parsed);
+}
+
+function formatPendingAge(value) {
+  const parsed = parseUtcTimestamp(value);
+  if (!parsed) return '—';
+  return formatDistanceToNowStrict(parsed, { addSuffix: true });
+}
+
+function formatStandardDateTime(value) {
   if (!value) return '—';
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return '—';
   return format(parsed, 'MMM d, yyyy h:mm a');
-}
-
-function formatPendingAge(value) {
-  if (!value) return '—';
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return '—';
-  return formatDistanceToNowStrict(parsed, { addSuffix: true });
 }
 
 function formatDispatchDate(value) {
@@ -61,7 +103,7 @@ function OpenConfirmationMobileCard({ row, onClick }) {
         <MobileField label="Client" value={row.clientName} />
         <MobileField label="Job Number" value={row.jobNumber} />
         <MobileField label="Reference" value={row.referenceTag} />
-        <MobileField label="Notification" value={formatDateTime(row.createdAt)} />
+        <MobileField label="Notification" value={formatNotificationDateTime(row.createdAt)} />
       </div>
 
       <div className="mt-3 border-t border-slate-100 pt-3">
@@ -95,7 +137,7 @@ function HistoryMobileCard({ row, onClick }) {
       </div>
 
       <div className="mt-3 border-t border-slate-100 pt-3">
-        <MobileField label="Confirmed At" value={formatDateTime(row.confirmedAt)} />
+        <MobileField label="Confirmed At" value={formatStandardDateTime(row.confirmedAt)} />
       </div>
     </button>
   );
@@ -266,7 +308,7 @@ export default function AdminConfirmations() {
                         <td className="px-3 py-2">{row.clientName || '—'}</td>
                         <td className="px-3 py-2">{row.jobNumber || '—'}</td>
                         <td className="px-3 py-2">{row.referenceTag || '—'}</td>
-                        <td className="px-3 py-2">{formatDateTime(row.createdAt)}</td>
+                        <td className="px-3 py-2">{formatNotificationDateTime(row.createdAt)}</td>
                         <td className="px-3 py-2">{formatPendingAge(row.createdAt)}</td>
                       </tr>
                     ))}
@@ -339,7 +381,7 @@ export default function AdminConfirmations() {
                             {row.confirmationType || '—'}
                           </Badge>
                         </td>
-                        <td className="px-3 py-2">{formatDateTime(row.confirmedAt)}</td>
+                        <td className="px-3 py-2">{row.confirmedAt ? format(new Date(row.confirmedAt), 'MMM d, yyyy h:mm a') : '—'}</td>
                         <td className="px-3 py-2">{row.confirmedBy}</td>
                       </tr>
                     ))}

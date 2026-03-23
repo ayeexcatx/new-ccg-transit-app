@@ -7,6 +7,7 @@ Generated from repository code review on 2026-03-23. This document is intentiona
 - **Likely inferred from code** — strongly suggested by the implementation, but not guaranteed without runtime validation.
 - **Needs manual verification** — unclear, environment-dependent, or not fully provable from static review alone.
 
+**((NOTE))** `Truck` were originally added to be a user, but will eventually be removed as a user, leaving only 3 remaining user types: `Admin`, `CompanyOwner`, `Driver`.
 ---
 
 ## A. App-Level Core Rules

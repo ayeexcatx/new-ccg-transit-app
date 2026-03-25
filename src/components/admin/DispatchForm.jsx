@@ -6,16 +6,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Copy, Plus, Trash2 } from 'lucide-react';
-import {
-  notifyDispatchChange,
-  notifyDispatchInformationalUpdate,
-  reconcileOwnerNotificationsForDispatch,
-  expandCurrentStatusRequiredTrucks,
-} from '@/components/notifications/createNotifications';
 
 const UPDATE_MESSAGE_MAX_LENGTH = 100;
 
-export default function DispatchForm({ dispatch, dispatches = [], companies, accessCodes, onSave, onCancel, saving }) {
+export default function DispatchForm({ dispatch, dispatches = [], companies, onSave, onCancel, saving }) {
   const [form, setForm] = useState({
     company_id: '', date: '', shift_time: 'Day Shift', client_name: '', job_number: '', reference_tag: '',
     start_time: '', start_location: '', instructions: 'Deliver material to / from',
@@ -306,36 +300,8 @@ export default function DispatchForm({ dispatch, dispatches = [], companies, acc
     return missingFields;
   };
 
-  const finalizeSubmit = async (finalForm, customUpdateMessage = '') => {
-    const oldStatus = dispatch && !dispatch._isCopy ? dispatch.status : null;
-    const newStatus = finalForm.status;
-    const statusChanged = oldStatus !== newStatus;
-
-    const previousTrucks = dispatch && !dispatch._isCopy
-      ? (dispatch.trucks_assigned || [])
-      : [];
-    const nextTrucks = finalForm.trucks_assigned || [];
-    const addedTrucks = !statusChanged
-      ? nextTrucks.filter(truck => !previousTrucks.includes(truck))
-      : [];
-
-    const savedDispatch = await onSave(finalForm);
-    const dispatchForNotifications = savedDispatch || finalForm;
-
-    if (statusChanged) {
-      await notifyDispatchChange(dispatchForNotifications, oldStatus, newStatus, companies, accessCodes);
-    } else {
-      if (addedTrucks.length > 0) {
-        await expandCurrentStatusRequiredTrucks(dispatchForNotifications, addedTrucks, accessCodes);
-      }
-
-      if (dispatch && !dispatch._isCopy && customUpdateMessage.trim()) {
-        await notifyDispatchInformationalUpdate(dispatchForNotifications, customUpdateMessage, companies, accessCodes);
-      }
-    }
-
-    await reconcileOwnerNotificationsForDispatch(dispatchForNotifications, accessCodes);
-  };
+  const finalizeSubmit = async (finalForm, customUpdateMessage = '') =>
+  onSave(finalForm, { customUpdateMessage });
 
   const closeUpdateModals = () => {
     setShowUpdateNotifyChoice(false);

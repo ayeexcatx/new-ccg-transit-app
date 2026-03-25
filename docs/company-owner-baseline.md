@@ -1,6 +1,6 @@
 # Company Owner Baseline (Code-Backed)
 
-Date reviewed: 2026-03-24.
+Date reviewed: 2026-03-25.
 
 ## Covered areas
 - Company Owner Home
@@ -27,11 +27,10 @@ Date reviewed: 2026-03-24.
 - Today/Upcoming dispatch quick views.
 
 ### Missing from personal baseline
-- Exact read-state derivation using notification+confirmation reconciliation (`effectiveReadFlag`).
-- Eastern-time fallback behavior when time resolution fails.
+- None currently confirmed.
 
 ### Conflicts with personal baseline
-- None explicit and code-verifiable.
+- None currently confirmed.
 
 ### Needs manual verification
 - Exact UX expectations for Action Needed ordering/prioritization under heavy notification volume.
@@ -49,10 +48,10 @@ Date reviewed: 2026-03-24.
 - Owner-specific availability management with summary + calendar/defaults.
 
 ### Missing from personal baseline
-- None major; implementation aligns closely.
+- None currently confirmed.
 
 ### Conflicts with personal baseline
-- None explicit.
+- None currently confirmed.
 
 ### Needs manual verification
 - Any server-side enforcement beyond UI behavior.
@@ -72,14 +71,14 @@ Date reviewed: 2026-03-24.
 ### Present in personal baseline
 - Add/edit driver workflows.
 - SMS dual-permission model.
-- Access-code request intent.
+- Access-code request intent and status progression (`Requested`/`Created`).
+- Instructional guidance section with English/Portuguese coverage.
 
 ### Missing from personal baseline
-- Detailed pending-request status progression surfaced in UI (`Not Requested`/`Pending`/`Created`).
-- Built-in bilingual operational guidance sections.
+- None currently confirmed.
 
 ### Conflicts with personal baseline
-- None explicit.
+- None currently confirmed.
 
 ### Needs manual verification
 - Whether educational content text should be treated as product policy or temporary guidance copy.
@@ -96,13 +95,13 @@ Date reviewed: 2026-03-24.
 
 ### Present in personal baseline
 - Notification feed and action handling.
+- Distinction between stored read state and computed effective-read state.
 
 ### Missing from personal baseline
-- Distinction between stored read state and computed effective read state.
-- Category-specific read-on-click behavior.
+- None currently confirmed.
 
 ### Conflicts with personal baseline
-- None explicit.
+- None currently confirmed.
 
 ### Needs manual verification
 - Performance/consistency under high notification volume and frequent updates.
@@ -123,14 +122,13 @@ Date reviewed: 2026-03-24.
 - Profile editing and admin approval flow.
 - Access-code controls.
 - SMS notification settings.
+- Multi-contact-method editor and SMS-designation behavior.
 
 ### Missing from personal baseline
-- Multi-contact-method editor and SMS-contact radio behavior.
-- Explicit access-code synchronization side effects.
+- None currently confirmed.
 
 ### Conflicts with personal baseline
-- None explicit.
+- None currently confirmed.
 
 ### Needs manual verification
 - Approval SLA/workflow assumptions (frontend supports pending flow but not process guarantees).
-

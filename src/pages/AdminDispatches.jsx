@@ -20,10 +20,9 @@ import DispatchDetailDrawer from '../components/portal/DispatchDetailDrawer';
 import { useSession } from '../components/session/SessionContext';
 import { Label } from '@/components/ui/label';
 import { statusBadgeColors, statusBorderAccent, scheduledStatusMessage } from '../components/portal/statusConfig';
-import { reconcileOwnerNotificationsForDispatch, notifyDriversForDispatchEdit } from '@/components/notifications/createNotifications';
 import { syncDispatchHtmlToDrive } from '@/lib/dispatchDriveSync';
 import { toast } from 'sonner';
-import { clearRemovedTruckDriverAssignments } from '@/services/driverAssignmentMutationService';
+import { runAdminDispatchMutation } from '@/services/adminDispatchMutationService';
 
 const STATUS_ORDER = ['Scheduled', 'Dispatch', 'Amended', 'Cancelled'];
 const ACTIVE_LIVE_EXCLUDED_STATUSES = new Set(['Cancelled', 'Scheduled']);
@@ -680,108 +679,20 @@ export default function AdminDispatches() {
   };
 
   const saveMutation = useMutation({
-    mutationFn: async (data) => {
-      if (editing && !editing._isCopy) {
-        const nextEntries = buildDispatchUpdateActivityEntries(editing, data, session);
-
-        await base44.entities.Dispatch.update(editing.id, {
-          ...data,
-          admin_activity_log: appendAdminActivityLog(editing.admin_activity_log, nextEntries),
-          edit_locked: false,
-          edit_locked_by_session_id: null,
-          edit_locked_by_name: null,
-          edit_locked_at: null
-        });
-        const previousActiveDriverAssignments = await base44.entities.DriverDispatchAssignment.filter({
-          dispatch_id: editing.id,
-          active_flag: true
-        }, '-assigned_datetime', 500);
-        const savedDispatch = await base44.entities.Dispatch.filter({ id: editing.id }, '-created_date', 1).then((r) => r[0]);
-
-        if (savedDispatch) {
-          const removedTrucks = (editing?.trucks_assigned || []).filter((truck) => !(savedDispatch.trucks_assigned || []).includes(truck));
-          await clearRemovedTruckDriverAssignments({
-            dispatch: savedDispatch,
-            removedTrucks,
-          });
-
-          const previousStatus = editing?.status;
-          const nextStatus = savedDispatch.status;
-          const shouldResetDriverReceiptConfirmation = previousStatus !== nextStatus && (nextStatus === 'Amended' || nextStatus === 'Cancelled');
-
-          if (shouldResetDriverReceiptConfirmation) {
-            const activeDriverAssignmentsForReset = await base44.entities.DriverDispatchAssignment.filter({
-              dispatch_id: savedDispatch.id,
-              active_flag: true
-            }, '-assigned_datetime', 500);
-
-            await Promise.all((activeDriverAssignmentsForReset || []).
-            filter((assignment) => assignment?.id).
-            map((assignment) => base44.entities.DriverDispatchAssignment.update(assignment.id, {
-              receipt_confirmed_flag: false,
-              receipt_confirmed_at: null,
-              receipt_confirmed_by_driver_id: null,
-              receipt_confirmed_by_name: null
-            })));
-          }
-
-          await reconcileOwnerNotificationsForDispatch(savedDispatch, accessCodes);
-          const activeDriverAssignments = await base44.entities.DriverDispatchAssignment.filter({
-            dispatch_id: savedDispatch.id,
-            active_flag: true
-          }, '-assigned_datetime', 500);
-
-          await notifyDriversForDispatchEdit({
-            previousDispatch: editing,
-            nextDispatch: savedDispatch,
-            previousDriverAssignments: previousActiveDriverAssignments,
-            driverAssignments: activeDriverAssignments
-          });
-
-          try {
-            await syncDispatchRecordHtml({
-              dispatch: savedDispatch,
-              previousDispatch: editing,
-              companies
-            });
-          } catch (error) {
-            await base44.entities.Dispatch.update(savedDispatch.id, {
-              dispatch_html_drive_last_sync_status: 'failed',
-              dispatch_html_drive_last_sync_error: String(error?.message || error || 'Drive sync failed')
-            });
-            toast.warning('Dispatch saved, but Google Drive sync failed.');
-          }
-        }
-
-        return savedDispatch;
-      } else {
-        const adminName = getAdminDisplayName(session);
-        const createdDispatch = await base44.entities.Dispatch.create({
-          ...data,
-          admin_activity_log: appendAdminActivityLog(data.admin_activity_log, createAdminActivityEntry(session, 'created_dispatch', `${adminName} created this dispatch`)),
-          edit_locked: false,
-          edit_locked_by_session_id: null,
-          edit_locked_by_name: null,
-          edit_locked_at: null
-        });
-
-        try {
-          await syncDispatchRecordHtml({
-            dispatch: createdDispatch,
-            previousDispatch: null,
-            companies
-          });
-        } catch (error) {
-          await base44.entities.Dispatch.update(createdDispatch.id, {
-            dispatch_html_drive_last_sync_status: 'failed',
-            dispatch_html_drive_last_sync_error: String(error?.message || error || 'Drive sync failed')
-          });
-          toast.warning('Dispatch created, but Google Drive sync failed.');
-        }
-
-        return createdDispatch;
-      }
-    },
+    mutationFn: async ({ data, customUpdateMessage }) => runAdminDispatchMutation({
+      editing,
+      data,
+      customUpdateMessage,
+      session,
+      accessCodes,
+      companies,
+      appendAdminActivityLog,
+      buildDispatchUpdateActivityEntries,
+      createAdminActivityEntry,
+      getAdminDisplayName,
+      syncDispatchRecordHtml,
+      notifyDriveSyncWarning: (message) => toast.warning(message)
+    }),
     onSuccess: () => {
       activeEditLockDispatchIdRef.current = null;
       queryClient.invalidateQueries({ queryKey: ['dispatches-admin'] });
@@ -1203,9 +1114,12 @@ export default function AdminDispatches() {
     setLiveBoardCenterDate((prev) => addDays(prev, direction));
   };
 
-  const handleSave = (formData) => {
+  const handleSave = (formData, options = {}) => {
     return new Promise((resolve, reject) => {
-      saveMutation.mutate(formData, {
+      saveMutation.mutate({
+        data: formData,
+        customUpdateMessage: options.customUpdateMessage || ''
+      }, {
         onSuccess: (saved) => resolve(saved),
         onError: reject
       });

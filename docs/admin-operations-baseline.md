@@ -12,6 +12,7 @@ This baseline treats repository code as source of truth and compares it against 
 - Admin Access Codes
 - Admin Template Notes
 - Admin Profile
+- Admin Confirmations
 
 ---
 
@@ -195,3 +196,50 @@ This baseline treats repository code as source of truth and compares it against 
 
 ### Needs manual verification
 - Whether backend SMS workflow for admins is intentionally deferred or partially rolled out outside this repo.
+
+---
+
+## 8) Admin Confirmations
+
+### Confirmed from code
+- Page is split into **Open Confirmations** and **Confirmation History** sections.
+- Open rows are computed from unresolved owner notifications + missing truck confirmations (not a raw dispatch-status list).
+- Open section shows company, dispatch date, status/type, truck, client, job number, reference, notification timestamp, and a computed pending-age field.
+- History section is sourced from completed `Confirmation` records and shows company/date/truck/client/job/reference plus `Confirmed At` and `Confirmed By`.
+- Clicking either open/history rows deep-links to the target dispatch in Admin Dispatches (`AdminDispatches?dispatchId=...`).
+
+### Present in personal baseline
+- Two-section structure (open + history).
+- Pending duration and notification-time emphasis for open confirmations.
+- Confirmed-at / confirmed-by metadata in history.
+
+### Missing from personal baseline
+- None currently confirmed.
+
+### Conflicts with personal baseline
+- None currently confirmed.
+
+### Needs manual verification
+- Expected SLA/alerting policy for long-pending confirmations (UI shows age; escalation policy is not encoded in inspected code).
+
+---
+
+## 9) Admin app shell (header/nav) coverage
+
+### Confirmed from code
+- Admin pages use a shared sticky header with logo/title, workspace identity line, notification bell, profile menu trigger, and logout action.
+- Admin nav tabs are explicitly rendered as: Dashboard, Dispatches, Availability, Confirmations, Incidents, Announcements, Companies, Access Codes, Notes.
+- Pending badges for company profile requests and driver requests are attached to Companies and Access Codes nav items.
+
+### Present in personal baseline
+- Persistent header concept with logo, role/workspace identity, notification bell, profile/menu, and logout.
+- Admin navigation item set.
+
+### Missing from personal baseline
+- None currently confirmed.
+
+### Conflicts with personal baseline
+- None currently confirmed.
+
+### Needs manual verification
+- Responsive behavior details across breakpoints for very long company/workspace labels.

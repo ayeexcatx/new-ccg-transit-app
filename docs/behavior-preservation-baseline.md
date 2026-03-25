@@ -42,6 +42,15 @@ Generated from repository code review on 2026-03-23. This document is intentiona
 - **Confirmed from code:** Company-owner workspace labels are company-specific; a multi-company admin/company-owner hybrid can switch into specific linked companies.
 - **Needs manual verification:** Whether any non-admin/non-owner access codes are intentionally meant to support multiple workspaces beyond what current UI enforces.
 
+
+### App shell / header / install prompt behavior
+- **Confirmed from code:** A persistent shared header is rendered on all routed pages except `AccessCodeLogin`; it contains logo + title on the left and role/workspace identity on a second line.
+- **Confirmed from code:** Header identity uses role icon + `getWorkspaceDisplayLabel(...)` output (for example admin/company workspace labels), and shows a workspace picker only when multiple workspace options are available.
+- **Confirmed from code:** Header actions always include logout; notification bell and profile menu are shown for `Admin`, `CompanyOwner`, and `Driver` only.
+- **Confirmed from code:** Admin navigation tabs in the header include `Dashboard`, `Dispatches`, `Availability`, `Confirmations`, `Incidents`, `Announcements`, `Companies`, `Access Codes`, and `Notes`.
+- **Confirmed from code:** `InstallPromptBanner` is mounted app-wide (including login route) but suppresses itself in standalone mode and desktop-class environments; mobile/tablet eligible clients can see install guidance or prompt controls.
+- **Needs manual verification:** Exact timing/frequency of install-prompt display across browsers and repeated visits.
+
 ### Dispatch lifecycle behavior
 - **Confirmed from code:** Dispatch statuses used by the app are `Scheduled`, `Dispatch`, `Amended`, and `Cancelled`.
 - **Confirmed from code:** Creating or editing a dispatch can trigger owner notifications, driver notifications, edit-lock changes, admin activity-log entries, and Google Drive HTML sync.

@@ -15,6 +15,7 @@ import { format, parseISO } from 'date-fns';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { toast } from 'sonner';
+import { canUserSeeIncident, normalizeVisibilityId } from '@/lib/dispatchVisibility';
 
 const INCIDENT_TYPES = [
   'Mechanical Issue',
@@ -239,7 +240,10 @@ export default function Incidents() {
     );
   }, [dispatches, driverDispatchIds, isAdmin, isDriver, isOwner, session?.allowed_trucks]);
 
-  const visibleDispatchIds = useMemo(() => new Set(visibleDispatches.map((d) => d.id)), [visibleDispatches]);
+  const visibleDispatchIds = useMemo(
+    () => new Set(visibleDispatches.map((d) => normalizeVisibilityId(d.id))),
+    [visibleDispatches]
+  );
 
   const sortedVisibleDispatches = useMemo(() => (
     visibleDispatches
@@ -413,24 +417,8 @@ export default function Incidents() {
   });
 
   const visibleIncidents = useMemo(() => {
-    const ownedTruckSet = new Set(session?.allowed_trucks || []);
-
     return incidents
-      .filter((incident) => {
-        if (isAdmin) return true;
-        if (isTruck) return incident.reported_by_access_code_id === session?.id;
-        if (isDriver) {
-          const createdByDriver = incident.reported_by_access_code_id === session?.id;
-          const tiedToAssignedDispatch = incident.dispatch_id && visibleDispatchIds.has(incident.dispatch_id);
-          return createdByDriver || tiedToAssignedDispatch;
-        }
-        if (isOwner) {
-          const createdByOwner = incident.reported_by_access_code_id === session?.id;
-          const forOwnersTruck = incident.company_id === session?.company_id && ownedTruckSet.has(incident.truck_number);
-          return createdByOwner || forOwnersTruck;
-        }
-        return false;
-      })
+      .filter((incident) => canUserSeeIncident(session, incident, { visibleDispatchIds }))
       .filter((incident) => {
         if (filters.status !== 'all' && incident.status !== filters.status) return false;
         if (filters.type !== 'all' && incident.incident_type !== filters.type) return false;
@@ -438,7 +426,7 @@ export default function Incidents() {
         return true;
       })
       .sort((a, b) => new Date(b.incident_datetime || b.created_date || 0) - new Date(a.incident_datetime || a.created_date || 0));
-  }, [filters, incidents, isAdmin, isDriver, isOwner, isTruck, session, visibleDispatchIds]);
+  }, [filters, incidents, session, visibleDispatchIds]);
 
   const onDispatchChange = (dispatchId) => {
     if (dispatchId === '__none__') {

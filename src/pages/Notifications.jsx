@@ -14,6 +14,10 @@ import { useOwnerNotifications } from '@/components/notifications/useOwnerNotifi
 import { getNotificationDisplay } from '@/components/notifications/formatNotificationDetailsMessage';
 import { useConfirmationsQuery } from '@/components/notifications/useConfirmationsQuery';
 import { getOwnerNotificationActionStatus } from '@/components/notifications/ownerActionStatus';
+import {
+  canUserSeeNotification,
+  normalizeVisibilityId,
+} from '@/lib/dispatchVisibility';
 
 export default function Notifications() {
   const { session } = useSession();
@@ -29,12 +33,13 @@ export default function Notifications() {
   });
 
   const dispatchMap = Object.fromEntries(dispatches.map((dispatch) => [dispatch.id, dispatch]));
-  const filteredNotifications = notifications.filter((notification) => {
-    if (!notification.related_dispatch_id) return true;
-    if (session?.code_type === 'Admin') return true;
-    if (session?.code_type === 'Driver' && notification.notification_category === 'driver_dispatch_update') return true;
-    return Boolean(dispatchMap[notification.related_dispatch_id]);
-  });
+  const visibleDispatchIds = new Set(dispatches.map((dispatch) => normalizeVisibilityId(dispatch.id)));
+  const filteredNotifications = notifications.filter((notification) =>
+    canUserSeeNotification(session, notification, {
+      visibleDispatchIds,
+      driverDispatchIds: visibleDispatchIds,
+    })
+  );
   const allowedTrucks = session?.allowed_trucks || [];
   
   const isNotificationMarkedReadOnClick = (notification) =>

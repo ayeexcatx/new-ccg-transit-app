@@ -27,6 +27,7 @@ import DispatchDrawerTutorial from '@/components/tutorial/DispatchDrawerTutorial
 import DispatchActivityLogSection from './DispatchActivityLogSection';
 import DispatchTimeLogSection from './DispatchTimeLogSection';
 import DispatchDriverConfirmationSection from './DispatchDriverConfirmationSection';
+import { getVisibleTrucksForDispatch } from '@/lib/dispatchVisibility';
 
 const tollColors = {
   Authorized: 'bg-green-50 text-green-700',
@@ -346,9 +347,7 @@ export default function DispatchDetailDrawer({
     return () => window.clearTimeout(timeoutId);
   }, [truckEditMessage]);
 
-  const myTrucks = (session?.allowed_trucks || []).filter(t =>
-    (dispatch?.trucks_assigned || []).includes(t)
-  );
+  const myTrucks = getVisibleTrucksForDispatch(session, dispatch);
   const isOwner = session.code_type === 'CompanyOwner';
   const isAdmin = session.code_type === 'Admin';
   const isTruckUser = session.code_type === 'Truck';
@@ -567,7 +566,9 @@ export default function DispatchDetailDrawer({
     .map((entry) => entry.truck_number)
     .filter(Boolean);
 
-  const visibleTrucks = isDriverUser ? [...new Set(driverAssignedTrucks)] : myTrucks;
+  const visibleTrucks = getVisibleTrucksForDispatch(session, dispatch, {
+    driverAssignedTrucks,
+  });
   const activeAssignmentsByTruck = (isOwner || isAdmin ? driverAssignments : currentDriverAssignments)
     .filter((entry) => entry?.active_flag !== false && entry?.truck_number)
     .reduce((map, entry) => {
@@ -1354,4 +1355,3 @@ export default function DispatchDetailDrawer({
     </Sheet>
   );
 }
-

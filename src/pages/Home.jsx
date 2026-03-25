@@ -17,9 +17,15 @@ import { getNotificationDisplay } from '../components/notifications/formatNotifi
 import { useConfirmationsQuery } from '../components/notifications/useConfirmationsQuery';
 import { getWorkspaceDisplayLabel } from '../components/session/workspaceUtils';
 import { getOwnerNotificationActionStatus } from '../components/notifications/ownerActionStatus';
+import {
+  buildDriverAssignedTrucksByDispatch,
+  canUserSeeDispatch,
+  getVisibleTrucksForDispatch as getVisibleDispatchTrucks,
+  normalizeVisibilityId,
+} from '@/lib/dispatchVisibility';
 
 const dateOnly = (v) => (typeof v === 'string' ? v.slice(0, 10) : v);
-const normalizeId = (value) => String(value ?? '');
+const normalizeId = (value) => normalizeVisibilityId(value);
 
 const statusColors = {
   Scheduled: 'bg-blue-50 text-blue-700 border-blue-200',
@@ -203,19 +209,10 @@ export default function Home() {
     }).sort((a, b) => (a.priority || 3) - (b.priority || 3));
   }, [allAnnouncements, session]);
 
-  const driverAssignedTrucksByDispatch = useMemo(() => {
-    const map = new Map();
-    driverAssignments
-      .filter((assignment) => assignment?.active_flag !== false)
-      .forEach((assignment) => {
-        if (!assignment?.dispatch_id || !assignment?.truck_number) return;
-        const dispatchId = normalizeId(assignment.dispatch_id);
-        if (!map.has(dispatchId)) map.set(dispatchId, []);
-        const trucks = map.get(dispatchId);
-        if (!trucks.includes(assignment.truck_number)) trucks.push(assignment.truck_number);
-      });
-    return map;
-  }, [driverAssignments]);
+  const driverAssignedTrucksByDispatch = useMemo(
+    () => buildDriverAssignedTrucksByDispatch(driverAssignments),
+    [driverAssignments]
+  );
 
   const driverDispatchIds = useMemo(
     () => new Set(driverAssignedTrucksByDispatch.keys()),
@@ -224,20 +221,14 @@ export default function Home() {
 
   const getVisibleTrucksForDispatch = (dispatch) => {
     if (!dispatch?.id) return [];
-    if (isDriver) return driverAssignedTrucksByDispatch.get(normalizeId(dispatch.id)) || [];
-    return (dispatch.trucks_assigned || []).filter((truck) => allowedTrucks.includes(truck));
+    return getVisibleDispatchTrucks(session, dispatch, {
+      driverAssignedTrucks: driverAssignedTrucksByDispatch.get(normalizeId(dispatch.id)) || [],
+    });
   };
 
   const filteredDispatches = useMemo(() => {
-    if (isDriver) {
-      return dispatches.filter((dispatch) => driverDispatchIds.has(normalizeId(dispatch.id)));
-    }
-
-    return dispatches.filter(d => {
-      const assigned = d.trucks_assigned || [];
-      return assigned.some(t => allowedTrucks.includes(t));
-    });
-  }, [dispatches, allowedTrucks, driverDispatchIds, isDriver]);
+    return dispatches.filter((dispatch) => canUserSeeDispatch(session, dispatch, { driverDispatchIds }));
+  }, [dispatches, driverDispatchIds, session]);
 
   const todayDispatches = useMemo(() =>
     filteredDispatches

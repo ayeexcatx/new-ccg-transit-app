@@ -13,8 +13,13 @@ import { useOwnerNotifications } from './useOwnerNotifications';
 import { getNotificationDisplay } from './formatNotificationDetailsMessage';
 import { useConfirmationsQuery } from './useConfirmationsQuery';
 import { getOwnerNotificationActionStatus } from './ownerActionStatus';
+import {
+  canUserSeeNotification,
+  getDriverDispatchIdSet,
+  normalizeVisibilityId,
+} from '@/lib/dispatchVisibility';
 
-const normalizeId = (value) => String(value ?? '');
+const normalizeId = (value) => normalizeVisibilityId(value);
 
 export default function NotificationBell({ session }) {
   const navigate = useNavigate();
@@ -40,23 +45,14 @@ export default function NotificationBell({ session }) {
 
   const dispatchIds = new Set(dispatches.map((dispatch) => normalizeId(dispatch.id)));
 
-  const driverDispatchIds = new Set(
-    driverAssignments
-      .filter((assignment) => assignment?.active_flag !== false)
-      .map((assignment) => normalizeId(assignment.dispatch_id))
-      .filter(Boolean)
-  );
+  const driverDispatchIds = getDriverDispatchIdSet(driverAssignments);
 
-  const filteredNotifications = notifications.filter((notification) => {
-    if (!notification.related_dispatch_id) return true;
-    if (session?.code_type === 'Admin') return true;
-    const relatedDispatchId = normalizeId(notification.related_dispatch_id);
-    if (isDriver) {
-      if (notification.notification_category === 'driver_dispatch_update') return true;
-      return driverDispatchIds.has(relatedDispatchId);
-    }
-    return dispatchIds.has(relatedDispatchId);
-  });
+  const filteredNotifications = notifications.filter((notification) =>
+    canUserSeeNotification(session, notification, {
+      visibleDispatchIds: dispatchIds,
+      driverDispatchIds,
+    })
+  );
 
   const { data: confirmations = [] } = useConfirmationsQuery(session?.code_type === 'CompanyOwner');
 

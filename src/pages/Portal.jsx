@@ -31,6 +31,11 @@ import {
 } from '../components/notifications/createNotifications';
 import { useConfirmationsQuery, confirmationsQueryKey } from '../components/notifications/useConfirmationsQuery';
 import { useOwnerNotifications } from '../components/notifications/useOwnerNotifications';
+import {
+  buildDriverAssignedTrucksByDispatch,
+  canUserSeeDispatch,
+  normalizeVisibilityId,
+} from '@/lib/dispatchVisibility';
 
 
 function formatConflictDispatchSummary(dispatch) {
@@ -55,7 +60,7 @@ function getSessionActorMetadata(session) {
   };
 }
 
-const normalizeId = (value) => String(value ?? '');
+const normalizeId = (value) => normalizeVisibilityId(value);
 const normalizeTruckValue = (value) => String(value ?? '').trim();
 
 function myTrucksForHistory(dispatch, timeEntries, session) {
@@ -533,19 +538,10 @@ export default function Portal() {
 
   const handleOwnerTruckUpdate = (dispatch, nextTrucks) => updateOwnerTrucksMutation.mutateAsync({ dispatch, nextTrucks });
 
-  const allowedTrucks = session?.allowed_trucks || [];
-  const driverAssignedTrucksByDispatch = useMemo(() => {
-    const map = new Map();
-    driverAssignments
-      .filter((assignment) => assignment?.active_flag !== false)
-      .forEach((assignment) => {
-        if (!assignment?.dispatch_id || !assignment?.truck_number) return;
-        if (!map.has(assignment.dispatch_id)) map.set(assignment.dispatch_id, []);
-        const trucks = map.get(assignment.dispatch_id);
-        if (!trucks.includes(assignment.truck_number)) trucks.push(assignment.truck_number);
-      });
-    return map;
-  }, [driverAssignments]);
+  const driverAssignedTrucksByDispatch = useMemo(
+    () => buildDriverAssignedTrucksByDispatch(driverAssignments),
+    [driverAssignments]
+  );
 
   const driverDispatchIds = useMemo(
     () => new Set(driverAssignedTrucksByDispatch.keys()),
@@ -554,16 +550,10 @@ export default function Portal() {
 
   const isDriverUser = session?.code_type === 'Driver';
 
-  const filteredDispatches = useMemo(() => {
-    if (isDriverUser) {
-      return dispatches.filter((dispatch) => driverDispatchIds.has(dispatch.id));
-    }
-
-    return dispatches.filter(d => {
-      const assigned = d.trucks_assigned || [];
-      return assigned.some(t => allowedTrucks.includes(t));
-    });
-  }, [dispatches, allowedTrucks, driverDispatchIds, isDriverUser]);
+  const filteredDispatches = useMemo(
+    () => dispatches.filter((dispatch) => canUserSeeDispatch(session, dispatch, { driverDispatchIds })),
+    [dispatches, driverDispatchIds, session]
+  );
 
   const upcomingDispatches = useMemo(() => filteredDispatches
     .filter(d => getDispatchBucket(d) === 'upcoming')

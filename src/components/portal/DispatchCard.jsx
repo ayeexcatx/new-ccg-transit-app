@@ -8,6 +8,7 @@ import {
 import { format, parseISO } from 'date-fns';
 import DispatchDetailDrawer from './DispatchDetailDrawer';
 import { statusBadgeColors, statusBorderAccent, scheduledStatusMessage } from './statusConfig';
+import { getVisibleTrucksForDispatch } from '@/lib/dispatchVisibility';
 
 const formatDispatchTime = (startTime) => {
   if (!startTime) return '';
@@ -59,9 +60,7 @@ const DispatchCard = React.forwardRef(function DispatchCard({
     onOpenDispatch?.(dispatch);
   };
 
-  const myTrucks = (session.allowed_trucks || []).filter(t =>
-    (dispatch.trucks_assigned || []).includes(t)
-  );
+  const myTrucks = getVisibleTrucksForDispatch(session, dispatch);
   const visibleTrucks = Array.isArray(visibleTrucksOverride)
     ? visibleTrucksOverride
     : session.code_type === 'Driver'

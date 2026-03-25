@@ -4,6 +4,11 @@ import { base44 } from '@/api/base44Client';
 import { useConfirmationsQuery } from './useConfirmationsQuery';
 import { getOwnerNotificationActionStatus } from './ownerActionStatus';
 import { notifyOwnerDriverSeen } from './createNotifications';
+import {
+  canUserSeeNotification,
+  getDriverDispatchIdSet,
+  normalizeVisibilityId,
+} from '@/lib/dispatchVisibility';
 
 function getDriverNotificationSeenKind(notification, dispatch = null) {
   const notificationType = String(notification?.notification_type || '').toLowerCase();
@@ -53,24 +58,15 @@ export function useOwnerNotifications(session) {
     enabled: !!session?.company_id && session?.code_type !== 'Admin',
   });
 
-  const driverDispatchIds = new Set(
-    driverAssignments
-      .filter((assignment) => assignment?.active_flag !== false)
-      .map((assignment) => assignment.dispatch_id)
-      .filter(Boolean)
-  );
+  const driverDispatchIds = getDriverDispatchIdSet(driverAssignments);
+  const validDispatchIds = new Set(dispatches.map((dispatch) => normalizeVisibilityId(dispatch.id)));
 
-  const validDispatchIds = new Set(dispatches.map((dispatch) => dispatch.id));
-
-  const notifications = rawNotifications.filter((notification) => {
-    if (!notification.related_dispatch_id) return true;
-    if (session?.code_type === 'Admin') return true;
-    if (session?.code_type === 'Driver') {
-      if (notification.notification_category === 'driver_dispatch_update') return true;
-      return driverDispatchIds.has(notification.related_dispatch_id);
-    }
-    return validDispatchIds.has(notification.related_dispatch_id);
-  }).sort((a, b) => new Date(b.created_date || 0) - new Date(a.created_date || 0));
+  const notifications = rawNotifications
+    .filter((notification) => canUserSeeNotification(session, notification, {
+      visibleDispatchIds: validDispatchIds,
+      driverDispatchIds,
+    }))
+    .sort((a, b) => new Date(b.created_date || 0) - new Date(a.created_date || 0));
 
   const notificationsWithStatus = notifications.map((notification) => ({
     ...notification,

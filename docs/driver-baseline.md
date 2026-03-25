@@ -1,6 +1,6 @@
 # Driver Baseline (Code-Backed)
 
-Date reviewed: 2026-03-24.
+Date reviewed: 2026-03-25.
 
 ## Covered areas
 - Driver Home
@@ -19,12 +19,13 @@ Date reviewed: 2026-03-24.
 
 ### Present in personal baseline
 - Driver home aligns with owner-style layout but with restricted scope.
+- Assignment-based visibility constraints.
 
 ### Missing from personal baseline
-- Assignment-based filtering implementation detail (not just truck-list filtering).
+- None currently confirmed.
 
 ### Conflicts with personal baseline
-- None explicit.
+- None currently confirmed.
 
 ### Needs manual verification
 - Multi-assignment edge-case presentation in compact home cards.
@@ -45,10 +46,10 @@ Date reviewed: 2026-03-24.
 - Driver-controlled SMS opt-in behavior.
 
 ### Missing from personal baseline
-- Access-code synchronization and opt-in confirmation SMS side effects.
+- None currently confirmed.
 
 ### Conflicts with personal baseline
-- None explicit.
+- None currently confirmed.
 
 ### Needs manual verification
 - Delivery reliability of profile confirmation SMS in production integration.
@@ -67,14 +68,14 @@ Date reviewed: 2026-03-24.
 ### Present in personal baseline
 - Driver incident creation from dispatch drawer.
 - Driver visibility constraints on incidents.
+- Incidents-page create button hidden for drivers.
+- Truck prefill behavior is conditional.
 
 ### Missing from personal baseline
-- Incidents-page create button is hidden for drivers.
-- Prefilled truck is conditional (single clear truck) rather than guaranteed in all scenarios.
+- None currently confirmed.
 
 ### Conflicts with personal baseline
-- Baseline wording may imply guaranteed assigned-truck prefill; code only guarantees it when only one visible truck is determinable.
+- None currently confirmed.
 
 ### Needs manual verification
 - Whether product requirement expects hard-enforced single-truck prefill for all driver entry paths.
-

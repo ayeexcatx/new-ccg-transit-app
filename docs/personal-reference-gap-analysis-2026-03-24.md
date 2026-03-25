@@ -1,13 +1,13 @@
 # Personal Baseline Gap Analysis (Implementation vs Reference)
 
-Date reviewed: 2026-03-24.
+Date reviewed: 2026-03-25 (sync refresh).
 
 Reference used for comparison: `docs/personal-app-baseline-reference.md` (secondary).
 Source of truth: current repository implementation (primary).
 
 ## 1) Missing baseline areas in `/docs` before this update
 
-After this refresh pass, no additional major baseline-area gaps were identified beyond the focused docs already present in `/docs`.
+After this sync pass, no additional major baseline-area gaps were identified beyond the focused docs already present in `/docs`.
 
 ## 2) New baseline docs created
 
@@ -15,23 +15,11 @@ No new docs were created in this pass.
 
 ## 3) Behavior present in code but missing from personal baseline
 
-All previously listed section-3 items from the earlier audit were incorporated into `docs/personal-app-baseline-reference.md` during this refresh (with concise code-backed review notes), including:
-- Admin dashboard Fri/Sat/Sun Monday-rollover upcoming logic.
-- Force App Refresh admin-code reconfirmation + runtime-version trigger model.
-- Admin announcement card activity-log behavior.
-- Admin access-code multi-workspace + linked-company behavior.
-- Owner notification effective-read semantics.
-- Driver incidents create-entry constraints and conditional truck prefill.
-- Structured contact-method/SMS-designation behavior in owner/company profile flows.
+No currently confirmed items remain in this category for the audited baseline docs.
 
 ## 4) Conflicts between code and personal baseline
 
-Rechecked and resolved in this pass by updating `docs/personal-app-baseline-reference.md` to match visible current behavior:
-- Admin dashboard upcoming logic mismatch (Friday-only vs Fri/Sat/Sun) — resolved.
-- Header second-line identity semantics — rechecked against visible header behavior and corrected in baseline.
-- Driver incident truck prefill wording (absolute vs conditional) — resolved.
-
-Remaining unresolved conflicts after this update: **None confirmed from code review in this pass**.
+No currently confirmed code-vs-reference conflicts remain for the audited baseline docs.
 
 ## 5) Potential bugs, inconsistencies, or risky areas
 
@@ -46,3 +34,12 @@ Remaining unresolved conflicts after this update: **None confirmed from code rev
 - Incident completion backend validation constraints.
 - Notification load behavior under high-volume production data.
 - Policy-level correctness of scoring formulas and instructional guidance text.
+
+## 7) Sync result summary (this pass)
+
+- Re-audited and synchronized:
+  - `docs/admin-operations-baseline.md`
+  - `docs/company-owner-baseline.md`
+  - `docs/driver-baseline.md`
+- Updated comparison sections so that stale "Missing from personal baseline" and "Conflicts with personal baseline" bullets were removed or rewritten to explicit "None currently confirmed" where appropriate.
+- Remaining unresolved differences between audited baseline docs and personal reference: **None currently confirmed**.

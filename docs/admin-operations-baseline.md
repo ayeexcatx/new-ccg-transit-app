@@ -1,6 +1,6 @@
 # Admin Operations Baseline (Code-Backed)
 
-Date reviewed: 2026-03-24.
+Date reviewed: 2026-03-25.
 
 This baseline treats repository code as source of truth and compares it against `docs/personal-app-baseline-reference.md` as a secondary expectation reference.
 
@@ -18,9 +18,9 @@ This baseline treats repository code as source of truth and compares it against 
 ## 1) Admin Dashboard
 
 ### Confirmed from code
-- Shows four top cards: pending confirmations, create dispatch shortcut, today dispatch counts (day/night), and upcoming dispatch counts (day/night). Upcoming counts use Monday on Fri/Sat/Sun; otherwise next day. A Sunday-night indicator is shown when relevant.  
-- "Active Announcements" section lists active announcements and shows added date + computed audience label.  
-- Quick actions link to Dispatches, Companies, Access Codes, Template Notes.  
+- Shows four top cards: pending confirmations, create dispatch shortcut, today dispatch counts (day/night), and upcoming dispatch counts (day/night). Upcoming counts use Monday on Fri/Sat/Sun; otherwise next day. A Sunday-night indicator is shown when relevant.
+- "Active Announcements" section lists active announcements and shows added date + computed audience label.
+- Quick actions link to Dispatches, Companies, Access Codes, Template Notes.
 - "Force App Refresh" requires entering a valid active Admin access code, then rotates runtime version in `AppConfig`.
 
 ### Present in personal baseline
@@ -28,16 +28,13 @@ This baseline treats repository code as source of truth and compares it against 
 - Four summary cards (confirmations/create/today/upcoming).
 - Active announcements block.
 - Quick actions block.
-- Force refresh capability.
+- Force refresh capability, including admin-code confirmation and runtime version behavior.
 
 ### Missing from personal baseline
-- Upcoming logic includes **Friday, Saturday, and Sunday** (not just Friday) for Monday targeting.
-- Force refresh flow includes explicit admin-code confirmation in modal.
-- Audience formatting includes explicit company/access-code/truck label derivation.
+- None currently confirmed.
 
 ### Conflicts with personal baseline
-- Personal baseline says Friday-only Monday logic; implementation uses Fri/Sat/Sun.
-- Personal baseline implies direct global prompt behavior details; implementation is version-token based polling + blocking refresh modal on clients.
+- None currently confirmed.
 
 ### Needs manual verification
 - Runtime polling timing and UX under long-lived backgrounded browser tabs.
@@ -57,14 +54,15 @@ This baseline treats repository code as source of truth and compares it against 
 
 ### Present in personal baseline
 - Summary cards and company-focused availability controls.
+- Company selector/search.
+- Day/week/month views.
 - Weekly defaults + date overrides.
 
 ### Missing from personal baseline
-- Company selector search behavior.
-- Compact day/week/month rendering behavior details.
+- None currently confirmed.
 
 ### Conflicts with personal baseline
-- None found that are explicit and code-verifiable.
+- None currently confirmed.
 
 ### Needs manual verification
 - Any backend constraints not visible in frontend (e.g., entity-level validation).
@@ -85,13 +83,13 @@ This baseline treats repository code as source of truth and compares it against 
 - Create/edit + targeting controls.
 - Active toggle.
 - Card list with metadata.
+- Per-announcement activity log behavior.
 
 ### Missing from personal baseline
-- Structured admin activity log generation and display behavior.
-- Update-entry granularity (content/visibility/targets/activation events).
+- None currently confirmed.
 
 ### Conflicts with personal baseline
-- None found that are explicit and code-verifiable.
+- None currently confirmed.
 
 ### Needs manual verification
 - Real-world audit expectations for activity-log ordering and truncation.
@@ -111,13 +109,14 @@ This baseline treats repository code as source of truth and compares it against 
 ### Present in personal baseline
 - Company info management.
 - Company scoring + metrics + manual reliability log concepts.
+- Pending profile-change approval flow with current/requested comparison.
+- Multi-contact-method structure.
 
 ### Missing from personal baseline
-- Pending profile-change approval flow with current/requested value comparison.
-- Multi-contact-method structure replacing single contact string assumptions.
+- None currently confirmed.
 
 ### Conflicts with personal baseline
-- If interpreted as single-contact-field model, implementation now uses structured `contact_methods` with compatibility fallback.
+- None currently confirmed.
 
 ### Needs manual verification
 - Score formula correctness against intended business policy (frontend calls shared scoring lib, but policy acceptance is business-side).
@@ -139,13 +138,14 @@ This baseline treats repository code as source of truth and compares it against 
 ### Present in personal baseline
 - Card-driven access code management.
 - Create/edit modals by role.
-
-### Missing from personal baseline
-- Pending driver request workflow surfaced directly on admin page.
+- Pending driver request workflow surfaced on admin page.
 - Admin multi-workspace configuration and linked-company constraints.
 
+### Missing from personal baseline
+- None currently confirmed.
+
 ### Conflicts with personal baseline
-- None explicit; baseline is less detailed rather than contradictory.
+- None currently confirmed.
 
 ### Needs manual verification
 - Long-term UX for admins managing many linked companies and views.
@@ -165,11 +165,10 @@ This baseline treats repository code as source of truth and compares it against 
 - Template note management with note types and ordering concepts.
 
 ### Missing from personal baseline
-- Explicit display width setting and persisted dual key (`displayWidth` + `display_width`) compatibility behavior.
-- Box note text-markup helper actions (bold/underline wrappers).
+- None currently confirmed.
 
 ### Conflicts with personal baseline
-- None explicit.
+- None currently confirmed.
 
 ### Needs manual verification
 - Exact final render parity inside all dispatch drawer contexts.
@@ -185,14 +184,14 @@ This baseline treats repository code as source of truth and compares it against 
 
 ### Present in personal baseline
 - Admin profile edit flow and SMS section concept.
+- Unsaved-change modal guard behavior.
+- Explicit "SMS not active yet" framing.
 
 ### Missing from personal baseline
-- Unsaved-change modal guard behavior.
-- Explicit "future-support" framing for admin SMS.
+- None currently confirmed.
 
 ### Conflicts with personal baseline
-- If baseline implies active admin SMS delivery today, implementation contradicts that (preference stored, delivery not currently enabled as product behavior).
+- None currently confirmed.
 
 ### Needs manual verification
 - Whether backend SMS workflow for admins is intentionally deferred or partially rolled out outside this repo.
-

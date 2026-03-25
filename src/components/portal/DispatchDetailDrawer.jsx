@@ -1,40 +1,31 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Badge } from '@/components/ui/badge';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Clock, Truck, Sun, Moon,
-  FileText, AlertTriangle, ArrowLeft, Pencil, Camera
-} from 'lucide-react';
+import { Truck } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format, parseISO } from 'date-fns';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
 import {
   canCompanyOwnerViewAssignmentsAndTimeLogs,
-  statusBadgeColors,
-  scheduledDispatchNote,
-  scheduledStatusMessage,
 } from './statusConfig';
-import { NOTE_DISPLAY_WIDTH, NOTE_TYPES, normalizeTemplateNote, renderSimpleMarkupToHtml } from '@/lib/templateNotes';
+import { NOTE_DISPLAY_WIDTH, NOTE_TYPES, normalizeTemplateNote } from '@/lib/templateNotes';
 import { calculateWorkedHours, formatTime24h, formatWorkedHours } from '@/lib/timeLogs';
 import { toast } from 'sonner';
 import html2canvas from 'html2canvas';
-import DispatchDrawerTutorial from '@/components/tutorial/DispatchDrawerTutorial';
 import DispatchActivityLogSection from './DispatchActivityLogSection';
 import DispatchTimeLogSection from './DispatchTimeLogSection';
 import DispatchDriverConfirmationSection from './DispatchDriverConfirmationSection';
+import DispatchDrawerTopBar from './DispatchDrawerTopBar';
+import DispatchDrawerActionButtons from './DispatchDrawerActionButtons';
+import DispatchDrawerIdentitySection from './DispatchDrawerIdentitySection';
+import DispatchDrawerStatusReasonBox from './DispatchDrawerStatusReasonBox';
+import DispatchDrawerAssignmentsSection from './DispatchDrawerAssignmentsSection';
+import DispatchDrawerTemplateNotesSection from './DispatchDrawerTemplateNotesSection';
 import { getVisibleTrucksForDispatch } from '@/lib/dispatchVisibility';
 import { buildConfirmedTruckSetForStatus } from '@/components/notifications/confirmationStateHelpers';
 import { deactivateDriverAssignment, upsertDriverAssignment } from '@/services/driverAssignmentMutationService';
-
-const tollColors = {
-  Authorized: 'bg-green-50 text-green-700',
-  Unauthorized: 'bg-red-50 text-red-700',
-  'Included in Rate': 'bg-purple-50 text-purple-700',
-};
 
 const UNASSIGNED_DRIVER_VALUE = '__unassigned__';
 const DRIVER_SHIFT_CONFLICT_MESSAGE = 'That driver is already assigned on a different dispatch for the same shift. Please remove the driver from that assignment or select a different driver.';
@@ -174,40 +165,6 @@ function formatLogTimestampWithActor(prefix, timestamp, actorLabel) {
   if (!timestamp) return '';
   const base = `${prefix} ${format(new Date(timestamp), 'MMM d, h:mm a')}`;
   return actorLabel ? `${base} by ${actorLabel}` : base;
-}
-
-function getGeneralNoteLayout(note) {
-  const bullets = note.bullet_lines?.length > 0
-    ? note.bullet_lines
-    : note.note_text
-      ? [note.note_text]
-      : [];
-
-  const titleLength = (note.title || '').trim().length;
-  const bulletLengths = bullets.map((line) => String(line || '').trim().length);
-  const totalTextLength = titleLength + bulletLengths.reduce((sum, len) => sum + len, 0);
-  const longestBulletLength = Math.max(0, ...bulletLengths);
-  const bulletCount = bullets.length;
-
-  const shouldSpanWide = (
-    totalTextLength > 220
-    || bulletCount >= 5
-    || longestBulletLength > 90
-    || (Boolean(note.title) && bulletCount >= 3 && totalTextLength > 150)
-  );
-
-  return {
-    bullets,
-    shouldSpanWide,
-  };
-}
-
-
-
-function getNoteColumnClass(displayWidth, autoShouldSpanWide = false) {
-  if (displayWidth === NOTE_DISPLAY_WIDTH.FULL) return 'col-span-2';
-  if (displayWidth === NOTE_DISPLAY_WIDTH.HALF) return 'col-span-1';
-  return autoShouldSpanWide ? 'col-span-2 md:col-span-2' : 'col-span-2 md:col-span-1';
 }
 
 function TruckTimeRow({
@@ -876,388 +833,67 @@ export default function DispatchDetailDrawer({
         className="w-full sm:max-w-lg overflow-y-auto p-0"
         data-tutorial-scroll="drawer"
       >
-        {/* Top bar */}
-        <div className="sticky top-0 bg-white border-b border-slate-200 px-5 py-4 z-10">
-          <div className="flex items-center justify-between gap-2">
-            <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleDrawerClose}
-            className="mb-2 -ml-2 h-8 px-2 text-slate-600 hover:text-slate-900"
-          >
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back
-            </Button>
-            <DispatchDrawerTutorial isOwner={isOwner} drawerOpen={open} />
-          </div>
-          <SheetHeader>
-            <SheetTitle className="flex items-center gap-2 flex-wrap text-base">
-              <Badge className={`${statusBadgeColors[dispatch.status]} border text-xs font-medium`}>
-                {dispatch.status}
-              </Badge>
-              <span className="text-xs text-slate-400 flex items-center gap-1 font-normal">
-                {dispatch.shift_time === 'Day Shift' ? <Sun className="h-3 w-3" /> : <Moon className="h-3 w-3" />}
-                {dispatch.shift_time}
-              </span>
-              <span className="ml-auto text-xs text-slate-500 font-normal">
-                {displayDate}
-              </span>
-            </SheetTitle>
-          </SheetHeader>
-        </div>
+        <DispatchDrawerTopBar
+          dispatch={dispatch}
+          displayDate={displayDate}
+          isOwner={isOwner}
+          open={open}
+          onBack={handleDrawerClose}
+        />
 
         <div className="px-5 py-5 space-y-6">
-
-          {isDriverUser && (
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-8 text-xs"
-                data-screenshot-exclude="true"
-                onClick={handleReportIncident}
-                data-tour="dispatch-report-incident"
-              >
-                <AlertTriangle className="h-3.5 w-3.5 mr-1" />
-                Report Incident
-              </Button>
-            </div>
-          )}
-
-          {(isOwner || isTruckUser) && (
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-8 text-xs"
-                data-screenshot-exclude="true"
-                onClick={handleReportIncident}
-                data-tour="dispatch-report-incident"
-              >
-                <AlertTriangle className="h-3.5 w-3.5 mr-1" />
-                Report Incident
-              </Button>
-              {isOwner && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 text-xs"
-                  disabled={isCreatingScreenshot || isEditingTrucks}
-                  onClick={handleScreenshotDispatch}
-                  data-tour="dispatch-screenshot"
-                >
-                  <Camera className="h-3.5 w-3.5 mr-1" />
-                  {isCreatingScreenshot ? 'Creating…' : 'Screenshot Dispatch'}
-                </Button>
-              )}
-            </div>
-          )}
+          <DispatchDrawerActionButtons
+            isDriverUser={isDriverUser}
+            isOwner={isOwner}
+            isTruckUser={isTruckUser}
+            isCreatingScreenshot={isCreatingScreenshot}
+            isEditingTrucks={isEditingTrucks}
+            onReportIncident={handleReportIncident}
+            onScreenshotDispatch={handleScreenshotDispatch}
+          />
 
           <div ref={screenshotSectionRef} className="space-y-6 bg-white">
-            {/* Main info */}
-            {dispatch.status === 'Scheduled' ? (
-              <div>
-                <h2 className="text-sm font-semibold text-slate-700">Scheduled Dispatch</h2>
-                <p className="text-sm text-blue-600 mt-1 italic">{scheduledStatusMessage}</p>
-                <p className="text-xs text-slate-600 mt-2 italic">{scheduledDispatchNote}</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-              <div className="space-y-1">
-                {dispatch.client_name && (
-                  <h2 className="text-lg font-semibold text-slate-800">{dispatch.client_name}</h2>
-                )}
-                {!hasAdditional && (
-                  <div className="grid grid-cols-1 text-sm">
-                    {dispatch.job_number && (
-                      <div className="flex items-center gap-2 text-slate-700">
-                        <FileText className="h-4 w-4 text-slate-400 shrink-0" />
-                        <span className="font-bold">Job #</span>
-                        <Badge className={jobNumberBadgeClassName}>
-                          {dispatch.job_number}
-                        </Badge>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-2.5 pt-1">
-                <p className="text-xs font-bold text-slate-400">Working for CCG Transit</p>
-
-              {/* Trucks */}
-              <div className="space-y-2">
-                <div className="flex items-start gap-1.5">
-                  <Truck className="h-3.5 w-3.5 text-slate-400 mt-1 shrink-0" />
-                  {(isAdmin || isOwner) ? (
-                    <div className="min-w-0 flex-1 space-y-1.5">
-                      {visibleTrucks.map((t) => {
-                        const truckDriverSummaryLabel = getTruckDriverSummaryLabel(t);
-
-                        return (
-                          <div key={t} className="flex items-start gap-2">
-                            <Badge variant="outline" className="text-xs border-slate-900 text-slate-900 font-medium shrink-0">
-                              {t}
-                            </Badge>
-                            {truckDriverSummaryLabel && (
-                              <span className="text-xs text-slate-500 min-w-0 break-words leading-5">
-                                {truckDriverSummaryLabel}
-                              </span>
-                            )}
-                            {hasTruckSeenStatus(t) && (
-                              <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-semibold py-0 px-1.5">
-                                Seen
-                              </Badge>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      {visibleTrucks.map((t) => (
-                        <Badge key={t} variant="outline" className="text-xs border-slate-900 text-slate-900 font-medium w-fit">
-                          {t}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                  {isOwner && (
-                    <Button
-                      type="button"
-                      data-screenshot-exclude="true"
-                      variant="outline"
-                      size="sm"
-                      className="h-7 text-xs border-red-300 text-red-700 hover:bg-red-50 hover:text-red-800"
-                      data-tour="dispatch-edit-trucks"
-                      onClick={() => {
-                        if (isEditingTrucks) {
-                          resetTruckEditing();
-                          return;
-                        }
-                        setTruckEditMessage(null);
-                        setIsEditingTrucks((prev) => !prev);
-                      }}
-                    >
-                      <Pencil className="h-3.5 w-3.5 mr-1" />
-                      {isEditingTrucks ? 'Cancel' : 'Edit Trucks'}
-                    </Button>
-                  )}
-                </div>
-
-                {isOwner && isEditingTrucks && (
-                  <div data-screenshot-exclude="true" className="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-3">
-                    <p className="text-xs text-slate-500">
-                      Select assigned trucks. You must keep exactly {requiredTruckCount} truck{requiredTruckCount === 1 ? '' : 's'}.
-                    </p>
-                    <div className="space-y-2">
-                      {ownerTruckOptions.map((truck) => (
-                        <label key={truck} className="flex items-center gap-2 text-sm text-slate-700">
-                          <Checkbox
-                            checked={draftTrucks.includes(truck)}
-                            disabled={!draftTrucks.includes(truck) && draftTrucks.filter(Boolean).length >= requiredTruckCount}
-                            onCheckedChange={() => toggleDraftTruck(truck)}
-                          />
-                          <span className="font-mono">{truck}</span>
-                        </label>
-                      ))}
-                    </div>
-                    {truckEditMessage?.text && (
-                      <div className="rounded-md border border-red-200 bg-red-50 px-2.5 py-2 text-xs text-red-700">
-                        {truckEditMessage.text}
-                      </div>
-                    )}
-                    <Button
-                      type="button"
-                      size="sm"
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                      disabled={!hasTruckDraftChanges || isSavingTrucks || draftTrucks.filter(Boolean).length !== requiredTruckCount}
-                      onClick={handleSaveTrucks}
-                    >
-                      {isSavingTrucks ? 'Saving…' : 'Save Truck Assignments'}
-                    </Button>
-                  </div>
-                )}
-
-              </div>
-              </div>
-            </div>
-          )}
+            <DispatchDrawerIdentitySection
+              dispatch={dispatch}
+              hasAdditional={hasAdditional}
+              jobNumberBadgeClassName={jobNumberBadgeClassName}
+              isAdmin={isAdmin}
+              isOwner={isOwner}
+              visibleTrucks={visibleTrucks}
+              getTruckDriverSummaryLabel={getTruckDriverSummaryLabel}
+              hasTruckSeenStatus={hasTruckSeenStatus}
+              isEditingTrucks={isEditingTrucks}
+              onToggleEditingTrucks={() => {
+                if (isEditingTrucks) {
+                  resetTruckEditing();
+                  return;
+                }
+                setTruckEditMessage(null);
+                setIsEditingTrucks((prev) => !prev);
+              }}
+              requiredTruckCount={requiredTruckCount}
+              ownerTruckOptions={ownerTruckOptions}
+              draftTrucks={draftTrucks}
+              toggleDraftTruck={toggleDraftTruck}
+              truckEditMessage={truckEditMessage}
+              hasTruckDraftChanges={hasTruckDraftChanges}
+              isSavingTrucks={isSavingTrucks}
+              onSaveTrucks={handleSaveTrucks}
+            />
 
           {dispatch.status !== 'Scheduled' && (
             <>
-              {(() => {
-                const normalizedStatus = String(dispatch.status || '').toLowerCase();
-                const isCanceled = normalizedStatus === 'cancelled' || normalizedStatus === 'canceled';
-                const isAmended = normalizedStatus === 'amended';
-
-                if (!dispatch.canceled_reason || (!isCanceled && !isAmended)) return null;
-
-                const amendmentBadgeClasses = statusBadgeColors.Amended || '';
-
-                return (
-                  <div className={`flex items-start gap-2 rounded-lg p-4 ${isAmended ? amendmentBadgeClasses : 'bg-red-50'}`}>
-                    <AlertTriangle className={`h-4 w-4 mt-0.5 shrink-0 ${isAmended ? 'text-amber-700' : 'text-red-500'}`} />
-                    <div>
-                      <p className={`text-xs font-semibold mb-0.5 ${isAmended ? 'text-amber-700' : 'text-red-700'}`}>{isCanceled ? 'Cancellation' : 'Amendment'}</p>
-                      <p className={`text-sm ${isAmended ? 'text-amber-700' : 'text-red-600'}`}>{dispatch.canceled_reason}</p>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {(hasAdditional || dispatch.instructions || dispatch.notes || dispatch.toll_status || dispatch.start_time || dispatch.start_location) && (
-                <div data-tour="dispatch-assignment-details" className="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-3">
-                  <p className="text-xs text-slate-500 uppercase tracking-wide">
-                    {(dispatch.additional_assignments || []).length > 0 ? 'Assignment 1' : 'Assignment'}
-                  </p>
-                  {hasAdditional && (
-                    <div className="space-y-0.5">
-                      <div className="flex items-center gap-2 text-sm text-slate-700">
-                        <FileText className="h-4 w-4 text-slate-400 shrink-0" />
-                        <span className="font-bold">Job #</span>
-                        {dispatch.job_number && (
-                          <Badge className={jobNumberBadgeClassName}>
-                            {dispatch.job_number}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  {dispatch.start_time && (
-                    <div className="flex items-center gap-2 text-sm text-slate-600">
-                      <Clock className="h-4 w-4 text-slate-400 shrink-0" />
-                      <span>{formatTimeToAmPm(dispatch.start_time)}</span>
-                    </div>
-                  )}
-                  {dispatch.start_location && (
-                    <div>
-                      <p className="text-xs font-semibold text-slate-400 mb-1">Start Location:</p>
-                      <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{dispatch.start_location}</p>
-                    </div>
-                  )}
-                  {dispatch.instructions && (
-                    <div>
-                      <p className="text-xs font-semibold text-slate-400 mb-1">Instructions:</p>
-                      <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{dispatch.instructions}</p>
-                    </div>
-                  )}
-                  {dispatch.notes && (
-                    <div>
-                      <p className="text-xs font-semibold text-slate-400 mb-1">Notes</p>
-                      <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{dispatch.notes}</p>
-                    </div>
-                  )}
-                  {dispatch.toll_status && (
-                    <Badge className={`${tollColors[dispatch.toll_status]} text-xs font-medium`}>
-                      Toll: {dispatch.toll_status}
-                    </Badge>
-                  )}
-                </div>
-              )}
-
-              {(dispatch.additional_assignments || []).length > 0 && (
-                <div>
-                  <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Additional Assignments</p>
-                  <div className="space-y-3">
-                    {dispatch.additional_assignments.map((a, i) => (
-                      <div key={i} className={`rounded-lg border border-slate-200 p-3 text-sm ${i % 2 === 0 ? 'bg-slate-50' : 'bg-blue-50/40'}`}>
-                        <p className="text-xs font-semibold text-slate-500 mb-2">Assignment {i + 2}</p>
-                        <div className="space-y-1.5">
-                          {a.job_number && (
-                            <div className="space-y-0.5">
-                              <div className="flex items-center gap-2 text-slate-700">
-                                <FileText className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                                <span className="font-bold">Job #</span>
-                                <Badge className={jobNumberBadgeClassName}>
-                                  {a.job_number}
-                                </Badge>
-                              </div>
-                            </div>
-                          )}
-                          {a.start_time && (
-                            <div className="flex items-center gap-2 text-slate-600">
-                              <Clock className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                              <span>{formatTimeToAmPm(a.start_time)}</span>
-                            </div>
-                          )}
-                          {a.start_location && (
-                            <div>
-                              <p className="text-xs font-semibold text-slate-400 mb-0.5">Start Location:</p>
-                              <p className="text-sm text-slate-600 whitespace-pre-wrap">{a.start_location}</p>
-                            </div>
-                          )}
-                          {a.instructions && (
-                            <div>
-                              <p className="text-xs font-semibold text-slate-400 mb-0.5">Instructions:</p>
-                              <p className="text-sm text-slate-600 whitespace-pre-wrap">{a.instructions}</p>
-                            </div>
-                          )}
-                          {a.notes && (
-                            <div>
-                              <p className="text-xs font-semibold text-slate-400 mb-0.5">Notes</p>
-                              <p className="text-sm text-slate-600 whitespace-pre-wrap">{a.notes}</p>
-                            </div>
-                          )}
-                          {a.toll_status && (
-                            <Badge className={`${tollColors[a.toll_status]} text-xs font-medium`}>
-                              Toll: {a.toll_status}
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {boxNotes.length > 0 && (
-                <div data-tour="dispatch-notes" className="space-y-1.5">
-                  <p className="text-xs text-slate-500 uppercase tracking-wide">Box Notes</p>
-                  <div className="grid grid-cols-2 gap-1.5 md:gap-2">
-                    {boxNotes.map(n => (
-                      <div key={n.id} className={`rounded-lg border p-2.5 md:p-3 ${getNoteColumnClass(n.displayWidth, false)}`} style={{ borderColor: n.border_color, color: n.text_color }}>
-                        {n.title && <p className="text-sm font-semibold leading-snug mb-0.5">{n.title}</p>}
-                        <p
-                          className="text-sm leading-snug"
-                          dangerouslySetInnerHTML={{ __html: renderSimpleMarkupToHtml(n.box_content || n.note_text) }}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {generalNotes.length > 0 && (
-                <div data-tour="dispatch-notes" className="space-y-1.5">
-                  <p className="text-xs text-slate-500 uppercase tracking-wide">General Notes</p>
-                  <div className="grid grid-cols-2 gap-1.5 md:gap-2">
-                    {generalNotes.map(n => {
-                      const { bullets, shouldSpanWide } = getGeneralNoteLayout(n);
-
-                      if (bullets.length === 0 && !n.title) return null;
-
-                      return (
-                        <div
-                          key={n.id}
-                          className={`rounded-lg border border-slate-200 bg-white/90 p-2.5 md:p-3 ${getNoteColumnClass(n.displayWidth, shouldSpanWide)}`}
-                        >
-                          {n.title && <p className="text-sm text-slate-700 font-semibold leading-snug mb-0.5">{n.title}</p>}
-                          <ul className="mt-0.5 space-y-0.5 list-disc ml-4">
-                            {bullets.map((line, idx) => (
-                              <li key={`${n.id}-${idx}`} className="text-sm text-slate-600 leading-snug">{line}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+              <DispatchDrawerStatusReasonBox dispatch={dispatch} />
+              <DispatchDrawerAssignmentsSection
+                dispatch={dispatch}
+                hasAdditional={hasAdditional}
+                formatTimeToAmPm={formatTimeToAmPm}
+              />
+              <DispatchDrawerTemplateNotesSection
+                boxNotes={boxNotes}
+                generalNotes={generalNotes}
+                NOTE_DISPLAY_WIDTH={NOTE_DISPLAY_WIDTH}
+              />
 
               </>
             )}

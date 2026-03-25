@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSession } from '../components/session/SessionContext';
-import DispatchCard from '../components/portal/DispatchCard';
+import PortalDispatchList from '../components/portal/PortalDispatchList';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -16,7 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Truck, Inbox } from 'lucide-react';
+import { Truck } from 'lucide-react';
 import { startOfDay, parseISO } from 'date-fns';
 import { areAllAssignedTrucksTimeComplete } from '@/lib/timeLogs';
 import { getDispatchBucket } from '../components/portal/dispatchBuckets';
@@ -497,45 +497,25 @@ export default function Portal() {
         </TabsList>
       </Tabs>
 
-      {currentList.length === 0 ? (
-        <div className="text-center py-16">
-          <Inbox className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-          <p className="text-sm text-slate-500">
-            {tab === 'today' ? 'No dispatches today' : tab === 'upcoming' ? 'No upcoming dispatches' : 'No history'}
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {currentList.map(d => {
-            const isForcedOpenCard = normalizeId(drawerDispatchId) === normalizeId(d.id);
-
-            return (
-              <div
-                key={d.id}
-                ref={(el) => {
-                  dispatchRefs.current[normalizeId(d.id)] = el;
-                }}
-              >
-                <DispatchCard
-                  dispatch={d}
-                  session={session}
-                  confirmations={confirmations}
-                  timeEntries={timeEntries}
-                  templateNotes={sortedNotes}
-                  onConfirm={handleConfirm}
-                  onTimeEntry={handleTimeEntry}
-                  onOwnerTruckUpdate={handleOwnerTruckUpdate}
-                  companyName={companyMap[d.company_id]}
-                  forceOpen={isForcedOpenCard}
-                  onDrawerClose={handleDrawerClose}
-                  onOpenDispatch={handleDispatchOpen}
-                  visibleTrucksOverride={isDriverUser ? (driverAssignedTrucksByDispatch.get(normalizeId(d.id)) || []) : undefined}
-                />
-              </div>
-            );
-          })}
-        </div>
-      )}
+      <PortalDispatchList
+        currentList={currentList}
+        tab={tab}
+        normalizeId={normalizeId}
+        drawerDispatchId={drawerDispatchId}
+        dispatchRefs={dispatchRefs}
+        session={session}
+        confirmations={confirmations}
+        timeEntries={timeEntries}
+        sortedNotes={sortedNotes}
+        handleConfirm={handleConfirm}
+        handleTimeEntry={handleTimeEntry}
+        handleOwnerTruckUpdate={handleOwnerTruckUpdate}
+        companyMap={companyMap}
+        handleDrawerClose={handleDrawerClose}
+        handleDispatchOpen={handleDispatchOpen}
+        isDriverUser={isDriverUser}
+        driverAssignedTrucksByDispatch={driverAssignedTrucksByDispatch}
+      />
       <AlertDialog open={removedAssignmentModalState.open}>
         <AlertDialogContent className="max-w-md">
           <AlertDialogHeader>

@@ -90,11 +90,5 @@
     "record_type",
     "status"
   ],
-  "rls": {
-    "create": {
-      "user_condition": {
-        "role": "admin"
-      }
-    }
-  }
+  "rls": {}
 }

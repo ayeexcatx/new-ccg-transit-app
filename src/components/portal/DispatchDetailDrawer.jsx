@@ -308,6 +308,7 @@ export default function DispatchDetailDrawer({
   const myTrucks = getVisibleTrucksForDispatch(session, dispatch);
   const isOwner = session.code_type === 'CompanyOwner';
   const isAdmin = session.code_type === 'Admin';
+  const isTruckUser = session.code_type === 'Truck';
   const isDriverUser = session.code_type === 'Driver';
 
   const { data: companyDrivers = [] } = useQuery({
@@ -844,6 +845,7 @@ export default function DispatchDetailDrawer({
           <DispatchDrawerActionButtons
             isDriverUser={isDriverUser}
             isOwner={isOwner}
+            isTruckUser={isTruckUser}
             isCreatingScreenshot={isCreatingScreenshot}
             isEditingTrucks={isEditingTrucks}
             onReportIncident={handleReportIncident}

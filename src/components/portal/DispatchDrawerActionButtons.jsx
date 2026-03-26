@@ -5,6 +5,7 @@ import { AlertTriangle, Camera } from 'lucide-react';
 export default function DispatchDrawerActionButtons({
   isDriverUser,
   isOwner,
+  isTruckUser,
   isCreatingScreenshot,
   isEditingTrucks,
   onReportIncident,
@@ -29,7 +30,7 @@ export default function DispatchDrawerActionButtons({
         </div>
       )}
 
-      {isOwner && (
+      {(isOwner || isTruckUser) && (
         <div className="flex items-center gap-2">
           <Button
             type="button"

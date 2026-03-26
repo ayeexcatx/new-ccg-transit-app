@@ -37,8 +37,9 @@ function LayoutInner({ children, currentPageName }) {
 
   const isAdmin = effectiveView === 'Admin';
   const isOwner = effectiveView === 'CompanyOwner';
+  const isTruck = session?.code_type === 'Truck';
   const isDriver = session?.code_type === 'Driver';
-  const canUsePortalTabs = isOwner || isDriver;
+  const canUsePortalTabs = isOwner || isTruck || isDriver;
 
   const { data: allDrivers = [] } = useQuery({
     queryKey: ['drivers-all-nav'],
@@ -139,6 +140,7 @@ function LayoutInner({ children, currentPageName }) {
                   <p className="text-xs text-slate-500 flex items-center gap-1 truncate">
                     {isAdmin && <Shield className="h-3 w-3 shrink-0" />}
                     {isOwner && <Building2 className="h-3 w-3 shrink-0" />}
+                    {isTruck && <Truck className="h-3 w-3 shrink-0" />}
                     {isDriver && <UserRound className="h-3 w-3 shrink-0" />}
                     <span className="truncate">{workspaceDisplayLabel || effectiveView}</span>
                   </p>

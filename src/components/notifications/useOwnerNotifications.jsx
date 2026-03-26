@@ -32,7 +32,6 @@ export function useOwnerNotifications(session) {
     queryKey,
     queryFn: async () => {
       if (!session) return [];
-      if (!['Admin', 'CompanyOwner', 'Driver'].includes(session.code_type)) return [];
       if (session.code_type === 'Admin') {
         return base44.entities.Notification.filter({ recipient_type: 'Admin' }, '-created_date', 200);
       }

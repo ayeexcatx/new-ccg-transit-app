@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useAuth } from '@/lib/AuthContext';
 import { getAvailableWorkspaces, normalizeView } from './workspaceUtils';
 
 const STORAGE_ACCESS_CODE_ID = 'access_code_id';
@@ -44,46 +43,13 @@ function pickInitialWorkspace(accessCode) {
   };
 }
 
-function getDriverIdentityMetadata(accessCode, authenticatedUser) {
-  const authenticatedRole = String(authenticatedUser?.app_role || '').trim().toLowerCase();
-  const authenticatedDriverId = authenticatedUser?.driver_id || null;
-  const isAuthenticatedDriver = authenticatedRole === 'driver';
-  const fallbackDriverId = accessCode?.driver_id || null;
-  const effectiveDriverId = authenticatedDriverId || fallbackDriverId || null;
-  const isDriverUser = isAuthenticatedDriver || accessCode?.code_type === 'Driver';
-
-  return {
-    authenticatedAppRole: authenticatedRole || null,
-    authenticatedDriverId,
-    isAuthenticatedDriver,
-    isDriverUser,
-    effectiveDriverId,
-  };
-}
-
-function buildEffectiveSession(
-  accessCode,
-  activeViewMode,
-  activeCompanyId,
-  ownerWorkspaceAllowedTrucks = null,
-  authenticatedUser = null,
-) {
+function buildEffectiveSession(accessCode, activeViewMode, activeCompanyId, ownerWorkspaceAllowedTrucks = null) {
   if (!accessCode) return null;
   if (!SUPPORTED_CODE_TYPES.has(accessCode.code_type)) return null;
-
-  const driverIdentity = getDriverIdentityMetadata(accessCode, authenticatedUser);
 
   if (accessCode.code_type === 'Driver') {
     return {
       ...accessCode,
-      app_role: authenticatedUser?.app_role || accessCode?.app_role || null,
-      authenticated_user_id: authenticatedUser?.id || null,
-      authenticated_app_role: driverIdentity.authenticatedAppRole,
-      authenticated_driver_id: driverIdentity.authenticatedDriverId,
-      is_authenticated_driver: driverIdentity.isAuthenticatedDriver,
-      is_driver_user: driverIdentity.isDriverUser,
-      driver_id: driverIdentity.effectiveDriverId,
-      effective_driver_id: driverIdentity.effectiveDriverId,
       raw_code_type: accessCode.code_type,
       activeViewMode: accessCode.code_type,
       activeCompanyId: accessCode.company_id || null,
@@ -97,14 +63,6 @@ function buildEffectiveSession(
 
     return {
       ...accessCode,
-      app_role: authenticatedUser?.app_role || accessCode?.app_role || null,
-      authenticated_user_id: authenticatedUser?.id || null,
-      authenticated_app_role: driverIdentity.authenticatedAppRole,
-      authenticated_driver_id: driverIdentity.authenticatedDriverId,
-      is_authenticated_driver: driverIdentity.isAuthenticatedDriver,
-      is_driver_user: driverIdentity.isDriverUser,
-      driver_id: driverIdentity.effectiveDriverId,
-      effective_driver_id: driverIdentity.effectiveDriverId,
       raw_code_type: accessCode.code_type,
       code_type: 'CompanyOwner',
       company_id: activeCompanyId,
@@ -116,14 +74,6 @@ function buildEffectiveSession(
 
   return {
     ...accessCode,
-    app_role: authenticatedUser?.app_role || accessCode?.app_role || null,
-    authenticated_user_id: authenticatedUser?.id || null,
-    authenticated_app_role: driverIdentity.authenticatedAppRole,
-    authenticated_driver_id: driverIdentity.authenticatedDriverId,
-    is_authenticated_driver: driverIdentity.isAuthenticatedDriver,
-    is_driver_user: driverIdentity.isDriverUser,
-    driver_id: driverIdentity.effectiveDriverId,
-    effective_driver_id: driverIdentity.effectiveDriverId,
     raw_code_type: accessCode.code_type,
     code_type: accessCode.code_type,
     activeViewMode: activeViewMode || accessCode.code_type,
@@ -132,7 +82,6 @@ function buildEffectiveSession(
 }
 
 export function useAccessSession() {
-  const { user } = useAuth();
   const [accessCode, setAccessCode] = useState(null);
   const [workspace, setWorkspace] = useState({ activeViewMode: null, activeCompanyId: null });
   const [ownerWorkspaceAllowedTrucks, setOwnerWorkspaceAllowedTrucks] = useState(null);
@@ -247,9 +196,8 @@ export function useAccessSession() {
       workspace.activeViewMode,
       workspace.activeCompanyId,
       ownerWorkspaceAllowedTrucks,
-      user,
     ),
-    [accessCode, ownerWorkspaceAllowedTrucks, user, workspace.activeCompanyId, workspace.activeViewMode],
+    [accessCode, ownerWorkspaceAllowedTrucks, workspace.activeCompanyId, workspace.activeViewMode],
   );
 
   return {

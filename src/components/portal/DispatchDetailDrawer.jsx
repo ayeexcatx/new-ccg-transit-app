@@ -308,8 +308,7 @@ export default function DispatchDetailDrawer({
   const myTrucks = getVisibleTrucksForDispatch(session, dispatch);
   const isOwner = session.code_type === 'CompanyOwner';
   const isAdmin = session.code_type === 'Admin';
-  const isDriverUser = session?.is_driver_user === true;
-  const driverId = session?.effective_driver_id || session?.driver_id || null;
+  const isDriverUser = session.code_type === 'Driver';
 
   const { data: companyDrivers = [] } = useQuery({
     queryKey: ['drivers', dispatch?.company_id],
@@ -334,9 +333,9 @@ export default function DispatchDetailDrawer({
 
 
   const { data: currentDriverAssignments = [] } = useQuery({
-    queryKey: ['driver-dispatch-assignments', dispatch?.id, driverId],
-    queryFn: () => base44.entities.DriverDispatchAssignment.filter({ dispatch_id: dispatch.id, driver_id: driverId }, '-assigned_datetime', 200),
-    enabled: open && isDriverUser && !!dispatch?.id && !!driverId,
+    queryKey: ['driver-dispatch-assignments', dispatch?.id, session?.driver_id],
+    queryFn: () => base44.entities.DriverDispatchAssignment.filter({ dispatch_id: dispatch.id, driver_id: session.driver_id }, '-assigned_datetime', 200),
+    enabled: open && isDriverUser && !!dispatch?.id && !!session?.driver_id,
   });
 
   useEffect(() => {

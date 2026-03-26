@@ -1,5 +1,4 @@
 const normalizeId = (value) => String(value ?? '');
-const isDriverUser = (session) => session?.is_driver_user === true || session?.code_type === 'Driver';
 
 const getDispatchTrucks = (dispatch) => (Array.isArray(dispatch?.trucks_assigned) ? dispatch.trucks_assigned : []);
 const getAllowedTrucks = (session) => (Array.isArray(session?.allowed_trucks) ? session.allowed_trucks : []);
@@ -38,7 +37,7 @@ export function canUserSeeDispatch(session, dispatch, { driverDispatchIds = null
   if (session.code_type === 'Admin') return true;
 
   const dispatchId = normalizeId(dispatch.id);
-  if (isDriverUser(session)) {
+  if (session.code_type === 'Driver') {
     return driverDispatchIds instanceof Set ? driverDispatchIds.has(dispatchId) : false;
   }
   if (session.code_type !== 'CompanyOwner') return false;
@@ -56,7 +55,7 @@ export function getVisibleTrucksForDispatch(session, dispatch, { driverAssignedT
   if (!session) return [];
   if (session.code_type === 'Admin') return assigned;
 
-  if (isDriverUser(session)) {
+  if (session.code_type === 'Driver') {
     return [...new Set((driverAssignedTrucks || []).filter(Boolean))];
   }
   if (session.code_type !== 'CompanyOwner') return [];
@@ -76,7 +75,7 @@ export function canUserSeeNotification(session, notification, {
   if (session?.code_type === 'Admin') return true;
 
   const relatedDispatchId = normalizeId(notification.related_dispatch_id);
-  if (isDriverUser(session)) {
+  if (session?.code_type === 'Driver') {
     if (notification.notification_category === 'driver_dispatch_update') return true;
     return driverDispatchIds.has(relatedDispatchId);
   }
@@ -95,7 +94,7 @@ export function canUserSeeIncident(session, incident, {
 
   if (session.code_type === 'Admin') return true;
 
-  if (isDriverUser(session)) {
+  if (session.code_type === 'Driver') {
     const createdByDriver = incident.reported_by_access_code_id === session.id;
     const tiedToAssignedDispatch = incident.dispatch_id && visibleDispatchIds.has(normalizeId(incident.dispatch_id));
     return createdByDriver || tiedToAssignedDispatch;

@@ -37,7 +37,7 @@ function LayoutInner({ children, currentPageName }) {
 
   const isAdmin = effectiveView === 'Admin';
   const isOwner = effectiveView === 'CompanyOwner';
-  const isDriver = session?.is_driver_user === true;
+  const isDriver = session?.code_type === 'Driver';
   const canUsePortalTabs = isOwner || isDriver;
 
   const { data: allDrivers = [] } = useQuery({

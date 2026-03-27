@@ -92,6 +92,8 @@ function buildLinkedUserSession({
   const appRole = linkedIdentity?.app_role;
   if (!SUPPORTED_CODE_TYPES.has(appRole)) return null;
 
+  if (!fallbackSession?.id) return null;
+
   const companyId = linkedIdentity?.company_id || fallbackSession?.company_id || null;
   const driverId = linkedIdentity?.driver_id || fallbackSession?.driver_id || null;
   const activeViewMode = appRole === 'Admin'
@@ -102,7 +104,7 @@ function buildLinkedUserSession({
     : null;
 
   return {
-    ...(fallbackSession || {}),
+    ...fallbackSession,
     user_id: linkedIdentity.user_id,
     onboarding_complete: true,
     raw_code_type: fallbackSession?.raw_code_type || appRole,
@@ -113,6 +115,55 @@ function buildLinkedUserSession({
     activeViewMode,
     activeCompanyId,
   };
+}
+
+function isActiveSupportedCode(accessCode) {
+  return Boolean(
+    accessCode
+    && accessCode.active_flag !== false
+    && SUPPORTED_CODE_TYPES.has(accessCode.code_type),
+  );
+}
+
+async function resolveLinkedIdentityAccessCode(linkedIdentity) {
+  if (!linkedIdentity?.onboarding_complete) return null;
+
+  const appRole = linkedIdentity?.app_role;
+  if (!SUPPORTED_CODE_TYPES.has(appRole)) return null;
+
+  const candidates = [];
+
+  if (linkedIdentity.user_id) {
+    candidates.push(
+      base44.entities.AccessCode.filter({ user_id: linkedIdentity.user_id }, '-created_date', 20),
+    );
+  }
+
+  if (appRole === 'Driver' && linkedIdentity.driver_id) {
+    candidates.push(
+      base44.entities.AccessCode.filter({ code_type: 'Driver', driver_id: linkedIdentity.driver_id }, '-created_date', 20),
+    );
+  }
+
+  if (appRole === 'CompanyOwner' && linkedIdentity.company_id) {
+    candidates.push(
+      base44.entities.AccessCode.filter({ code_type: 'CompanyOwner', company_id: linkedIdentity.company_id }, '-created_date', 20),
+    );
+  }
+
+  if (appRole === 'Admin') {
+    candidates.push(
+      base44.entities.AccessCode.filter({ code_type: 'Admin' }, '-created_date', 20),
+    );
+  }
+
+  for (const query of candidates) {
+    const results = await query;
+    const valid = (results || []).find((accessCode) => isActiveSupportedCode(accessCode) && accessCode.code_type === appRole);
+    if (valid) return valid;
+  }
+
+  return null;
 }
 
 export function useAccessSession() {
@@ -176,29 +227,44 @@ export function useAccessSession() {
   useEffect(() => {
     async function loadSession() {
       if (isLoadingAuth) return;
+
       const storedId = localStorage.getItem(STORAGE_ACCESS_CODE_ID);
-      if (!storedId) {
-        setLoading(false);
-        return;
-      }
+      let restoredAccessCode = null;
+
       try {
-        const codes = await base44.entities.AccessCode.filter({ id: storedId });
-        if (codes.length > 0 && codes[0].active_flag !== false && SUPPORTED_CODE_TYPES.has(codes[0].code_type)) {
-          const nextCode = codes[0];
-          const nextWorkspace = pickInitialWorkspace(nextCode);
-          setAccessCode(nextCode);
+        if (isAuthenticated) {
+          restoredAccessCode = await resolveLinkedIdentityAccessCode(currentAppIdentity);
+        }
+
+        if (!restoredAccessCode && storedId) {
+          const codes = await base44.entities.AccessCode.filter({ id: storedId });
+          const storedAccessCode = codes?.[0] || null;
+          if (isActiveSupportedCode(storedAccessCode)) {
+            restoredAccessCode = storedAccessCode;
+          } else {
+            localStorage.removeItem(STORAGE_ACCESS_CODE_ID);
+          }
+        }
+
+        if (restoredAccessCode) {
+          const nextWorkspace = pickInitialWorkspace(restoredAccessCode);
+          localStorage.setItem(STORAGE_ACCESS_CODE_ID, restoredAccessCode.id);
+          setAccessCode(restoredAccessCode);
           setWorkspace(nextWorkspace);
           persistWorkspace(nextWorkspace);
-        } else {
-          localStorage.removeItem(STORAGE_ACCESS_CODE_ID);
+        } else if (!storedId) {
+          setAccessCode(null);
+          setWorkspace({ activeViewMode: null, activeCompanyId: null });
         }
-      } catch (error) {
+      } catch {
         localStorage.removeItem(STORAGE_ACCESS_CODE_ID);
       }
+
       setLoading(false);
     }
+
     loadSession();
-  }, [isLoadingAuth, persistWorkspace]);
+  }, [currentAppIdentity, isAuthenticated, isLoadingAuth, persistWorkspace]);
 
   const login = (nextAccessCode) => {
     if (!nextAccessCode || !SUPPORTED_CODE_TYPES.has(nextAccessCode.code_type)) {

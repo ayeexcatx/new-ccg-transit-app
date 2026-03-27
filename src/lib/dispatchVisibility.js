@@ -1,7 +1,6 @@
 const normalizeId = (value) => String(value ?? '');
 
 const getDispatchTrucks = (dispatch) => (Array.isArray(dispatch?.trucks_assigned) ? dispatch.trucks_assigned : []);
-const getAllowedTrucks = (session) => (Array.isArray(session?.allowed_trucks) ? session.allowed_trucks : []);
 
 /**
  * Build a dispatchId -> unique assigned truck numbers map from active driver assignments.
@@ -100,9 +99,8 @@ export function canUserSeeIncident(session, incident, {
 
   if (session.code_type === 'CompanyOwner') {
     const createdByOwner = incident.reported_by_access_code_id === session.id;
-    const ownedTruckSet = new Set(getAllowedTrucks(session));
-    const forOwnersTruck = incident.company_id === session.company_id && ownedTruckSet.has(incident.truck_number);
-    return createdByOwner || forOwnersTruck;
+    const forOwnerCompany = incident.company_id === session.company_id;
+    return createdByOwner || forOwnerCompany;
   }
 
   return false;

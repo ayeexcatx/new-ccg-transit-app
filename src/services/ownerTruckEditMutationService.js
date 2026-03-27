@@ -38,7 +38,12 @@ export async function runOwnerTruckEditMutation({
   const normalizedNext = [...new Set((nextTrucks || []).filter(Boolean))];
   if (!normalizedNext.length) throw new Error('Please assign at least one truck.');
 
-  const allowedSet = new Set(session?.allowed_trucks || []);
+  const ownerCompanyId = dispatch.company_id || session?.company_id || null;
+  const companies = ownerCompanyId
+    ? await base44.entities.Company.filter({ id: ownerCompanyId }, '-created_date', 1)
+    : [];
+  const companyTrucks = Array.isArray(companies?.[0]?.trucks) ? companies[0].trucks : [];
+  const allowedSet = new Set(companyTrucks);
   const hasUnauthorizedTruck = normalizedNext.some((truck) => !allowedSet.has(truck));
   if (hasUnauthorizedTruck) throw new Error('You can only assign trucks from your own company.');
 

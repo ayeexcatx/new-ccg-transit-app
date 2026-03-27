@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { getAvailableWorkspaces, normalizeView } from './workspaceUtils';
 import { useAuth } from '@/lib/AuthContext';
+import { normalizeAppRoleToAccessCodeType } from '@/services/currentAppIdentityService';
 
 const STORAGE_ACCESS_CODE_ID = 'access_code_id';
 const STORAGE_WORKSPACE_MODE = 'workspace_mode';
@@ -60,7 +61,7 @@ function buildEffectiveSession(accessCode, activeViewMode, activeCompanyId, owne
   if (activeViewMode === 'CompanyOwner') {
     const allowedTrucks = Array.isArray(ownerWorkspaceAllowedTrucks)
       ? ownerWorkspaceAllowedTrucks
-      : accessCode.allowed_trucks;
+      : [];
 
     return {
       ...accessCode,
@@ -87,16 +88,16 @@ function buildLinkedUserSession({
   fallbackSession,
   workspace,
 }) {
-  const appRole = linkedIdentity?.app_role;
-  if (!SUPPORTED_CODE_TYPES.has(appRole)) return null;
+  const codeType = normalizeAppRoleToAccessCodeType(linkedIdentity?.app_role);
+  if (!SUPPORTED_CODE_TYPES.has(codeType)) return null;
 
   if (!fallbackSession?.id) return null;
 
   const companyId = linkedIdentity?.company_id || fallbackSession?.company_id || null;
   const driverId = linkedIdentity?.driver_id || fallbackSession?.driver_id || null;
-  const activeViewMode = appRole === 'Admin'
+  const activeViewMode = codeType === 'Admin'
     ? (workspace.activeViewMode || 'Admin')
-    : appRole;
+    : codeType;
   const activeCompanyId = activeViewMode === 'CompanyOwner'
     ? (workspace.activeCompanyId || companyId || null)
     : null;
@@ -105,8 +106,8 @@ function buildLinkedUserSession({
     ...fallbackSession,
     user_id: linkedIdentity.user_id,
     onboarding_complete: true,
-    raw_code_type: fallbackSession?.raw_code_type || appRole,
-    code_type: appRole,
+    raw_code_type: fallbackSession?.raw_code_type || codeType,
+    code_type: codeType,
     company_id: companyId,
     driver_id: driverId,
     allowed_trucks: Array.isArray(fallbackSession?.allowed_trucks) ? fallbackSession.allowed_trucks : [],
@@ -124,8 +125,8 @@ function isActiveSupportedCode(accessCode) {
 }
 
 async function resolveLinkedIdentityAccessCode(linkedIdentity) {
-  const appRole = linkedIdentity?.app_role;
-  if (!SUPPORTED_CODE_TYPES.has(appRole)) return null;
+  const codeType = normalizeAppRoleToAccessCodeType(linkedIdentity?.app_role);
+  if (!SUPPORTED_CODE_TYPES.has(codeType)) return null;
 
   const candidates = [];
 
@@ -135,19 +136,19 @@ async function resolveLinkedIdentityAccessCode(linkedIdentity) {
     );
   }
 
-  if (appRole === 'Driver' && linkedIdentity.driver_id) {
+  if (codeType === 'Driver' && linkedIdentity.driver_id) {
     candidates.push(
       base44.entities.AccessCode.filter({ code_type: 'Driver', driver_id: linkedIdentity.driver_id }, '-created_date', 20),
     );
   }
 
-  if (appRole === 'CompanyOwner' && linkedIdentity.company_id) {
+  if (codeType === 'CompanyOwner' && linkedIdentity.company_id) {
     candidates.push(
       base44.entities.AccessCode.filter({ code_type: 'CompanyOwner', company_id: linkedIdentity.company_id }, '-created_date', 20),
     );
   }
 
-  if (appRole === 'Admin') {
+  if (codeType === 'Admin') {
     candidates.push(
       base44.entities.AccessCode.filter({ code_type: 'Admin' }, '-created_date', 20),
     );
@@ -155,7 +156,7 @@ async function resolveLinkedIdentityAccessCode(linkedIdentity) {
 
   for (const query of candidates) {
     const results = await query;
-    const valid = (results || []).find((accessCode) => isActiveSupportedCode(accessCode) && accessCode.code_type === appRole);
+    const valid = (results || []).find((accessCode) => isActiveSupportedCode(accessCode) && accessCode.code_type === codeType);
     if (valid) return valid;
   }
 
@@ -172,17 +173,18 @@ async function resolveStoredAccessCodeById(storedId) {
 }
 
 function isAccessCodeCompatibleWithLinkedIdentity(accessCode, linkedIdentity) {
-  if (!accessCode || !linkedIdentity?.app_role) return false;
-  if (accessCode.code_type !== linkedIdentity.app_role) return false;
+  const codeType = normalizeAppRoleToAccessCodeType(linkedIdentity?.app_role);
+  if (!accessCode || !codeType) return false;
+  if (accessCode.code_type !== codeType) return false;
 
-  if (linkedIdentity.app_role === 'Driver') {
+  if (codeType === 'Driver') {
     if (linkedIdentity.driver_id) {
       return String(accessCode.driver_id || '') === String(linkedIdentity.driver_id);
     }
     return true;
   }
 
-  if (linkedIdentity.app_role === 'CompanyOwner') {
+  if (codeType === 'CompanyOwner') {
     if (linkedIdentity.company_id) {
       return String(accessCode.company_id || '') === String(linkedIdentity.company_id);
     }
@@ -222,18 +224,17 @@ export function useAccessSession() {
         return;
       }
 
-      if (accessCode.code_type !== 'Admin') {
-        setOwnerWorkspaceAllowedTrucks(Array.isArray(accessCode.allowed_trucks) ? accessCode.allowed_trucks : []);
-        return;
-      }
+      const companyId = accessCode.code_type === 'Admin'
+        ? workspace.activeCompanyId
+        : (accessCode.company_id || null);
 
-      if (!workspace.activeCompanyId) {
+      if (!companyId) {
         setOwnerWorkspaceAllowedTrucks([]);
         return;
       }
 
       try {
-        const companies = await base44.entities.Company.filter({ id: workspace.activeCompanyId }, '-created_date', 1);
+        const companies = await base44.entities.Company.filter({ id: companyId }, '-created_date', 1);
         if (cancelled) return;
         const company = companies?.[0];
         setOwnerWorkspaceAllowedTrucks(Array.isArray(company?.trucks) ? company.trucks : []);

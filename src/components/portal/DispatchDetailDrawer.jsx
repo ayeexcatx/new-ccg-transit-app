@@ -27,7 +27,7 @@ import DispatchDrawerTemplateNotesSection from './DispatchDrawerTemplateNotesSec
 import { getVisibleTrucksForDispatch } from '@/lib/dispatchVisibility';
 import { buildConfirmedTruckSetForStatus } from '@/components/notifications/confirmationStateHelpers';
 import { deactivateDriverAssignment, upsertDriverAssignment } from '@/services/driverAssignmentMutationService';
-import { resolveDriverIdentity } from '@/services/currentAppIdentityService';
+import { resolveCompanyOwnerCompanyId, resolveDriverIdentity } from '@/services/currentAppIdentityService';
 
 const UNASSIGNED_DRIVER_VALUE = '__unassigned__';
 const DRIVER_SHIFT_CONFLICT_MESSAGE = 'That driver is already assigned on a different dispatch for the same shift. Please remove the driver from that assignment or select a different driver.';
@@ -316,6 +316,19 @@ export default function DispatchDetailDrawer({
     () => resolveDriverIdentity({ currentAppIdentity, session }),
     [currentAppIdentity, session],
   );
+  const ownerCompanyId = useMemo(
+    () => resolveCompanyOwnerCompanyId({ currentAppIdentity, session }),
+    [currentAppIdentity, session],
+  );
+
+  const { data: ownerCompanyRecord = null } = useQuery({
+    queryKey: ['company-owner-trucks', ownerCompanyId],
+    queryFn: async () => {
+      const companies = await base44.entities.Company.filter({ id: ownerCompanyId }, '-created_date', 1);
+      return companies?.[0] || null;
+    },
+    enabled: open && isOwner && !!ownerCompanyId,
+  });
 
   const { data: companyDrivers = [] } = useQuery({
     queryKey: ['drivers', dispatch?.company_id],
@@ -648,7 +661,9 @@ export default function DispatchDetailDrawer({
   };
 
 
-  const ownerTruckOptions = session?.code_type === 'CompanyOwner' ? (session?.allowed_trucks || []) : [];
+  const ownerTruckOptions = session?.code_type === 'CompanyOwner'
+    ? (Array.isArray(ownerCompanyRecord?.trucks) ? ownerCompanyRecord.trucks : [])
+    : [];
   const showOwnerAssignmentsAndTimeLogs = !isOwner || canCompanyOwnerViewAssignmentsAndTimeLogs(dispatch.status);
   const requiredTruckCount = (dispatch?.trucks_assigned || []).filter(Boolean).length;
 

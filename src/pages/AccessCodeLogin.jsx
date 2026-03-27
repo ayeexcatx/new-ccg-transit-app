@@ -6,14 +6,8 @@ import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { getAvailableWorkspaces } from '@/components/session/workspaceUtils';
+import { normalizeAccessCodeTypeToAppRole } from '@/services/currentAppIdentityService';
 import { ArrowRight, AlertCircle } from 'lucide-react';
-
-function getAppRoleFromAccessCodeType(codeType) {
-  if (codeType === 'Admin') return 'admin';
-  if (codeType === 'CompanyOwner') return 'company_owner';
-  if (codeType === 'Driver') return 'driver';
-  return null;
-}
 
 export default function AccessCodeLogin() {
   const { login } = useSession();
@@ -42,7 +36,7 @@ export default function AccessCodeLogin() {
       return;
     }
 
-    const appRole = getAppRoleFromAccessCodeType(match.code_type);
+    const appRole = normalizeAccessCodeTypeToAppRole(match.code_type);
     if (!user?.id || !appRole) {
       setError('Unable to link this login. Please sign in again.');
       setLoading(false);

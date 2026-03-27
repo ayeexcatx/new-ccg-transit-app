@@ -1,3 +1,25 @@
+const ACCESS_CODE_TYPE_TO_APP_ROLE = {
+  Admin: 'admin',
+  CompanyOwner: 'company_owner',
+  Driver: 'driver',
+};
+
+const APP_ROLE_TO_ACCESS_CODE_TYPE = {
+  admin: 'Admin',
+  company_owner: 'CompanyOwner',
+  driver: 'Driver',
+};
+
+export function normalizeAccessCodeTypeToAppRole(codeType) {
+  if (!codeType) return null;
+  return ACCESS_CODE_TYPE_TO_APP_ROLE[codeType] || null;
+}
+
+export function normalizeAppRoleToAccessCodeType(appRole) {
+  if (!appRole) return null;
+  return APP_ROLE_TO_ACCESS_CODE_TYPE[String(appRole).toLowerCase()] || null;
+}
+
 export function getCurrentAppIdentity(authenticatedUser) {
   if (!authenticatedUser?.id) {
     return null;

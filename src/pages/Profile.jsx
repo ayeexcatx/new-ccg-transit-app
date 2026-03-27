@@ -183,8 +183,11 @@ function AdminProfile({ session }) {
       }
 
       if (nameChanged) {
+        if (!user?.id) {
+          throw new Error('Unable to update admin name because authenticated user details are unavailable.');
+        }
         const namePayload = { full_name: trimmedName || null };
-        await base44.auth.updateMe(namePayload);
+        await base44.entities.User.update(user.id, namePayload);
       }
 
       if (hasSmsChanges) {

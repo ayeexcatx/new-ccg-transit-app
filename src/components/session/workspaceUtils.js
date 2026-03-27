@@ -80,7 +80,9 @@ export function getActiveCompanyId(session) {
 }
 
 function getBaseLabelName(session) {
-  const rawLabel = typeof session?.label === 'string' ? session.label.trim() : '';
+  const rawLabel = typeof session?.admin_display_name === 'string' && session.admin_display_name.trim()
+    ? session.admin_display_name.trim()
+    : (typeof session?.label === 'string' ? session.label.trim() : '');
   if (!rawLabel) return '';
 
   const withoutWorkspaceSuffix = rawLabel.replace(/\s*\([^)]*\)\s*$/, '').trim();

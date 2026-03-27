@@ -20,6 +20,7 @@ import DriverProfileSmsCard from '@/components/profile/DriverProfileSmsCard';
 import { CompanyOwnerProfileOverview, CompanyOwnerSmsCard } from '@/components/profile/CompanyOwnerProfileSections';
 import SmsConsentDisclosure from '@/components/profile/SmsConsentDisclosure';
 import { getActiveCompanyId, getEffectiveView } from '@/components/session/workspaceUtils';
+import { resolveAdminDisplayName, resolveProfileName } from '@/lib/adminIdentity';
 
 const CONTACT_TYPE_OPTIONS = ['Office', 'Cell', 'Email', 'Fax', 'Other'];
 
@@ -118,10 +119,10 @@ function ContactMethodEditor({ methods, setMethods, smsIndex, setSmsIndex, readO
 }
 
 function AdminProfile({ session }) {
-  const { user } = useAuth();
+  const { user, checkAppState } = useAuth();
   const queryClient = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
-  const [form, setForm] = useState({ sms_phone: '', sms_enabled: false });
+  const [form, setForm] = useState({ name: '', sms_phone: '', sms_enabled: false });
 
   const { data: accessCodes = [] } = useQuery({
     queryKey: ['admin-profile', session?.shared_admin_access_code_id],
@@ -130,14 +131,8 @@ function AdminProfile({ session }) {
   });
 
   const adminAccessCode = accessCodes[0] || null;
-  const adminName = (
-    session?.label
-    || user?.full_name
-    || user?.name
-    || user?.display_name
-    || user?.email
-    || 'Admin'
-  );
+  const profileName = resolveProfileName(user);
+  const adminName = session?.admin_display_name || resolveAdminDisplayName(user);
   const adminPhone = adminAccessCode?.sms_phone || '';
   const adminSmsState = getAdminSmsProductState(adminAccessCode);
   const adminSmsOptedIn = adminSmsState.optedIn;
@@ -146,14 +141,16 @@ function AdminProfile({ session }) {
     || Boolean(adminAccessCode?.sms_consent_method);
   const hasSmsChanges = normalizeSmsPhone(form.sms_phone) !== normalizeSmsPhone(adminPhone)
     || form.sms_enabled !== adminSmsOptedIn;
+  const hasNameChanges = form.name.trim() !== profileName;
+  const hasProfileChanges = hasNameChanges || hasSmsChanges;
 
   useEffect(() => {
-    if (!adminAccessCode) return;
     setForm({
+      name: profileName,
       sms_phone: formatPhoneNumber(adminPhone),
       sms_enabled: adminSmsOptedIn,
     });
-  }, [adminAccessCode, adminPhone, adminSmsOptedIn, adminConsentRecorded]);
+  }, [adminAccessCode, adminPhone, adminSmsOptedIn, adminConsentRecorded, profileName]);
 
   const closeEditModal = (nextOpen) => {
     if (nextOpen) {
@@ -161,12 +158,13 @@ function AdminProfile({ session }) {
       return;
     }
 
-    if (hasSmsChanges && !window.confirm('Discard your unsaved admin profile changes?')) {
+    if (hasProfileChanges && !window.confirm('Discard your unsaved admin profile changes?')) {
       return;
     }
 
     setEditOpen(false);
     setForm({
+      name: profileName,
       sms_phone: formatPhoneNumber(adminPhone),
       sms_enabled: adminSmsOptedIn,
     });
@@ -174,23 +172,38 @@ function AdminProfile({ session }) {
 
   const mutation = useMutation({
     mutationFn: async () => {
+      const trimmedName = form.name.trim();
+      const nameChanged = trimmedName !== profileName;
       const normalizedSmsPhone = normalizeSmsPhone(form.sms_phone);
       if (form.sms_enabled && !hasUsSmsPhone(normalizedSmsPhone)) {
         throw new Error('Enter a valid US 10-digit SMS phone number (example: (555) 123-4567).');
       }
-      if (!adminAccessCode?.id) {
-        throw new Error('Admin SMS settings are unavailable because no active shared admin config was found.');
+      if (!nameChanged && !hasSmsChanges) {
+        return null;
       }
-      const payload = {
-        sms_phone: normalizedSmsPhone,
-        sms_enabled: form.sms_enabled,
-      };
-      if (form.sms_enabled) {
-        Object.assign(payload, buildSmsConsentFields(adminAccessCode));
+
+      if (nameChanged && user?.id) {
+        await base44.entities.User.update(user.id, { full_name: trimmedName || null });
       }
-      return base44.entities.AccessCode.update(adminAccessCode.id, payload);
+
+      if (hasSmsChanges) {
+        if (!adminAccessCode?.id) {
+          throw new Error('Admin SMS settings are unavailable because no active shared admin config was found.');
+        }
+        const payload = {
+          sms_phone: normalizedSmsPhone,
+          sms_enabled: form.sms_enabled,
+        };
+        if (form.sms_enabled) {
+          Object.assign(payload, buildSmsConsentFields(adminAccessCode));
+        }
+        await base44.entities.AccessCode.update(adminAccessCode.id, payload);
+      }
+
+      return true;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await checkAppState();
       queryClient.invalidateQueries({ queryKey: ['admin-profile', session?.shared_admin_access_code_id] });
       queryClient.invalidateQueries({ queryKey: ['access-codes'] });
       setEditOpen(false);
@@ -257,8 +270,8 @@ function AdminProfile({ session }) {
             <div className="rounded-lg bg-slate-50 p-3 border"><p className="text-slate-500">SMS opt-in saved</p><p className={`font-medium ${form.sms_enabled ? 'text-emerald-700' : 'text-slate-900'}`}>{form.sms_enabled ? 'Yes' : 'No'}</p></div>
           </div>
           <div className="flex justify-end">
-            <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !hasSmsChanges} className="bg-red-600 text-white hover:bg-red-700">
-              {mutation.isPending ? 'Saving...' : 'Save SMS Settings'}
+            <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !hasProfileChanges} className="bg-red-600 text-white hover:bg-red-700">
+              {mutation.isPending ? 'Saving...' : 'Save Profile'}
             </Button>
           </div>
           {!adminAccessCode && (
@@ -272,10 +285,10 @@ function AdminProfile({ session }) {
         <DialogContent
           className="sm:max-w-lg"
           onInteractOutside={(event) => {
-            if (hasSmsChanges) event.preventDefault();
+            if (hasProfileChanges) event.preventDefault();
           }}
           onEscapeKeyDown={(event) => {
-            if (hasSmsChanges) event.preventDefault();
+            if (hasProfileChanges) event.preventDefault();
           }}
         >
           <DialogHeader className="pr-8">
@@ -285,7 +298,7 @@ function AdminProfile({ session }) {
           <div className="space-y-4 py-1">
             <div className="space-y-2">
               <Label htmlFor="admin-name">Name</Label>
-              <Input id="admin-name" value={adminName} readOnly />
+              <Input id="admin-name" value={form.name} onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="admin-phone">Phone number</Label>
@@ -294,7 +307,7 @@ function AdminProfile({ session }) {
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => closeEditModal(false)}>Cancel</Button>
-            <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !hasSmsChanges} className="bg-red-600 text-white hover:bg-red-700">
+            <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !hasProfileChanges} className="bg-red-600 text-white hover:bg-red-700">
               {mutation.isPending ? 'Saving...' : 'Save'}
             </Button>
           </DialogFooter>

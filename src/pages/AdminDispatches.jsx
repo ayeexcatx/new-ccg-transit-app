@@ -30,6 +30,7 @@ import AdminDispatchesFiltersPanel from '@/components/admin/admin-dispatches/Adm
 import AdminDispatchesTabBar from '@/components/admin/admin-dispatches/AdminDispatchesTabBar';
 import LiveDispatchBoard from '@/components/admin/admin-dispatches/LiveDispatchBoard';
 import AdminDispatchCard from '@/components/admin/admin-dispatches/AdminDispatchCard';
+import { resolveAdminDisplayNameFromSession } from '@/lib/adminIdentity';
 
 const STATUS_ORDER = ['Scheduled', 'Dispatch', 'Amended', 'Cancelled'];
 const ACTIVE_LIVE_EXCLUDED_STATUSES = new Set(['Cancelled', 'Scheduled']);
@@ -90,8 +91,7 @@ const getLiveStatusClasses = (status) => {
 
 
 const getAdminDisplayName = (session) => {
-  if (!session) return 'Admin';
-  return session.label || session.name || session.code || `Admin ${session.id || ''}`.trim();
+  return resolveAdminDisplayNameFromSession(session);
 };
 
 const getAdminSessionId = (session) => session?.id || session?.code || 'unknown-session';

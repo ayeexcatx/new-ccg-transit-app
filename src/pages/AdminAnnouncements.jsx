@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import { useSession } from '../components/session/SessionContext';
 import AdminAnnouncementsHeader from '@/components/admin/admin-announcements/AdminAnnouncementsHeader';
 import AdminAnnouncementsList from '@/components/admin/admin-announcements/AdminAnnouncementsList';
+import { resolveAdminDisplayNameFromSession } from '@/lib/adminIdentity';
 
 const priorityColors = {
   1: 'bg-red-50 text-red-700 border-red-200',
@@ -32,8 +33,7 @@ const defaultForm = {
 };
 
 const getAdminDisplayName = (session) => {
-  if (!session) return 'Admin';
-  return session.label || session.name || session.code || `Admin ${session.id || ''}`.trim();
+  return resolveAdminDisplayNameFromSession(session);
 };
 
 const getAdminSessionId = (session) => session?.id || session?.code || 'unknown-session';

@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { getAvailableWorkspaces, normalizeView } from './workspaceUtils';
 import { useAuth } from '@/lib/AuthContext';
 import { normalizeAppRoleToAccessCodeType } from '@/services/currentAppIdentityService';
+import { resolveAdminDisplayName, resolveProfileName } from '@/lib/adminIdentity';
 
 const STORAGE_ACCESS_CODE_ID = 'access_code_id';
 const STORAGE_WORKSPACE_MODE = 'workspace_mode';
@@ -90,13 +91,8 @@ function buildLinkedUserSession({
 
   if (codeType !== 'Admin' && !fallbackSession?.id) return null;
 
-  const userDisplayName = (
-    authenticatedUser?.full_name
-    || authenticatedUser?.name
-    || authenticatedUser?.display_name
-    || authenticatedUser?.email
-    || ''
-  ).trim();
+  const userProfileName = resolveProfileName(authenticatedUser);
+  const userDisplayName = resolveAdminDisplayName(authenticatedUser);
 
   if (codeType === 'Admin') {
     const activeViewMode = workspace.activeViewMode || 'Admin';
@@ -115,8 +111,11 @@ function buildLinkedUserSession({
       driver_id: null,
       activeViewMode,
       activeCompanyId,
-      label: userDisplayName || fallbackSession?.label || 'Admin',
-      name: userDisplayName || fallbackSession?.name || 'Admin',
+      label: userDisplayName || 'Admin',
+      name: userDisplayName || 'Admin',
+      profile_name: userProfileName || '',
+      admin_display_name: userDisplayName || 'Admin',
+      email: authenticatedUser?.email || '',
       shared_admin_access_code_id: fallbackSession?.id || null,
     };
   }

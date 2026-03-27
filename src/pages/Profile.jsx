@@ -182,8 +182,13 @@ function AdminProfile({ session }) {
         return null;
       }
 
-      if (nameChanged && user?.id) {
-        await base44.entities.User.update(user.id, { full_name: trimmedName || null });
+      if (nameChanged) {
+        const namePayload = {
+          full_name: trimmedName || null,
+          display_name: trimmedName || null,
+          name: trimmedName || null,
+        };
+        await base44.auth.updateMe(namePayload);
       }
 
       if (hasSmsChanges) {

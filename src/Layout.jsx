@@ -11,9 +11,11 @@ import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import TutorialProvider from '@/components/tutorial/TutorialProvider';
 import { getActiveCompanyId, getAvailableWorkspaces, getEffectiveView, getWorkspaceDisplayLabel } from '@/components/session/workspaceUtils';
+import { useAuth } from '@/lib/AuthContext';
 
 function LayoutInner({ children, currentPageName }) {
   const { session, rawAccessCode, loading, logout, setActiveWorkspace } = useSession();
+  const { logout: logoutAuth } = useAuth();
   const location = useLocation();
 
   const { data: companies = [] } = useQuery({
@@ -59,7 +61,13 @@ function LayoutInner({ children, currentPageName }) {
 
   useEffect(() => {
     if (loading) return;
-    if (currentPageName === 'AccessCodeLogin') return;
+    if (currentPageName === 'AccessCodeLogin') {
+      if (session) {
+        const destination = isAdmin ? 'AdminDashboard' : 'Home';
+        window.location.href = createPageUrl(destination);
+      }
+      return;
+    }
     if (!session) {
       window.location.href = createPageUrl('AccessCodeLogin');
       return;
@@ -197,6 +205,7 @@ function LayoutInner({ children, currentPageName }) {
                   size="sm"
                   onClick={() => {
                     logout();
+                    logoutAuth(false);
                     window.location.href = createPageUrl('AccessCodeLogin');
                   }}
                   className="text-slate-500 hover:text-slate-700"

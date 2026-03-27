@@ -2,13 +2,22 @@ import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '../utils';
 import { useSession } from '../components/session/SessionContext';
+import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { getAvailableWorkspaces } from '@/components/session/workspaceUtils';
 import { ArrowRight, AlertCircle } from 'lucide-react';
 
+function getAppRoleFromAccessCodeType(codeType) {
+  if (codeType === 'Admin') return 'Admin';
+  if (codeType === 'CompanyOwner') return 'CompanyOwner';
+  if (codeType === 'Driver') return 'Driver';
+  return null;
+}
+
 export default function AccessCodeLogin() {
   const { login } = useSession();
+  const { user, checkAppState } = useAuth();
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -33,6 +42,21 @@ export default function AccessCodeLogin() {
       return;
     }
 
+    const appRole = getAppRoleFromAccessCodeType(match.code_type);
+    if (!user?.id || !appRole) {
+      setError('Unable to link this login. Please sign in again.');
+      setLoading(false);
+      return;
+    }
+
+    await base44.entities.User.update(user.id, {
+      app_role: appRole,
+      company_id: match.company_id || null,
+      driver_id: match.driver_id || null,
+      onboarding_complete: true,
+    });
+
+    await checkAppState();
     login(match);
 
     const workspaces = getAvailableWorkspaces(match);

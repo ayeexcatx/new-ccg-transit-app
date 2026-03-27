@@ -537,7 +537,7 @@ export default function AdminAccessCodes() {
                   </div>
                 )}
 
-                {form.code_type !== 'Driver' && form.company_id && companyTrucks.length > 0 && (
+                {form.code_type !== 'Driver' && form.code_type !== 'CompanyOwner' && form.company_id && companyTrucks.length > 0 && (
                   <div>
                     <Label>Select Trucks</Label>
                     <div className="flex gap-2 flex-wrap mt-1">

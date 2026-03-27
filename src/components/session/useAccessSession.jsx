@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { getAvailableWorkspaces, normalizeView } from './workspaceUtils';
+import { useAuth } from '@/lib/AuthContext';
 
 const STORAGE_ACCESS_CODE_ID = 'access_code_id';
 const STORAGE_WORKSPACE_MODE = 'workspace_mode';
@@ -81,7 +82,41 @@ function buildEffectiveSession(accessCode, activeViewMode, activeCompanyId, owne
   };
 }
 
+function buildLinkedUserSession({
+  linkedUser,
+  fallbackSession,
+  workspace,
+}) {
+  if (!linkedUser?.onboarding_complete) return null;
+
+  const appRole = linkedUser?.app_role;
+  if (!SUPPORTED_CODE_TYPES.has(appRole)) return null;
+
+  const companyId = linkedUser?.company_id || fallbackSession?.company_id || null;
+  const driverId = linkedUser?.driver_id || fallbackSession?.driver_id || null;
+  const activeViewMode = appRole === 'Admin'
+    ? (workspace.activeViewMode || 'Admin')
+    : appRole;
+  const activeCompanyId = activeViewMode === 'CompanyOwner'
+    ? (workspace.activeCompanyId || companyId || null)
+    : null;
+
+  return {
+    ...(fallbackSession || {}),
+    user_id: linkedUser.id,
+    onboarding_complete: true,
+    raw_code_type: fallbackSession?.raw_code_type || appRole,
+    code_type: appRole,
+    company_id: companyId,
+    driver_id: driverId,
+    allowed_trucks: Array.isArray(fallbackSession?.allowed_trucks) ? fallbackSession.allowed_trucks : [],
+    activeViewMode,
+    activeCompanyId,
+  };
+}
+
 export function useAccessSession() {
+  const { user, isAuthenticated, isLoadingAuth } = useAuth();
   const [accessCode, setAccessCode] = useState(null);
   const [workspace, setWorkspace] = useState({ activeViewMode: null, activeCompanyId: null });
   const [ownerWorkspaceAllowedTrucks, setOwnerWorkspaceAllowedTrucks] = useState(null);
@@ -140,6 +175,7 @@ export function useAccessSession() {
 
   useEffect(() => {
     async function loadSession() {
+      if (isLoadingAuth) return;
       const storedId = localStorage.getItem(STORAGE_ACCESS_CODE_ID);
       if (!storedId) {
         setLoading(false);
@@ -162,7 +198,7 @@ export function useAccessSession() {
       setLoading(false);
     }
     loadSession();
-  }, [persistWorkspace]);
+  }, [isLoadingAuth, persistWorkspace]);
 
   const login = (nextAccessCode) => {
     if (!nextAccessCode || !SUPPORTED_CODE_TYPES.has(nextAccessCode.code_type)) {
@@ -190,7 +226,7 @@ export function useAccessSession() {
     setOwnerWorkspaceAllowedTrucks(null);
   };
 
-  const session = useMemo(
+  const accessCodeSession = useMemo(
     () => buildEffectiveSession(
       accessCode,
       workspace.activeViewMode,
@@ -199,6 +235,18 @@ export function useAccessSession() {
     ),
     [accessCode, ownerWorkspaceAllowedTrucks, workspace.activeCompanyId, workspace.activeViewMode],
   );
+
+  const session = useMemo(() => {
+    if (isAuthenticated) {
+      const linkedSession = buildLinkedUserSession({
+        linkedUser: user,
+        fallbackSession: accessCodeSession,
+        workspace,
+      });
+      if (linkedSession) return linkedSession;
+    }
+    return accessCodeSession;
+  }, [accessCodeSession, isAuthenticated, user, workspace]);
 
   return {
     session,

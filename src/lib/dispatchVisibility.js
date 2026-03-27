@@ -30,7 +30,7 @@ export function getDriverDispatchIdSet(driverAssignments = []) {
  * Dispatch visibility used by portal/home list views:
  * - Admin: all
  * - Driver: active assignment only
- * - CompanyOwner: allowed_trucks intersection
+ * - CompanyOwner: same-company only
  */
 export function canUserSeeDispatch(session, dispatch, { driverDispatchIds = null } = {}) {
   if (!session || !dispatch?.id) return false;
@@ -42,9 +42,7 @@ export function canUserSeeDispatch(session, dispatch, { driverDispatchIds = null
   }
   if (session.code_type !== 'CompanyOwner') return false;
 
-  const allowedTrucks = getAllowedTrucks(session);
-  const assigned = getDispatchTrucks(dispatch);
-  return assigned.some((truck) => allowedTrucks.includes(truck));
+  return normalizeId(dispatch.company_id) === normalizeId(session.company_id);
 }
 
 /**
@@ -60,8 +58,7 @@ export function getVisibleTrucksForDispatch(session, dispatch, { driverAssignedT
   }
   if (session.code_type !== 'CompanyOwner') return [];
 
-  const allowed = getAllowedTrucks(session);
-  return assigned.filter((truck) => allowed.includes(truck));
+  return assigned;
 }
 
 /**

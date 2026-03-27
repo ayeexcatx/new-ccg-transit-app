@@ -51,6 +51,10 @@ function getSessionActorMetadata(session) {
 
 const normalizeId = (value) => normalizeVisibilityId(value);
 function myTrucksForHistory(dispatch, timeEntries, session) {
+  if (session?.code_type === 'CompanyOwner') {
+    const dispatchEntries = timeEntries.filter((te) => te.dispatch_id === dispatch.id);
+    return areAllAssignedTrucksTimeComplete(dispatch, dispatchEntries);
+  }
   const trucks = (session?.allowed_trucks || []).filter(t => (dispatch.trucks_assigned || []).includes(t));
   if (trucks.length === 0) return false;
   const dispatchEntries = timeEntries.filter((te) => te.dispatch_id === dispatch.id && trucks.includes(te.truck_number));

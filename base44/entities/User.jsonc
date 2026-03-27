@@ -1,0 +1,31 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "user"
+      ],
+      "description": "User role"
+    },
+    "app_role": {
+      "type": "string",
+      "description": "Application-level role for migrated users (e.g. Admin, CompanyOwner, Driver, Truck)"
+    },
+    "company_id": {
+      "type": "string",
+      "description": "Associated company ID for this user"
+    },
+    "driver_id": {
+      "type": "string",
+      "description": "Associated driver ID if this user is a driver"
+    },
+    "onboarding_complete": {
+      "type": "boolean",
+      "description": "Whether the user has completed onboarding"
+    }
+  },
+  "required": []
+}

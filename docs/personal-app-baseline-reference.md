@@ -2,10 +2,15 @@
 
 ---
 
+## Change log (2026-03-28)
+- **Added:** Clarified authenticated Base44 sign-in as the gate before access-code linking.
+- **Removed:** Outdated wording that implied access code by itself is the full authentication step.
+- **Edited:** Login/landing wording in app entry and company-owner login sections to match current linking flow.
+
 ## **1\. Application Entry (Login Page)**
 
-* Navigating to **app.ccgnj.com** (desktop or mobile) directs the user to the **Access Code Login Page**
-* Users must enter a valid **access code** to log in
+* Navigating to **app.ccgnj.com** (desktop or mobile) first follows the Base44 authenticated sign-in gate, then lands in the in-app **Access Code Login** linking screen
+* Users enter a valid **access code** to link their authenticated user identity to an app role/session
 * **Mobile behavior:** A popup appears suggesting the user install the app, including instructions
 * **Desktop behavior:** No install prompt is shown
 
@@ -1636,7 +1641,7 @@ Each card includes:
 
 ## **1\. Login & Landing**
 
-* User logs in using **access code**
+* User completes Base44 sign-in, then links their app session using **access code**
 * Company Owner lands on the **Home Page (default page)**
 
 ---

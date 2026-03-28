@@ -8,18 +8,24 @@ Generated from repository code review on 2026-03-23. This document is intentiona
 - **Needs manual verification** — unclear, environment-dependent, or not fully provable from static review alone.
 
 **((NOTE))** `Truck` were originally added to be a user, but will eventually be removed as a user, leaving only 3 remaining user types: `Admin`, `CompanyOwner`, `Driver`.
+
+## Change log (2026-03-28)
+- **Added:** Clarified authenticated Base44 sign-in + access-code linking flow and explicit truck-code login rejection.
+- **Removed:** Outdated truck-user baseline table/route assumptions that no longer match supported login behavior.
+- **Edited:** Owner truck/notification scoping language to align with company truck truth (`Company.trucks`) in current flows.
+
 ---
 
 ## A. App-Level Core Rules
 
 ### Role-based visibility and access
-- **Confirmed from code:** The app has four active access-code types in data and UI logic: `Admin`, `CompanyOwner`, `Truck`, and `Driver`. `available_views` / `linked_company_ids` extend admin workspaces, while truck and driver sessions stay locked to their own role view.
+- **Confirmed from code:** The app supports `Admin`, `CompanyOwner`, and `Driver` access-code sessions. `Truck` access-code login is blocked in `AccessCodeLogin` with “This access code type is no longer supported.” `available_views` / `linked_company_ids` extend admin workspaces.
 - **Confirmed from code:** Admin-only pages are `AdminDashboard`, `AdminCompanies`, `AdminConfirmations`, `AdminAccessCodes`, `AdminDispatches`, `AdminTemplateNotes`, `AdminAnnouncements`, and `AdminAvailability`. Non-admin sessions attempting those pages are redirected away.
 - **Confirmed from code:** Company-owner-only pages are `Availability` and `Drivers`. Non-owner sessions are redirected away.
-- **Confirmed from code:** `Profile` and `Notifications` are available only to `Admin`, `CompanyOwner`, and `Driver`, not truck users.
+- **Confirmed from code:** `Profile` and `Notifications` are available only to `Admin`, `CompanyOwner`, and `Driver`.
 - **Confirmed from code:** `Portal` / `Home` are the main non-admin workspace pages; admins are redirected from those routes to `AdminDashboard`.
 - **Confirmed from code:** `Incidents` is visible in both admin and portal-style navigation and is accessible to all role types, with role-specific filtering inside the page.
-- **Likely inferred from code:** Truck users appear to be intentionally limited to operational dispatch / incident flows and do not get a general notifications page or profile page.
+- **Removed as outdated:** Truck-user-specific route assumptions are no longer part of current supported login behavior.
 
 ### Admin / company owner / driver / truck differences
 - **Confirmed from code:** Admins can manage dispatches, companies, access codes, announcements, template notes, availability, confirmations, and incident records.
@@ -29,7 +35,7 @@ Generated from repository code review on 2026-03-23. This document is intentiona
 - **Confirmed from code:** Driver management UI is company-owner only, and truck / driver assignment controls in the dispatch drawer are primarily admin / owner capabilities.
 
 ### Access-code session behavior
-- **Confirmed from code:** Access-code login uses `AccessCode.filter({ code })`, accepts the first active match, and rejects inactive or missing codes with “Invalid or inactive access code.”
+- **Confirmed from code:** App entry requires authenticated Base44 user state first; `AccessCodeLogin` then links the authenticated user to an app role/session via `AccessCode.filter({ code })`, accepts the first active match, and rejects inactive or missing codes with “Invalid or inactive access code.”
 - **Confirmed from code:** Successful login stores `access_code_id` in local storage and also stores workspace mode/company selection in local storage.
 - **Confirmed from code:** On app load, the session layer restores the saved access code by ID, re-fetches the record, and discards the session if the record no longer exists or is inactive.
 - **Confirmed from code:** Logout clears the access-code ID and workspace local-storage entries.
@@ -116,8 +122,9 @@ Generated from repository code review on 2026-03-23. This document is intentiona
 ## B. Workflow Baseline
 
 ### Access code login
-- **Confirmed from code:** User enters a raw access code on `AccessCodeLogin`.
+- **Confirmed from code:** Authenticated users enter a raw access code on `AccessCodeLogin` to link app identity/session.
 - **Confirmed from code:** The code is looked up by exact `code` field; the first active match is used.
+- **Confirmed from code:** Truck code type is rejected with “This access code type is no longer supported.”
 - **Confirmed from code:** On success, the session is stored locally and initial workspace is chosen from access-code capabilities.
 - **Confirmed from code:** Admin-capable logins redirect to `AdminDashboard`; everyone else redirects to `Home`.
 - **Needs manual verification:** Behavior when duplicate active `AccessCode.code` values exist, because the UI uses the first active match returned by the query.
@@ -235,10 +242,9 @@ Generated from repository code review on 2026-03-23. This document is intentiona
 | Admin | **Confirmed from code:** All admin pages, incidents, notifications, profile. | **Confirmed from code:** Dispatches, companies, access codes, announcements, template notes, scoring events, availability configs. | **Confirmed from code:** Dispatches, company records/reviews, access codes, announcements, availability, likely template notes. | **Confirmed from code:** Can review confirmations; **needs manual verification** whether admins directly create truck confirmations in UI. | **Confirmed from code:** Can create incidents and updates. | **Confirmed from code:** Admin notification stream if any records use `recipient_type: Admin`. | **Likely inferred from code:** Preference can be stored, but admin SMS delivery is described as not enabled yet. | **Confirmed from code:** Can switch between Admin and CompanyOwner workspaces when configured. | **Confirmed from code:** Not normally kept in portal routes; redirected to admin dashboard. |
 | Company owner | **Confirmed from code:** Home, Portal, Availability, Drivers, Notifications, Incidents, Profile. | **Confirmed from code:** Drivers, incident reports, owner access codes (via profile), company profile change requests, truck reassignment changes in drawer. | **Confirmed from code:** Driver records, owner SMS preference, company profile request draft, truck swaps on dispatches, availability. | **Confirmed from code:** Truck-level confirmations for their allowed trucks from portal dispatches. | **Confirmed from code:** Can create incidents and updates. | **Confirmed from code:** Owner dispatch status notifications, optional dispatch update notifications, driver-seen notifications. | **Confirmed from code:** Yes, only when opted in and company SMS contact is valid. | **Confirmed from code:** Current company-owner workspace; possibly multiple linked companies if access code allows. | **Confirmed from code:** Yes. |
 | Driver | **Confirmed from code:** Home, Portal, Notifications, Incidents, Profile, limited to assigned dispatch scope. | **Confirmed from code:** No Incidents-page create button; can still initiate incident creation from dispatch drawer `Report Incident` flow; can add incident updates. | **Confirmed from code:** Their own SMS opt-in only. | **Confirmed from code:** No truck confirmation records; they acknowledge by seeing assignments/removals. | **Confirmed from code:** Can add incident updates; drawer-initiated incident flow pre-fills truck only when uniquely resolvable (not guaranteed in multi-truck ambiguity). | **Confirmed from code:** Driver dispatch assigned/updated/amended/cancelled/removed notifications. | **Confirmed from code:** Yes, only if owner enabled + driver opted in + valid phone. | **Confirmed from code:** No workspace switching. | **Confirmed from code:** Yes, but only for assigned dispatches/trucks. |
-| Truck user / portal user | **Confirmed from code:** Home, Portal, Incidents; no Notifications/Profile pages. | **Confirmed from code:** Incident reports and time entries. | **Confirmed from code:** Time entries only; no driver/profile/admin editing UI. | **Confirmed from code:** Yes, creates truck confirmations for visible trucks and current dispatch status. | **Confirmed from code:** Can create incidents and likely view incident details within scope. | **Likely inferred from code:** No dedicated notifications page/bell; status awareness comes mainly from portal dispatches. | **Confirmed from code:** Possible if truck access code has `sms_enabled` and `sms_phone`, but actual notification creation targets for trucks need manual verification. | **Confirmed from code:** No workspace switching. | **Confirmed from code:** Yes, for allowed trucks only. |
 
 ### Additional role notes
-- **Confirmed from code:** `allowed_trucks` is the main filtering primitive for truck users and company owners.
+- **Confirmed from code:** Owner truck scope in current owner/notification flows uses company truck truth (`Company.trucks`); driver visibility remains assignment-driven.
 - **Confirmed from code:** Driver visibility depends on `DriverDispatchAssignment`, not only `allowed_trucks`.
 - **Needs manual verification:** Whether any hybrid access-code patterns beyond admin↔owner switching are used in production data.
 
@@ -252,7 +258,7 @@ Generated from repository code review on 2026-03-23. This document is intentiona
 - **Risk note:** Small refactors could easily break multi-record consistency between dispatch trucks, driver assignments, and notifications.
 
 ### Notification targeting
-- **Confirmed from code:** Owner notifications depend on overlapping `allowed_trucks`, current dispatch trucks, status-dedup keys, and notification categories.
+- **Confirmed from code:** Owner notifications depend on overlap between `dispatch.trucks_assigned` and company truck truth (`Company.trucks`), plus status-dedup keys and notification categories.
 - **Confirmed from code:** Driver notifications depend on active assignments, access-code lookup through driver records, and dedupe/update semantics.
 - **Risk note:** This logic is cross-cutting and reused by save, edit, assignment, and seen flows.
 

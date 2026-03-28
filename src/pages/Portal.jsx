@@ -35,6 +35,7 @@ import { runOwnerTruckEditMutation } from '@/services/ownerTruckEditMutationServ
 import { autoArchiveDispatchAfterTimeLogging } from '@/services/dispatchArchiveMutationService';
 import { useConfirmationsQuery, confirmationsQueryKey } from '../components/notifications/useConfirmationsQuery';
 import { useOwnerNotifications } from '../components/notifications/useOwnerNotifications';
+import { getEffectiveView } from '@/components/session/workspaceUtils';
 import {
   buildDriverAssignedTrucksByDispatch,
   canUserSeeDispatch,
@@ -101,6 +102,7 @@ export default function Portal() {
     () => resolveCompanyOwnerCompanyId({ currentAppIdentity, session }),
     [currentAppIdentity, session],
   );
+  const effectiveView = useMemo(() => getEffectiveView(session), [session]);
 
   const { data: dispatches = [] } = useQuery({
     queryKey: ['portal-dispatches', ownerCompanyId],
@@ -362,7 +364,7 @@ export default function Portal() {
       const companyName = companyMap[dispatch.company_id];
       notifyTruckConfirmation(dispatch, truck, companyName);
 
-      if (session?.code_type === 'CompanyOwner') {
+      if (effectiveView === 'CompanyOwner') {
         const ownerNotificationAccessCodeIds = [...new Set(
           (notifications || [])
             .filter((notification) =>

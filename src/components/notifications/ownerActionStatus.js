@@ -3,6 +3,7 @@ import {
   deriveConfirmationCoverage,
   parseStatusFromDispatchStatusKey,
 } from './confirmationStateHelpers';
+import { getEffectiveView } from '@/components/session/workspaceUtils';
 
 export const CLICK_TO_READ_NOTIFICATION_CATEGORIES = new Set(['dispatch_update_info', 'driver_dispatch_seen']);
 export const NON_CONFIRMATION_NOTIFICATION_CATEGORIES = CLICK_TO_READ_NOTIFICATION_CATEGORIES;
@@ -22,7 +23,7 @@ export function getNotificationEffectiveReadFlag({
   confirmations = [],
   ownerAllowedTrucks = [],
 }) {
-  if (session?.code_type !== 'CompanyOwner') {
+  if (getEffectiveView(session) !== 'CompanyOwner') {
     return Boolean(notification?.read_flag);
   }
 

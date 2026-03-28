@@ -5,6 +5,11 @@ This document captures the current notification behavior around dispatch notific
 
 Whenever behavior could not be proven from repository code alone, it is marked **needs manual verification**.
 
+## Change log (2026-03-28)
+- **Added:** Clarified that owner notification truck scoping now follows company truck truth from `Company.trucks`.
+- **Removed:** Outdated wording that described owner notification scoping as `AccessCode.allowed_trucks`-driven.
+- **Edited:** Owner targeting, required-truck/read-state, expansion, reconciliation, and regression-checklist text to match current company-scoped truck logic.
+
 ---
 
 ## A. Purpose / scope
@@ -120,7 +125,7 @@ Selected from `AccessCode` records where:
 - `company_id === dispatch.company_id`
 - `active_flag === true`
 - `code_type === 'CompanyOwner'`
-- plus truck intersection requirement: `(dispatch.trucks_assigned || [])` must intersect `(accessCode.allowed_trucks || [])`.
+- plus truck intersection requirement: `(dispatch.trucks_assigned || [])` must intersect owner company trucks from `Company.trucks`.
 
 Owner notifications are truck-scoped. Owners with no overlap receive nothing.
 
@@ -137,16 +142,16 @@ If a driver has no `access_code_id`, notification creation stops for that driver
 Admin notifications are created with `recipient_type: 'Admin'` and no additional recipient id targeting in this file. Exact downstream admin fanout is **needs manual verification**.
 
 ### How owner/driver/admin targeting differs
-- **Owner targeting** is company + active owner access code + allowed truck intersection.
+- **Owner targeting** is company + active owner access code + company-truck intersection (`Company.trucks`).
 - **Driver targeting** is active driver assignment + driver's linked access code.
 - **Admin targeting** is global `recipient_type: 'Admin'` creation with category-based meaning.
 
-### Role of `allowed_trucks`
-`allowed_trucks` materially affects:
+### Role of owner truck scope (`Company.trucks`)
+Owner company truck scope materially affects:
 - whether a CompanyOwner receives an initial status notification,
 - whether a CompanyOwner receives a driver-seen notification,
 - which trucks are stored in `required_trucks` for owner notifications,
-- owner effective read state because confirmations are compared only against required/allowed trucks,
+- owner effective read state because confirmations are compared only against required/company trucks,
 - open confirmation rows in admin reporting.
 
 ### Role of `company_id`
@@ -269,7 +274,7 @@ There are two distinct mechanisms.
 #### Effective read-state for owners
 Owner unread counts and list highlighting do **not** use raw `read_flag` alone for status notifications.
 `getOwnerNotificationActionStatus` computes:
-- `requiredTrucks` from live dispatch trucks intersected with owner allowed trucks when dispatch is available, otherwise falls back to stored `required_trucks`.
+- `requiredTrucks` from live dispatch trucks intersected with owner company trucks when dispatch is available, otherwise falls back to stored `required_trucks`.
 - `confirmedTrucks` from live confirmations matching dispatch id and status parsed from `dispatch_status_key`.
 - `pendingTrucks = requiredTrucks - confirmedTrucks`.
 - `effectiveReadFlag = notification.read_flag || pendingTrucks.length === 0`.
@@ -285,9 +290,9 @@ Implication:
 #### `expandCurrentStatusRequiredTrucks`
 Used when trucks are added without a status change.
 Behavior per owner:
-- Determine newly added trucks that are also in owner `allowed_trucks`.
+- Determine newly added trucks that are also in owner company trucks (`Company.trucks`).
 - Load current owner status notification by dedupe key `(dispatch,status,owner)`.
-- Reconcile existing `required_trucks` down to trucks that are still both on the dispatch and still allowed for the owner.
+- Reconcile existing `required_trucks` down to trucks that are still both on the dispatch and still in owner company trucks.
 - Union that reconciled set with the owner-visible added trucks.
 - Rebuild the owner message from the updated required truck set.
 - Compute `allConfirmed` using current confirmations for the dispatch status.
@@ -305,7 +310,7 @@ Behavior:
 - For current-status notifications, `required_trucks` is reduced to the intersection of:
   - the notification's stored `required_trucks`,
   - current `dispatch.trucks_assigned`,
-  - current owner `allowed_trucks`.
+  - current owner company trucks (`Company.trucks`).
 - Message is rebuilt from current dispatch details and the reconciled truck list.
 - `read_flag` becomes whether every reconciled required truck has a matching confirmation for the current status.
 
@@ -529,7 +534,7 @@ Every send/skip/failure attempt records a `General` entity row with `record_type
 2. After save, `notifyDispatchChange(dispatch, oldStatus, newStatus, ...)` is called.
 3. Company is resolved from provided companies or fetched.
 4. Active `CompanyOwner` access codes for the company are resolved from provided access codes or fetched.
-5. Owners are filtered to those whose `allowed_trucks` intersect `dispatch.trucks_assigned`.
+5. Owners are filtered to those whose company truck scope (`Company.trucks`) intersects `dispatch.trucks_assigned`.
 6. For each affected owner:
    - stale unread owner status notifications for the same dispatch but different status are marked read,
    - dedupe key `${dispatch.id}:${newStatus}:${ownerId}` is checked,
@@ -780,7 +785,7 @@ These functions combine business rules, side effects, dedupe, and data writes.
 - [ ] Create a dispatch with trucks overlapping one owner access code and not another; verify only overlapping owners receive a status notification.
 - [ ] Change dispatch status from Scheduled -> Dispatch -> Amended -> Cancelled; verify one owner status notification per owner per status and older unread status notifications are resolved.
 - [ ] Edit dispatch without status change and with a custom update message; verify a new `dispatch_update_info` notification is created each time with no dedupe.
-- [ ] Add a truck without status change; verify owner current-status notification expands `required_trucks` only for owners allowed on that truck.
+- [ ] Add a truck without status change; verify owner current-status notification expands `required_trucks` only for owners whose company truck scope includes that truck.
 - [ ] Remove a truck or revoke owner access to a truck; verify owner notification reconciliation shrinks `required_trucks` and updates pending counts.
 - [ ] Confirm all required trucks for an owner; verify owner notification becomes effectively read and eventually stored `read_flag` is true.
 - [ ] Click owner informational and driver-seen notifications; verify click marks them read.
@@ -827,7 +832,7 @@ These functions combine business rules, side effects, dedupe, and data writes.
 ## K. Final required sections
 
 ### 1. Must-remain-identical behaviors
-- Owner status notification targeting must continue to be restricted by company, active CompanyOwner access code, and `allowed_trucks` overlap.
+- Owner status notification targeting must continue to be restricted by company, active CompanyOwner access code, and company-truck (`Company.trucks`) overlap.
 - Owner status notification dedupe must remain one per `(dispatch, status, owner)` and must resolve older unread status notifications for that owner when status changes.
 - Informational owner updates must remain non-deduped unless the product explicitly changes that behavior.
 - Driver notification targeting must remain based on active driver assignments and the driver's linked access code.

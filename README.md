@@ -1,7 +1,7 @@
  # CCG Dispatch Hub # 
 ---------------------------------------------------------------------
 
-CCG Dispatch Hub is a dispatch management system built for CCG Transit using Base44 and React. It supports daily dispatch operations across administrators, company owners, truck access-code users, and drivers.
+CCG Dispatch Hub is a dispatch management system built for CCG Transit using Base44 and React. It supports daily dispatch operations across administrators, company owners, and drivers.
 
 The repository contains the frontend application code synchronized with Base44 through GitHub.
 Base44 entities and backend configuration are managed within the Base44 platform and are not stored in this repository.
@@ -135,14 +135,6 @@ The application is role-based and dynamically adjusts visibility and workflows.
 - Notifications
 - Incidents
 
-** Truck User **
-1. Truck users are limited to operational dispatch views.
-2. Accessible pages include:
-- Home
-- Dispatch Portal
-- Incidents
-3. Truck users primarily perform confirmations and time entry logging.
-
 ** Driver User **
 1. Driver users have a limited interface showing dispatches assigned to them.
 2. Accessible pages include:
@@ -170,7 +162,7 @@ The application is role-based and dynamically adjusts visibility and workflows.
 1. The backend is provided by Base44, which handles:
 - Data entities
 - Query endpoints
-- Authentication via access codes
+- Base44-authenticated user sessions with in-app access-code linking
 - API services
 - Entity filtering and sorting
 - Serverless function execution (Deno)
@@ -212,7 +204,6 @@ The application is role-based and dynamically adjusts visibility and workflows.
 | ------------- | ---------------------------------------------- |
 | Admin         | All dispatches                                 |
 | Company Owner | Dispatches assigned to company trucks          |
-| Truck User    | Dispatches assigned to allowed trucks          |
 | Driver        | Dispatches assigned through driver assignments |
  ------------------------------------------------------------------
 
@@ -252,7 +243,7 @@ functions
 Defines route structure and role-based navigation.
 
 [SessionContext.jsx]
-Handles login state and access code authentication.
+Handles linked access-code session state and workspace selection for authenticated users.
 
 [DispatchDetailDrawer.jsx]
 Main dispatch detail interface used across multiple pages.

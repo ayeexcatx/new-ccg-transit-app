@@ -25,16 +25,14 @@ export default function NotificationBellItem({
             {display.title}
           </p>
           <p className="mt-1 whitespace-pre-line text-sm leading-5 text-slate-600">{display.message}</p>
-          {notification.required_trucks?.length > 0 && (
-            <div className="mt-2">
-              <NotificationStatusBadge
-                notification={notification}
-                confirmations={confirmations}
-                dispatch={dispatch}
-                ownerAllowedTrucks={ownerAllowedTrucks}
-              />
-            </div>
-          )}
+          <div className="mt-2">
+            <NotificationStatusBadge
+              notification={notification}
+              confirmations={confirmations}
+              dispatch={dispatch}
+              ownerAllowedTrucks={ownerAllowedTrucks}
+            />
+          </div>
           <p className="mt-2 text-xs text-slate-400">
             {format(new Date(notification.created_date), 'MMM d, h:mm a')}
           </p>

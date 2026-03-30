@@ -101,6 +101,6 @@ export function getOwnerNotificationActionStatus({
     total,
     done,
     needsAction,
-    effectiveReadFlag: Boolean(notification?.read_flag) || !needsAction,
+    effectiveReadFlag: !needsAction,
   };
 }

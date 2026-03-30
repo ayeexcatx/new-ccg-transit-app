@@ -16,8 +16,9 @@ export default function DispatchConfirmReceiptLogSection({
   if (myTrucks.length === 0) return null;
 
   return (
-    <div data-tour="dispatch-confirm-receipt">
-      <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">
+    <section data-tour="dispatch-confirm-receipt" className="rounded-xl border border-slate-200 bg-white p-3 sm:p-3.5">
+      <p className="text-xs text-slate-500 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+        <CheckCircle2 className="h-3.5 w-3.5 text-slate-400" />
         Confirm Receipt — <span className="text-slate-700">{currentConfType}</span>
       </p>
       <div className="space-y-2">
@@ -71,6 +72,6 @@ export default function DispatchConfirmReceiptLogSection({
           );
         })}
       </div>
-    </div>
+    </section>
   );
 }

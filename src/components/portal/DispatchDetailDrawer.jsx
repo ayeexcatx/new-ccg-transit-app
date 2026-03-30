@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Truck } from 'lucide-react';
+import { Settings2, Truck } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format, parseISO } from 'date-fns';
 import { createPageUrl } from '@/utils';
@@ -971,61 +971,75 @@ export default function DispatchDetailDrawer({
 
           {/* Actions */}
           {(isOwner || isAdmin || isDriverUser) && (
-            <div className="space-y-4 pt-2 border-t border-slate-100">
+            <div className="space-y-4 pt-2">
+              {(isOwner || isAdmin) && (
+                <div className="pt-2 border-t-2 border-slate-200">
+                  <section className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3.5 sm:p-4 space-y-3.5">
+                    <div className="rounded-xl border border-slate-200 bg-white/70 px-3 py-2.5">
+                      <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-700">
+                        <Settings2 className="h-3.5 w-3.5 text-slate-500" />
+                        Operations Panel
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        Internal workflow controls for owner/admin use. These tools are not part of the formal dispatch record.
+                      </p>
+                    </div>
 
-              <DispatchDriverConfirmationSection
-                isOwner={isOwner}
-                isAdmin={isAdmin}
-                showOwnerAssignmentsAndTimeLogs={showOwnerAssignmentsAndTimeLogs}
-                myTrucks={myTrucks}
-                currentConfType={currentConfType}
-                isTruckConfirmedForCurrent={isTruckConfirmedForCurrent}
-                getTruckCurrentConfirmation={getTruckCurrentConfirmation}
-                getTruckPriorConfirmations={getTruckPriorConfirmations}
-                handleConfirmTruck={handleConfirmTruck}
-                formatLogTimestampWithActor={formatLogTimestampWithActor}
-                getEntryActorLabel={getEntryActorLabel}
-                dispatch={dispatch}
-                eligibleDrivers={eligibleDrivers}
-                selectedDriverByTruck={selectedDriverByTruck}
-                handleDriverSelection={handleDriverSelection}
-                assignDriverMutation={assignDriverMutation}
-                unassignedDriverValue={UNASSIGNED_DRIVER_VALUE}
-                conflictingDriverAssignmentsById={conflictingDriverAssignmentsById}
-                driverAssignmentErrors={driverAssignmentErrors}
-                confirmations={confirmations}
-                shouldShowDriverAssignmentControls={shouldShowDriverAssignmentControls}
-                driverDispatchByTruck={driverDispatchByTruck}
-                onSendDispatch={handleSendDriverDispatch}
-                onCancelDispatch={handleCancelDriverDispatch}
-                sendMutationPending={sendDriverDispatchMutation.isPending}
-                cancelMutationPending={cancelDriverDispatchMutation.isPending}
-              />
+                    <DispatchDriverConfirmationSection
+                      isOwner={isOwner}
+                      isAdmin={isAdmin}
+                      showOwnerAssignmentsAndTimeLogs={showOwnerAssignmentsAndTimeLogs}
+                      myTrucks={myTrucks}
+                      currentConfType={currentConfType}
+                      isTruckConfirmedForCurrent={isTruckConfirmedForCurrent}
+                      getTruckCurrentConfirmation={getTruckCurrentConfirmation}
+                      getTruckPriorConfirmations={getTruckPriorConfirmations}
+                      handleConfirmTruck={handleConfirmTruck}
+                      formatLogTimestampWithActor={formatLogTimestampWithActor}
+                      getEntryActorLabel={getEntryActorLabel}
+                      dispatch={dispatch}
+                      eligibleDrivers={eligibleDrivers}
+                      selectedDriverByTruck={selectedDriverByTruck}
+                      handleDriverSelection={handleDriverSelection}
+                      assignDriverMutation={assignDriverMutation}
+                      unassignedDriverValue={UNASSIGNED_DRIVER_VALUE}
+                      conflictingDriverAssignmentsById={conflictingDriverAssignmentsById}
+                      driverAssignmentErrors={driverAssignmentErrors}
+                      confirmations={confirmations}
+                      shouldShowDriverAssignmentControls={shouldShowDriverAssignmentControls}
+                      driverDispatchByTruck={driverDispatchByTruck}
+                      onSendDispatch={handleSendDriverDispatch}
+                      onCancelDispatch={handleCancelDriverDispatch}
+                      sendMutationPending={sendDriverDispatchMutation.isPending}
+                      cancelMutationPending={cancelDriverDispatchMutation.isPending}
+                    />
 
-              {!isDriverUser && (
-                <DispatchTimeLogSection
-                  isOwner={isOwner}
-                  isDriverUser={isDriverUser}
-                  isAdmin={isAdmin}
-                  showOwnerAssignmentsAndTimeLogs={showOwnerAssignmentsAndTimeLogs}
-                  dispatchStatus={dispatch.status}
-                  myTrucks={myTrucks}
-                  visibleTrucks={visibleTrucks}
-                  assignedTrucks={dispatch.trucks_assigned || []}
-                  timeLogSectionRef={timeLogSectionRef}
-                  draftTimeEntries={draftTimeEntries}
-                  timeEntries={timeEntries}
-                  dispatch={dispatch}
-                  onChangeDraft={handleChangeDraft}
-                  onCopyToAll={handleCopyToAll}
-                  onSaveAll={handleSaveAll}
-                  hasUnsavedChanges={hasUnsavedChanges}
-                  isSavingAll={isSavingAll}
-                  entriesToSave={entriesToSave}
-                  TruckTimeRow={TruckTimeRow}
-                />
+                    {!isDriverUser && (
+                      <DispatchTimeLogSection
+                        isOwner={isOwner}
+                        isDriverUser={isDriverUser}
+                        isAdmin={isAdmin}
+                        showOwnerAssignmentsAndTimeLogs={showOwnerAssignmentsAndTimeLogs}
+                        dispatchStatus={dispatch.status}
+                        myTrucks={myTrucks}
+                        visibleTrucks={visibleTrucks}
+                        assignedTrucks={dispatch.trucks_assigned || []}
+                        timeLogSectionRef={timeLogSectionRef}
+                        draftTimeEntries={draftTimeEntries}
+                        timeEntries={timeEntries}
+                        dispatch={dispatch}
+                        onChangeDraft={handleChangeDraft}
+                        onCopyToAll={handleCopyToAll}
+                        onSaveAll={handleSaveAll}
+                        hasUnsavedChanges={hasUnsavedChanges}
+                        isSavingAll={isSavingAll}
+                        entriesToSave={entriesToSave}
+                        TruckTimeRow={TruckTimeRow}
+                      />
+                    )}
+                  </section>
+                </div>
               )}
-
 
               {/* Activity — Admin */}
               {isAdmin && (

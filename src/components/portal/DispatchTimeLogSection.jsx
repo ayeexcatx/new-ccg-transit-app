@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Save } from 'lucide-react';
+import { Clock3, Save } from 'lucide-react';
 
 export default function DispatchTimeLogSection({
   isOwner,
@@ -30,10 +30,13 @@ export default function DispatchTimeLogSection({
           id="time-log-section"
           ref={timeLogSectionRef}
           data-tour="dispatch-time-log"
-          className="rounded-xl border border-slate-200 bg-slate-50/50 p-3 sm:p-4"
+          className="rounded-xl border border-slate-200 bg-white p-3 sm:p-3.5"
         >
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-600">Time Log</p>
+            <p className="text-xs text-slate-500 uppercase tracking-wide flex items-center gap-1.5">
+              <Clock3 className="h-3.5 w-3.5 text-slate-400" />
+              Time Log
+            </p>
           </div>
           <div className="space-y-2.5">
             {myTrucks.map((truck) => (
@@ -82,8 +85,11 @@ export default function DispatchTimeLogSection({
       )}
 
       {isAdmin && assignedTrucks.length > 0 && (
-        <div>
-          <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Time Log</p>
+        <section className="rounded-xl border border-slate-200 bg-white p-3 sm:p-3.5">
+          <p className="text-xs text-slate-500 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+            <Clock3 className="h-3.5 w-3.5 text-slate-400" />
+            Time Log
+          </p>
           <div className="space-y-1.5">
             {assignedTrucks.map((truck) => (
               <TruckTimeRow
@@ -96,7 +102,7 @@ export default function DispatchTimeLogSection({
               />
             ))}
           </div>
-        </div>
+        </section>
       )}
     </>
   );

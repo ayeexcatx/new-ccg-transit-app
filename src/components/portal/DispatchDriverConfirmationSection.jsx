@@ -68,7 +68,7 @@ export default function DispatchDriverConfirmationSection({
       )}
 
       {isAdmin && (dispatch.trucks_assigned || []).length > 0 && (
-        <div>
+        <section className="rounded-xl border border-slate-200 bg-white p-3 sm:p-3.5">
           <p className="text-xs text-slate-500 uppercase tracking-wide mb-2 flex items-center gap-1.5">
             <History className="h-3.5 w-3.5" />Confirmations
           </p>
@@ -104,7 +104,7 @@ export default function DispatchDriverConfirmationSection({
               );
             })}
           </div>
-        </div>
+        </section>
       )}
     </>
   );

@@ -21,6 +21,7 @@ import {
 import {
   canUserSeeNotification,
   getDriverDispatchIdSet,
+  getVisibleTrucksForDispatch as getVisibleDispatchTrucks,
   normalizeVisibilityId,
 } from '@/lib/dispatchVisibility';
 import { listDriverDispatchesForDriver } from '@/lib/driverDispatch';
@@ -81,6 +82,11 @@ export default function NotificationBell({ session }) {
     enabled: isOwner && !!activeCompanyId,
   });
   const ownerScopeTrucks = Array.isArray(ownerCompany?.trucks) ? ownerCompany.trucks : [];
+
+  const getVisibleTrucksForDispatch = (dispatch) => {
+    if (!dispatch?.id) return [];
+    return getVisibleDispatchTrucks(session, dispatch);
+  };
 
   const shouldMarkReadOnClick = (notification) => {
     if (notification.read_flag) return false;
@@ -178,6 +184,7 @@ export default function NotificationBell({ session }) {
                   dispatch={dispatch}
                   confirmations={confirmations}
                   ownerAllowedTrucks={ownerScopeTrucks}
+                  visibleTrucks={isOwner && dispatch ? getVisibleTrucksForDispatch(dispatch) : []}
                   onClick={() => handleNotificationClick(n)}
                 />
               );

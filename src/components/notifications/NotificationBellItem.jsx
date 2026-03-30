@@ -1,5 +1,7 @@
 import React from 'react';
 import { format } from 'date-fns';
+import { Badge } from '@/components/ui/badge';
+import { Truck } from 'lucide-react';
 import NotificationStatusBadge from './NotificationStatusBadge';
 
 export default function NotificationBellItem({
@@ -9,6 +11,7 @@ export default function NotificationBellItem({
   dispatch,
   confirmations,
   ownerAllowedTrucks,
+  visibleTrucks = [],
   onClick,
 }) {
   return (
@@ -25,6 +28,16 @@ export default function NotificationBellItem({
             {display.title}
           </p>
           <p className="mt-1 whitespace-pre-line text-sm leading-5 text-slate-600">{display.message}</p>
+          {dispatch && visibleTrucks.length > 0 && (
+            <div className="mt-1.5 flex items-center gap-1 flex-wrap">
+              <Truck className="h-3 w-3 text-slate-500" />
+              {visibleTrucks.map((truck) => (
+                <Badge key={`${notification.id}-${truck}`} variant="outline" className="text-[10px] font-mono px-1.5 py-0 h-5">
+                  {truck}
+                </Badge>
+              ))}
+            </div>
+          )}
           <div className="mt-2">
             <NotificationStatusBadge
               notification={notification}

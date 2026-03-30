@@ -25,14 +25,6 @@
     "onboarding_complete": {
       "type": "boolean",
       "description": "Whether the user has completed onboarding"
-    },
-    "app_display_name": {
-      "type": "string",
-      "description": "App-level editable display name for the user"
-    },
-    "company_name": {
-      "type": "string",
-      "description": "Readable display name of the company associated with the user"
     }
   },
   "required": []

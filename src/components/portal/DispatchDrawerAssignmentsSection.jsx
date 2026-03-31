@@ -26,20 +26,24 @@ function AssignmentDetailBlock({ assignment, iconSize = 'h-4 w-4', textColor = '
           </div>
         )}
         {(assignment.start_time || hasStartTimeRows) && (
-          <div className={`flex items-center gap-2 rounded-lg border border-slate-200/80 bg-white px-3 py-2 text-sm ${textColor}`}>
-            <Clock className={`${iconSize} text-slate-400 shrink-0`} />
-            <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-600">Start Time</span>
-            {hasStartTimeRows ? (
-              <div className="space-y-0.5">
-                {startTimeRows.map((row) => (
-                  <p key={row.truckNumber} className="text-xs text-slate-700">
-                    <span className="font-mono">{row.truckNumber}</span> — {assignment.formatTimeToAmPm(row.time) || '—'}
-                  </p>
-                ))}
-              </div>
-            ) : (
-              <span className="font-medium text-slate-700">{assignment.formatTimeToAmPm(assignment.start_time)}</span>
-            )}
+          <div className={`flex items-start gap-2 rounded-lg border border-slate-200/80 bg-white px-2.5 py-2 text-sm sm:px-2 ${textColor}`}>
+            <Clock className={`${iconSize} mt-0.5 shrink-0 text-slate-400`} />
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-600">Start Time</p>
+              {hasStartTimeRows ? (
+                <div className="mt-0.5 space-y-0 sm:mt-0.5 sm:space-y-0.5">
+                  {startTimeRows.map((row) => (
+                    <p key={row.truckNumber} className="inline-flex gap-1.5 whitespace-nowrap text-xs text-slate-700">
+                      <span className="font-mono">{row.truckNumber}</span>
+                      <span aria-hidden="true">—</span>
+                      <span>{assignment.formatTimeToAmPm(row.time) || '—'}</span>
+                    </p>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-0.5 whitespace-nowrap font-medium text-slate-700">{assignment.formatTimeToAmPm(assignment.start_time)}</p>
+              )}
+            </div>
           </div>
         )}
       </div>

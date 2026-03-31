@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { createPageUrl } from '@/utils';
-import { buildDispatchOpenPath } from '@/lib/dispatchOpenOrchestration';
 import { useNavigate } from 'react-router-dom';
+import { useAdminDispatchDrawer } from '@/components/portal/AdminDispatchDrawerContext';
 import NotificationBellItem from './NotificationBellItem';
 import { useOwnerNotifications } from './useOwnerNotifications';
 import { useAuth } from '@/lib/AuthContext';
@@ -33,6 +33,7 @@ export default function NotificationBell({ session }) {
   const { currentAppIdentity } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = React.useState(false);
+  const { openAdminDispatchDrawer } = useAdminDispatchDrawer();
   const { notifications, unreadCount, markReadAsync } = useOwnerNotifications(session);
   const effectiveView = getEffectiveView(session);
   const activeCompanyId = getActiveCompanyId(session);
@@ -106,13 +107,13 @@ export default function NotificationBell({ session }) {
     }
 
     if (n.related_dispatch_id) {
-      const targetPage = isAdmin ? 'AdminDispatches' : 'Portal';
-      const targetPath = buildDispatchOpenPath(targetPage, {
-        dispatchId: n.related_dispatch_id,
-        notificationId: n.id,
-        normalizeId,
-      });
       setOpen(false);
+      if (isAdmin) {
+        openAdminDispatchDrawer({ dispatchId: n.related_dispatch_id, notificationId: n.id });
+        return;
+      }
+
+      const targetPath = `Portal?dispatchId=${encodeURIComponent(normalizeId(n.related_dispatch_id))}${n.id ? `&notificationId=${encodeURIComponent(normalizeId(n.id))}` : ''}`;
       setTimeout(() => navigate(createPageUrl(targetPath)), 0);
     } else {
       navigate(createPageUrl('Notifications'));

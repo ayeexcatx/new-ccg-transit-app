@@ -1,14 +1,12 @@
 import React, { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { formatDistanceToNowStrict, format } from 'date-fns';
 import { base44 } from '@/api/base44Client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { createPageUrl } from '../utils';
-import { buildDispatchOpenPath } from '@/lib/dispatchOpenOrchestration';
 import { buildOpenConfirmationRows } from '@/components/notifications/openConfirmations';
 import { statusBadgeColors } from '@/components/portal/statusConfig';
+import { useAdminDispatchDrawer } from '@/components/portal/AdminDispatchDrawerContext';
 
 const EASTERN_TIMEZONE = 'America/New_York';
 
@@ -145,7 +143,7 @@ function HistoryMobileCard({ row, onClick }) {
 }
 
 export default function AdminConfirmations() {
-  const navigate = useNavigate();
+  const { openAdminDispatchDrawer } = useAdminDispatchDrawer();
 
   const { data: notifications = [], isLoading: notificationsLoading } = useQuery({
     queryKey: ['notifications-admin-confirmations'],
@@ -238,7 +236,7 @@ export default function AdminConfirmations() {
   const isLoading = notificationsLoading || confirmationsLoading || dispatchesLoading;
 
   const openDispatch = (dispatchId) => {
-    navigate(createPageUrl(buildDispatchOpenPath('AdminDispatches', { dispatchId })));
+    openAdminDispatchDrawer({ dispatchId });
   };
 
   return (

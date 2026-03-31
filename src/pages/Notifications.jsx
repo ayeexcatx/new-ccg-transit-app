@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Bell, CheckCircle2 } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 import { buildDispatchOpenPath } from '@/lib/dispatchOpenOrchestration';
+import { useAdminDispatchDrawer } from '@/components/portal/AdminDispatchDrawerContext';
 import { useNavigate } from 'react-router-dom';
 import { useOwnerNotifications } from '@/components/notifications/useOwnerNotifications';
 import { getNotificationDisplay } from '@/components/notifications/formatNotificationDetailsMessage';
@@ -25,6 +26,7 @@ import { getActiveCompanyId, getEffectiveView } from '@/components/session/works
 export default function Notifications() {
   const { session } = useSession();
   const navigate = useNavigate();
+  const { openAdminDispatchDrawer } = useAdminDispatchDrawer();
   const effectiveView = getEffectiveView(session);
   const activeCompanyId = getActiveCompanyId(session);
   const isOwner = effectiveView === 'CompanyOwner';
@@ -71,8 +73,12 @@ export default function Notifications() {
     }
 
     if (n.related_dispatch_id) {
-      const targetPage = isAdmin ? 'AdminDispatches' : 'Portal';
-      const targetPath = buildDispatchOpenPath(targetPage, {
+      if (isAdmin) {
+        openAdminDispatchDrawer({ dispatchId: n.related_dispatch_id, notificationId: n.id });
+        return;
+      }
+
+      const targetPath = buildDispatchOpenPath('Portal', {
         dispatchId: n.related_dispatch_id,
         notificationId: n.id,
       });

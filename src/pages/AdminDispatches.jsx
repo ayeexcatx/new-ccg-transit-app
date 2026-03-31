@@ -1000,6 +1000,18 @@ export default function AdminDispatches() {
     });
   };
 
+
+  useEffect(() => {
+    const editDispatchId = location.state?.editDispatchId;
+    if (!editDispatchId || dispatches.length === 0) return;
+
+    const target = dispatches.find((dispatch) => String(dispatch.id) === String(editDispatchId));
+    if (!target) return;
+
+    openEdit(target);
+    navigate(location.pathname + location.search, { replace: true, state: {} });
+  }, [location.pathname, location.search, location.state, dispatches]);
+
   useEffect(() => {
     if (!openNewDispatch) return;
     setEditing(null);

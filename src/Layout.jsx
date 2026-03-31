@@ -12,6 +12,7 @@ import { base44 } from '@/api/base44Client';
 import TutorialProvider from '@/components/tutorial/TutorialProvider';
 import { getActiveCompanyId, getAvailableWorkspaces, getEffectiveView, getWorkspaceDisplayLabel } from '@/components/session/workspaceUtils';
 import { useAuth } from '@/lib/AuthContext';
+import { AdminDispatchDrawerProvider } from '@/components/portal/AdminDispatchDrawerContext';
 
 function LayoutInner({ children, currentPageName }) {
   const { session, rawAccessCode, loading, logout, setActiveWorkspace } = useSession();
@@ -136,6 +137,7 @@ function LayoutInner({ children, currentPageName }) {
 
   return (
     <TutorialProvider session={session}>
+      <AdminDispatchDrawerProvider session={session} isAdmin={isAdmin}>
       <div className="bg-zinc-50 min-h-screen">
         <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
           <div className="bg-slate-50 mx-auto max-w-7xl px-4 sm:px-6">
@@ -285,6 +287,7 @@ function LayoutInner({ children, currentPageName }) {
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6" data-tutorial-scroll="main">{children}</main>
       </div>
+      </AdminDispatchDrawerProvider>
     </TutorialProvider>
   );
 }

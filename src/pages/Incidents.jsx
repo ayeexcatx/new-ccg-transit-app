@@ -16,6 +16,7 @@ import { format, parseISO } from 'date-fns';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { buildDispatchOpenPath } from '@/lib/dispatchOpenOrchestration';
+import { useAdminDispatchDrawer } from '@/components/portal/AdminDispatchDrawerContext';
 import { toast } from 'sonner';
 import { canUserSeeIncident, normalizeVisibilityId } from '@/lib/dispatchVisibility';
 import { listDriverDispatchesForDriver } from '@/lib/driverDispatch';
@@ -95,6 +96,7 @@ export default function Incidents() {
   const queryClient = useQueryClient();
   const location = useLocation();
   const navigate = useNavigate();
+  const { openAdminDispatchDrawer } = useAdminDispatchDrawer();
   const [createOpen, setCreateOpen] = useState(false);
   const [form, setForm] = useState(INITIAL_FORM);
   const [filters, setFilters] = useState({ status: 'all', truck: '', type: 'all' });
@@ -578,7 +580,13 @@ export default function Incidents() {
                           <Link
                             to={dispatchHref}
                             className="text-blue-700 hover:underline"
-                            onClick={(e) => e.stopPropagation()}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (isAdmin) {
+                                e.preventDefault();
+                                openAdminDispatchDrawer({ dispatchId: dispatch.id });
+                              }
+                            }}
                           >
                             {dispatch.job_number || dispatch.reference_tag || dispatch.id}
                           </Link>

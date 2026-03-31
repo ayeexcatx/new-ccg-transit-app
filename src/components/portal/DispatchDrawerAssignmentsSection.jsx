@@ -1,18 +1,11 @@
 import React from 'react';
-import { Badge } from '@/components/ui/badge';
 import { Clock, FileText } from 'lucide-react';
-
-const tollColors = {
-  Authorized: 'bg-green-50 text-green-700',
-  Unauthorized: 'bg-red-50 text-red-700',
-  'Included in Rate': 'bg-purple-50 text-purple-700',
-};
 
 function DetailTextRow({ label, value, valueClassName = '' }) {
   if (!value) return null;
   return (
     <div className="rounded-lg border border-slate-200/80 bg-white/80 px-3 py-2.5">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">{label}</p>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-600">{label}</p>
       <p className={`mt-1 whitespace-pre-wrap text-sm leading-relaxed text-slate-700 ${valueClassName}`}>{value}</p>
     </div>
   );
@@ -23,18 +16,18 @@ function AssignmentDetailBlock({ assignment, iconSize = 'h-4 w-4', textColor = '
     <>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         {assignment.job_number && (
-          <div className="flex items-center gap-2 rounded-lg border border-slate-200/80 bg-slate-50/70 px-3 py-2">
-            <FileText className={`${iconSize} shrink-0 text-slate-400`} />
-            <span className="text-[11px] font-semibold uppercase tracking-[0.09em] text-slate-500">Job #</span>
-            <Badge className="bg-slate-900 px-1.5 py-0 text-[11px] font-semibold text-white hover:bg-slate-900">
-              {assignment.job_number}
-            </Badge>
+          <div className="rounded-lg border border-slate-200/80 bg-slate-50/70 px-3 py-2">
+            <div className="flex items-center gap-2">
+              <FileText className={`${iconSize} shrink-0 text-slate-400`} />
+              <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-600">Job #</span>
+            </div>
+            <p className="mt-1 text-sm font-medium leading-relaxed text-slate-700">{assignment.job_number}</p>
           </div>
         )}
         {assignment.start_time && (
           <div className={`flex items-center gap-2 rounded-lg border border-slate-200/80 bg-white px-3 py-2 text-sm ${textColor}`}>
             <Clock className={`${iconSize} text-slate-400 shrink-0`} />
-            <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Start Time</span>
+            <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-600">Start Time</span>
             <span className="font-medium text-slate-700">{assignment.formatTimeToAmPm(assignment.start_time)}</span>
           </div>
         )}
@@ -56,12 +49,12 @@ function AssignmentDetailBlock({ assignment, iconSize = 'h-4 w-4', textColor = '
           value={assignment.notes}
           valueClassName={`${assignment.contentTextClass || 'text-slate-600'} ${assignment.contentExtraClass || ''}`}
         />
+        <DetailTextRow
+          label="Tolls"
+          value={assignment.toll_status}
+          valueClassName={`${assignment.contentTextClass || 'text-slate-600'} ${assignment.contentExtraClass || ''}`}
+        />
       </div>
-      {assignment.toll_status && (
-        <Badge className={`${tollColors[assignment.toll_status]} w-fit text-xs font-medium`}>
-          Toll: {assignment.toll_status}
-        </Badge>
-      )}
     </>
   );
 }

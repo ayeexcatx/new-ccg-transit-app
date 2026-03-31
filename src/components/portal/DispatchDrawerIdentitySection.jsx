@@ -51,7 +51,7 @@ export default function DispatchDrawerIdentitySection({
       <section className="rounded-2xl border border-slate-200/80 bg-gradient-to-b from-slate-50/80 to-white p-3.5 sm:p-4">
         <div className="mb-3 flex items-center justify-between gap-2">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">Assignment Summary</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">Truck Assignments</p>
             <p className="text-xs text-slate-500">Current truck coverage and driver visibility</p>
           </div>
           {isOwner && (

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, FileText } from 'lucide-react';
+import { Clock } from 'lucide-react';
 
 function DetailTextRow({ label, value, valueClassName = '' }) {
   if (!value) return null;
@@ -16,12 +16,9 @@ function AssignmentDetailBlock({ assignment, iconSize = 'h-4 w-4', textColor = '
     <>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         {assignment.job_number && (
-          <div className="rounded-lg border border-slate-200/80 bg-slate-50/70 px-3 py-2">
-            <div className="flex items-center gap-2">
-              <FileText className={`${iconSize} shrink-0 text-slate-400`} />
-              <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-600">Job #</span>
-            </div>
-            <p className="mt-1 text-sm font-medium leading-relaxed text-slate-700">{assignment.job_number}</p>
+          <div className="rounded-lg border border-slate-200/80 bg-slate-50/70 px-3 py-2 text-sm leading-relaxed text-slate-700">
+            <span className="font-medium text-slate-600">Job Number</span>{' '}
+            <span className="font-semibold text-slate-800">{assignment.job_number}</span>
           </div>
         )}
         {assignment.start_time && (
@@ -65,13 +62,14 @@ export default function DispatchDrawerAssignmentsSection({ dispatch, hasAddition
   }
 
   const primary = { ...dispatch, formatTimeToAmPm, contentTextClass: 'text-slate-700', contentExtraClass: 'leading-relaxed' };
+  const assignmentTitle = (dispatch.additional_assignments || []).length > 0 ? 'Assignment 1' : 'Assignment';
 
   return (
     <section className="space-y-3">
       <div data-tour="dispatch-assignment-details" className="rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white to-slate-50/70 p-3.5 sm:p-4">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
-          {(dispatch.additional_assignments || []).length > 0 ? 'Assignment 1' : 'Assignment'}
-        </p>
+        <div className="mb-2 rounded-md border border-slate-700/60 bg-slate-800/90 px-2.5 py-1">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-100">{assignmentTitle}</p>
+        </div>
         <div className="mt-2.5 space-y-3">
           <AssignmentDetailBlock assignment={primary} />
         </div>

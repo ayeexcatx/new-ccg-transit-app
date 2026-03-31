@@ -38,7 +38,9 @@ export default function DispatchDrawerTemplateNotesSection({ boxNotes, generalNo
     <>
       {boxNotes.length > 0 && (
         <div data-tour="dispatch-notes" className="space-y-1.5">
-          <p className="text-xs text-slate-500 uppercase tracking-wide">Box Notes</p>
+          <div className="rounded-md border border-slate-700/60 bg-slate-800/90 px-2.5 py-1">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-100">Box Notes</p>
+          </div>
           <div className="grid grid-cols-2 gap-1.5 md:gap-2">
             {boxNotes.map((n) => (
               <div key={n.id} className={`rounded-lg border p-2.5 md:p-3 ${getNoteColumnClass(n.displayWidth, false, NOTE_DISPLAY_WIDTH)}`} style={{ borderColor: n.border_color, color: n.text_color }}>
@@ -55,7 +57,9 @@ export default function DispatchDrawerTemplateNotesSection({ boxNotes, generalNo
 
       {generalNotes.length > 0 && (
         <div data-tour="dispatch-notes" className="space-y-1.5">
-          <p className="text-xs text-slate-500 uppercase tracking-wide">General Notes</p>
+          <div className="rounded-md border border-slate-700/60 bg-slate-800/90 px-2.5 py-1">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-100">General Notes</p>
+          </div>
           <div className="grid grid-cols-2 gap-1.5 md:gap-2">
             {generalNotes.map((n) => {
               const { bullets, shouldSpanWide } = getGeneralNoteLayout(n);

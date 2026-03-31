@@ -134,3 +134,15 @@ Date reviewed: 2026-03-25.
 
 ### Needs manual verification
 - Approval SLA/workflow assumptions (frontend supports pending flow but not process guarantees).
+
+
+## Reconciliation updates (2026-03-31)
+
+### Dispatch drawer expectations
+- Company owner top-row actions in dispatch drawer are `Back`, `Report Incident`, and `Screenshot Dispatch` (no admin edit button).
+- Owner dispatch detail rendering now supports mixed truck start-time display when staggered truck overrides produce per-truck effective times.
+- Owner flows remain Portal-hosted; this role does not use the admin in-place overlay drawer flow.
+
+### Notifications
+- Owner notification wording around dispatch time can be truck-scope-aware when the required trucks converge to one effective start time.
+- Owner can continue receiving driver-seen notifications generated from driver drawer open/removal acknowledgment flows.

@@ -614,3 +614,15 @@ Effects of that admin drawer mode:
 - whether admin drawer confirmation/time-entry UI renders actionable controls that now no-op because empty handlers are passed.
 - whether deleting a dispatch should also clean up time entries, driver assignments, and live-board request rows.
 - whether duplicate owner-notification reconciliation calls are intentionally required.
+
+
+## Reconciliation update (2026-03-31)
+
+- Admin dispatch detail access is now split between:
+  1. `AdminDispatches.jsx` inline preview drawer (existing behavior), and
+  2. global admin overlay drawer (`AdminDispatchDrawerContext`) invoked from Notifications/Bell/Confirmations/Incidents.
+- For admin overlay entry points, dispatch detail opens without navigating to `AdminDispatches`.
+- Admin top action row in shared drawer includes `Edit`, `Report Incident`, and `Screenshot`.
+- Admin `Edit` from overlay closes overlay and routes to `AdminDispatches` with `state.editDispatchId`.
+- Documentation references that previously implied all admin deep-link entry paths must navigate to `AdminDispatches` should be treated as superseded by overlay behavior.
+- Live-board truck start-time derivation should be interpreted with this precedence: truck override `start_time`, then assignment-derived truck start time, then base dispatch `start_time`.

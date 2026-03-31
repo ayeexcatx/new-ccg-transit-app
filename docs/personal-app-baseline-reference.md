@@ -3562,3 +3562,14 @@ SMS is active ONLY if:
   * Admin
   * Company Owner
   * Driver
+
+
+## Reconciliation addendum (2026-03-31)
+
+- Admin dispatch detail behavior now includes in-place overlay opening from Notifications, Notification Bell, Confirmations, and Incidents pages (no mandatory intermediate Admin Dispatches navigation for these entry paths).
+- In those admin overlay paths, the drawer **Back** control closes the overlay and keeps the current page visible.
+- Shared dispatch drawer admin top-row actions are now explicitly: **Edit**, **Report Incident**, **Screenshot**.
+- Dispatch records support optional per-truck staggered overrides (`truck_overrides`) for start time, location, instructions, and notes, with effective fallback to base dispatch values when no override exists.
+- Live-board truck start-time display resolves in precedence order: truck override -> truck assignment-derived time -> base dispatch start time.
+- Drive-synced per-truck HTML render now reflects effective truck override values where present.
+- Driver/owner notification and SMS datetime wording now uses truck-scoped effective start-time logic when it resolves to a single time value.

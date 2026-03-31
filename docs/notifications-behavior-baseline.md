@@ -877,3 +877,18 @@ These functions combine business rules, side effects, dedupe, and data writes.
 - Whether `driver_dispatch_seen` intentionally belongs outside `openConfirmations.js` non-confirmation set or if that difference is accidental.
 - Whether all UI entry points that open a driver dispatch reliably pass `notificationId`; fallback logic exists, but real navigation coverage should be manually verified.
 - Whether any external automations consume `dispatch_status_key`, `admin_group_key`, `confirmation_type`, or SMS log `General` records.
+
+
+## Reconciliation addendum (2026-03-31)
+
+### Admin notification click/open behavior
+- Admin notification click behavior now prefers opening dispatch detail via in-place overlay (`openAdminDispatchDrawer`) from Notifications page and Notification Bell, rather than routing to `AdminDispatches?dispatchId=...`.
+- Confirmations and Incidents admin flows likewise open the overlay in place.
+
+### Owner/driver notification open behavior
+- Owner/driver notification click behavior remains portal deep-link based (`Portal?dispatchId=...&notificationId=...`).
+
+### Truck-aware dispatch date/time wording
+- Driver/owner seen and driver dispatch-update notification text can include a truck-scoped start time resolved via `getEffectiveTruckStartTime(...)`.
+- If required truck scope produces a single effective time, that time is embedded; if multiple effective times exist, a single time is intentionally not forced into text.
+- SMS message date/time line follows the same truck-aware effective-time rule.

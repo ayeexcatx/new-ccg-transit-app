@@ -386,3 +386,19 @@ Key systems stabilized:
 > ⚠️ Future changes to these systems should reference:
 > - `docs/refactor-safety-rules.md`
 > - baseline docs in `/docs`
+
+
+---------------------------------------------------------------------
+
+## Recent Behavior Reconciliation (2026-03-31)
+
+- **Shared dispatch drawer actions now differ by role:**
+  - Admin top action row includes **Back**, **Edit**, **Report Incident**, and **Screenshot**.
+  - Company Owner top action row includes **Back**, **Report Incident**, and **Screenshot Dispatch**.
+  - Driver top action row includes **Back** and **Report Incident** only.
+- **Admin in-place drawer overlay is enabled** from admin entry points (Notifications page, notification bell, Confirmations, Incidents) using `AdminDispatchDrawerContext`; admins no longer need to route through `AdminDispatches` first to open dispatch detail from those pages.
+- **Back button semantics in admin overlay:** label stays **Back**, but it closes the overlay and keeps the admin on the same underlying page.
+- **Staggered truck times/details are supported** through optional `Dispatch.truck_overrides` (`start_time`, `start_location`, `instructions`, `notes`), with effective per-truck fallback to base dispatch fields.
+- **Live Board start-time precedence** for each truck line is: truck override start time -> earliest assignment start time for that truck -> dispatch `start_time`.
+- **Notification/SMS start-time wording is truck-aware:** when a notification target truck scope resolves to one effective start time, that time is injected; when multiple times exist, wording intentionally avoids presenting a single misleading time.
+- **Drive/HTML dispatch records are truck-aware** and reflect effective truck override values in per-truck records where those fields differ from base dispatch values.

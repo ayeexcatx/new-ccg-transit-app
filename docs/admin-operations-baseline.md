@@ -206,7 +206,7 @@ This baseline treats repository code as source of truth and compares it against 
 - Open rows are computed from unresolved owner notifications + missing truck confirmations (not a raw dispatch-status list).
 - Open section shows company, dispatch date, status/type, truck, client, job number, reference, notification timestamp, and a computed pending-age field.
 - History section is sourced from completed `Confirmation` records and shows company/date/truck/client/job/reference plus `Confirmed At` and `Confirmed By`.
-- Clicking either open/history rows deep-links to the target dispatch in Admin Dispatches (`AdminDispatches?dispatchId=...`).
+- Clicking open/history rows opens dispatch detail in place via the admin overlay drawer (`openAdminDispatchDrawer`), without forcing navigation to Admin Dispatches first.
 - See `docs/notifications-behavior-baseline.md` for full owner-notification / open-confirmation reconciliation logic.
 
 ### Present in personal baseline
@@ -245,3 +245,9 @@ This baseline treats repository code as source of truth and compares it against 
 
 ### Needs manual verification
 - Responsive behavior details across breakpoints for very long company/workspace labels.
+
+
+### Reconciliation updates (2026-03-31)
+- Admin dispatch detail can now open in-place from Confirmations, Incidents, Notifications, and the global notification bell through `AdminDispatchDrawerContext`.
+- The shared drawer Back button remains labeled `Back`, but in overlay entry paths it closes the drawer and leaves the admin on the same page context.
+- Shared admin drawer top-row actions now include `Edit`, `Report Incident`, and `Screenshot`.

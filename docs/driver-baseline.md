@@ -82,3 +82,14 @@ Date reviewed: 2026-03-25.
 
 ### Needs manual verification
 - Whether product requirement expects hard-enforced single-truck prefill for all driver entry paths.
+
+
+## Reconciliation updates (2026-03-31)
+
+### Dispatch drawer expectations
+- Driver top-row actions in dispatch drawer are `Back` and `Report Incident` only.
+- Driver does not get screenshot or edit controls in drawer.
+- Driver assignment-facing dispatch time text/notification wording can reflect truck-scoped effective start time when uniquely resolvable.
+
+### Navigation
+- Driver notification-driven dispatch open behavior remains Portal deep-link based; admin overlay changes are intentionally admin-only.

@@ -1528,3 +1528,35 @@ Use this checklist after any refactor.
 - Whether Incidents page consumes every query param generated here exactly as assumed; this file pair only proves that those params are sent.
 - Whether owner/admin notification UX elsewhere depends on ordering or exact message text beyond what is visible in current helper code.
 - Whether there are backend automations tied to confirmation/time-entry/assignment entity changes outside the traced client code.
+
+
+---
+
+## Reconciliation update (2026-03-31)
+
+### Admin drawer action row (shared `DispatchDetailDrawer` top bar)
+- Admin top row now exposes three action buttons to the right of **Back**: **Edit**, **Report Incident**, and **Screenshot**.
+- `Edit` is shown when `isAdmin` and `onAdminEditDispatch` is supplied.
+- `Report Incident` is shown for admin/owner/driver.
+- Screenshot button is available for owner and admin; for admins the label is `Screenshot`, for owners `Screenshot Dispatch`.
+
+### Admin overlay entry behavior
+- Admin dispatch details can open **in place** from non-Dispatches pages via `openAdminDispatchDrawer(...)`:
+  - `Notifications.jsx`
+  - `NotificationBell.jsx`
+  - `AdminConfirmations.jsx`
+  - `Incidents.jsx`
+- This uses `AdminDispatchDrawerContext` and does not require pre-navigation to `AdminDispatches`.
+- In these overlay paths, **Back** closes the overlay and keeps the admin on the source page.
+
+### Owner/driver portal behavior intentionally unchanged
+- Owner/driver deep links still open `Portal?dispatchId=...&notificationId=...`.
+- Portal drawer close still clears dispatch query params for that page path.
+
+### Staggered truck time/details rendering in drawer
+- Primary assignment `Start Time` renders per-truck rows when mixed effective times are detected in visible trucks.
+- Effective per-truck values come from truck override values with fallback to dispatch-level values.
+
+### Screenshot behavior
+- Screenshot generation remains DOM-clone + `data-screenshot-exclude` filtering + share/download fallback.
+- Screenshot remains disabled while truck editing is active.

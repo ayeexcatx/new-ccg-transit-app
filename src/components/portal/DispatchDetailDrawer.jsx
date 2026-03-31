@@ -19,7 +19,6 @@ import DispatchActivityLogSection from './DispatchActivityLogSection';
 import DispatchTimeLogSection from './DispatchTimeLogSection';
 import DispatchDriverConfirmationSection from './DispatchDriverConfirmationSection';
 import DispatchDrawerTopBar from './DispatchDrawerTopBar';
-import DispatchDrawerActionButtons from './DispatchDrawerActionButtons';
 import DispatchDrawerIdentitySection from './DispatchDrawerIdentitySection';
 import DispatchDrawerStatusReasonBox from './DispatchDrawerStatusReasonBox';
 import DispatchDrawerAssignmentsSection from './DispatchDrawerAssignmentsSection';
@@ -907,20 +906,16 @@ export default function DispatchDetailDrawer({
           dispatch={dispatch}
           displayDate={displayDate}
           isOwner={isOwner}
+          isDriverUser={isDriverUser}
           open={open}
           onBack={handleDrawerClose}
+          isCreatingScreenshot={isCreatingScreenshot}
+          isEditingTrucks={isEditingTrucks}
+          onReportIncident={handleReportIncident}
+          onScreenshotDispatch={handleScreenshotDispatch}
         />
 
         <div className="px-5 py-5 space-y-6">
-          <DispatchDrawerActionButtons
-            isDriverUser={isDriverUser}
-            isOwner={isOwner}
-            isCreatingScreenshot={isCreatingScreenshot}
-            isEditingTrucks={isEditingTrucks}
-            onReportIncident={handleReportIncident}
-            onScreenshotDispatch={handleScreenshotDispatch}
-          />
-
           <div ref={screenshotSectionRef} className="space-y-6 bg-white">
             <DispatchDrawerIdentitySection
               dispatch={dispatch}

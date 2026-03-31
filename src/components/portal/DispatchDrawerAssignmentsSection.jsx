@@ -31,15 +31,19 @@ function AssignmentDetailBlock({ assignment, iconSize = 'h-4 w-4', textColor = '
             <div className="min-w-0 flex-1">
               <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-600">Start Time</p>
               {hasStartTimeRows ? (
-                <div className="mt-0.5 space-y-0 sm:mt-0.5 sm:space-y-0.5">
-                  {startTimeRows.map((row) => (
-                    <p key={row.truckNumber} className="inline-flex gap-1.5 whitespace-nowrap text-xs text-slate-700">
-                      <span className="font-mono">{row.truckNumber}</span>
-                      <span aria-hidden="true">—</span>
-                      <span>{assignment.formatTimeToAmPm(row.time) || '—'}</span>
-                    </p>
+                <ul className="mt-1 list-disc space-y-0.5 pl-4 marker:text-slate-500">
+                  {startTimeRows.map((row, index) => (
+                    <li key={`${row.truckNumber}-${row.time ?? 'none'}-${index}`} className="block w-full text-xs text-slate-700">
+                      <span className="inline-flex whitespace-nowrap">
+                        <span className="font-mono">{row.truckNumber}</span>
+                        <span className="px-1" aria-hidden="true">
+                          —
+                        </span>
+                        <span>{assignment.formatTimeToAmPm(row.time) || '—'}</span>
+                      </span>
+                    </li>
                   ))}
-                </div>
+                </ul>
               ) : (
                 <p className="mt-0.5 whitespace-nowrap font-medium text-slate-700">{assignment.formatTimeToAmPm(assignment.start_time)}</p>
               )}

@@ -45,11 +45,14 @@ export default function DispatchDrawerTopBar({
                 type="button"
                 variant="outline"
                 size="sm"
-                className="h-9 rounded-lg px-3 text-xs font-medium"
+                className="h-9 w-9 rounded-lg px-0 text-xs font-medium sm:w-auto sm:px-3"
                 onClick={onAdminEditDispatch}
+                aria-label="Edit dispatch"
+                title="Edit dispatch"
               >
-                <Pencil className="mr-1.5 h-3.5 w-3.5" />
-                Edit
+                <Pencil className="h-3.5 w-3.5 sm:mr-1.5" />
+                <span className="sr-only">Edit dispatch</span>
+                <span className="hidden sm:inline">Edit</span>
               </Button>
             )}
             {canShowReportIncident && (

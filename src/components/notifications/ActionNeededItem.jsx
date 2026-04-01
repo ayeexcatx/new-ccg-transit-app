@@ -2,6 +2,7 @@ import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Bell, Truck } from 'lucide-react';
 import NotificationStatusBadge from './NotificationStatusBadge';
+import NotificationMessageText from './NotificationMessageText';
 
 export default function ActionNeededItem({
   notification,
@@ -20,7 +21,11 @@ export default function ActionNeededItem({
       <Bell className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
       <div className="flex-1 min-w-0">
         <p className={`text-sm text-slate-800 truncate ${display.isOwnerDispatchStatus ? 'font-semibold' : ''}`}>{display.title}</p>
-        <p className="text-xs text-slate-600 mt-0.5 line-clamp-2 whitespace-pre-line">{display.message}</p>
+        <NotificationMessageText
+          notification={notification}
+          message={display.message}
+          className="text-xs text-slate-600 mt-0.5 line-clamp-2 whitespace-pre-line"
+        />
         {dispatch && (
           <div className="mt-1 flex items-center gap-1 flex-wrap">
             <Truck className="h-3 w-3 text-slate-500" />

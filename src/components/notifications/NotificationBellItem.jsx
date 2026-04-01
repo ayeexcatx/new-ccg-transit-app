@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Truck } from 'lucide-react';
 import NotificationStatusBadge from './NotificationStatusBadge';
 import { formatNotificationTime } from './notificationTimeFormat';
+import NotificationMessageText from './NotificationMessageText';
 
 export default function NotificationBellItem({
   notification,
@@ -27,7 +28,11 @@ export default function NotificationBellItem({
           <p className={`text-sm leading-5 text-slate-800 ${display.isOwnerDispatchStatus ? 'font-semibold' : 'font-medium'}`}>
             {display.title}
           </p>
-          <p className="mt-1 whitespace-pre-line text-sm leading-5 text-slate-600">{display.message}</p>
+          <NotificationMessageText
+            notification={notification}
+            message={display.message}
+            className="mt-1 whitespace-pre-line text-sm leading-5 text-slate-600"
+          />
           {dispatch && visibleTrucks.length > 0 && (
             <div className="mt-1.5 flex items-center gap-1 flex-wrap">
               <Truck className="h-3 w-3 text-slate-500" />

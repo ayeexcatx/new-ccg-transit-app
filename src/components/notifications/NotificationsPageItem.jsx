@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ExternalLink } from 'lucide-react';
 import NotificationStatusBadge from './NotificationStatusBadge';
 import { formatNotificationTime } from './notificationTimeFormat';
+import NotificationMessageText from './NotificationMessageText';
 
 export default function NotificationsPageItem({
   notification,
@@ -29,7 +30,11 @@ export default function NotificationsPageItem({
                 <ExternalLink className="h-3.5 w-3.5 text-slate-400 ml-auto shrink-0" />
               )}
             </div>
-            <p className="text-sm text-slate-600 whitespace-pre-line">{display.message}</p>
+            <NotificationMessageText
+              notification={notification}
+              message={display.message}
+              className="text-sm text-slate-600 whitespace-pre-line"
+            />
             <div className="mt-1.5">
               <NotificationStatusBadge
                 notification={notification}

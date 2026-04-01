@@ -84,6 +84,7 @@ export async function runOwnerTruckEditMutation({
   }
 
   const actorName = getOwnerDisplayName(session);
+  void actorMetadata;
   const currentStatus = dispatch.status;
 
   if (conflictingAdded.length === 1) {
@@ -182,21 +183,6 @@ export async function runOwnerTruckEditMutation({
       await Promise.all(removeConfirmationIds.map((id) => base44.entities.Confirmation.delete(id)));
     }
 
-    const transferableConfirmationCount = removeConfirmationIds.length;
-    const trucksToTransferConfirmation = addedTrucks.slice(0, transferableConfirmationCount);
-
-    await Promise.all(trucksToTransferConfirmation.map((truck) =>
-      base44.entities.Confirmation.create({
-        dispatch_id: dispatch.id,
-        access_code_id: session.id,
-        truck_number: truck,
-        confirmation_type: currentStatus,
-        confirmed_at: new Date().toISOString(),
-        confirmed_by_name: actorMetadata.actorName || undefined,
-        confirmed_by_type: actorMetadata.actorType || undefined,
-      })
-    ));
-
     const conflictingRemovedConfirmationIds = conflictingStatusConfirmations
       .filter((confirmation) => confirmation.truck_number === incomingTruck)
       .map((confirmation) => confirmation.id)
@@ -204,23 +190,6 @@ export async function runOwnerTruckEditMutation({
 
     if (conflictingRemovedConfirmationIds.length > 0) {
       await Promise.all(conflictingRemovedConfirmationIds.map((id) => base44.entities.Confirmation.delete(id)));
-    }
-
-    const outgoingAlreadyConfirmedOnConflicting = conflictingStatusConfirmations
-      .some((confirmation) => confirmation.truck_number === outgoingTruck);
-    const incomingWasConfirmedOnConflicting = conflictingStatusConfirmations
-      .some((confirmation) => confirmation.truck_number === incomingTruck);
-
-    if (!outgoingAlreadyConfirmedOnConflicting && incomingWasConfirmedOnConflicting) {
-      await base44.entities.Confirmation.create({
-        dispatch_id: conflictingDispatch.id,
-        access_code_id: session.id,
-        truck_number: outgoingTruck,
-        confirmation_type: conflictingStatus,
-        confirmed_at: new Date().toISOString(),
-        confirmed_by_name: actorMetadata.actorName || undefined,
-        confirmed_by_type: actorMetadata.actorType || undefined,
-      });
     }
 
     await expandCurrentStatusRequiredTrucks(updatedDispatch, addedTrucks);
@@ -277,21 +246,6 @@ export async function runOwnerTruckEditMutation({
   if (removeConfirmationIds.length > 0) {
     await Promise.all(removeConfirmationIds.map((id) => base44.entities.Confirmation.delete(id)));
   }
-
-  const transferableConfirmationCount = removeConfirmationIds.length;
-  const trucksToTransferConfirmation = addedTrucks.slice(0, transferableConfirmationCount);
-
-  await Promise.all(trucksToTransferConfirmation.map((truck) =>
-    base44.entities.Confirmation.create({
-      dispatch_id: dispatch.id,
-      access_code_id: session.id,
-      truck_number: truck,
-      confirmation_type: currentStatus,
-      confirmed_at: new Date().toISOString(),
-      confirmed_by_name: actorMetadata.actorName || undefined,
-      confirmed_by_type: actorMetadata.actorType || undefined,
-    })
-  ));
 
   await expandCurrentStatusRequiredTrucks(updatedDispatch, addedTrucks);
   await reconcileOwnerNotificationsForDispatch(updatedDispatch);

@@ -8,6 +8,7 @@ import { statusBadgeColors } from './statusConfig';
 
 export default function DispatchDrawerTopBar({
   dispatch,
+  session,
   displayDate,
   isOwner,
   isAdmin,
@@ -111,6 +112,7 @@ export default function DispatchDrawerTopBar({
         isOwner={isOwner}
         drawerOpen={open}
         dispatchStatus={dispatch?.status}
+        session={session}
       />
     </div>
   );

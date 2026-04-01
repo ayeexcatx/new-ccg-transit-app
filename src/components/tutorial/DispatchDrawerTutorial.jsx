@@ -8,10 +8,13 @@ import {
   DISPATCH_DRAWER_TUTORIAL_LANGUAGE,
   tutorialRegistry,
 } from './tutorialConfig';
+import { buildTutorialStorageKey } from './tutorialStorage';
 
-export default function DispatchDrawerTutorial({ isOwner, drawerOpen, dispatchStatus }) {
+export default function DispatchDrawerTutorial({ isOwner, drawerOpen, dispatchStatus, session }) {
   const tutorialConfig = tutorialRegistry.dispatchDrawer;
-  const { seen: seenKey, completed: completedKey } = tutorialConfig.storageKeys;
+  const { seen: seenKeyBase, completed: completedKeyBase } = tutorialConfig.storageKeys;
+  const seenKey = useMemo(() => buildTutorialStorageKey(seenKeyBase, session, 'user'), [seenKeyBase, session]);
+  const completedKey = useMemo(() => buildTutorialStorageKey(completedKeyBase, session, 'user'), [completedKeyBase, session]);
 
   const [isRunning, setIsRunning] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);

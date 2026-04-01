@@ -10,13 +10,14 @@ import {
   COMPANY_OWNER_TUTORIAL_LANGUAGE,
   tutorialRegistry,
 } from './tutorialConfig';
+import { buildTutorialStorageKey } from './tutorialStorage';
 
 const TutorialContext = createContext({
   startTutorial: () => {},
   openTutorialWelcome: () => {},
 });
 
-const DEBUG_TUTORIAL_SCROLL = true;
+const DEBUG_TUTORIAL_SCROLL = false;
 
 const logTutorialScroll = (...args) => {
   if (!DEBUG_TUTORIAL_SCROLL) return;
@@ -37,7 +38,10 @@ export default function TutorialProvider({ session, children }) {
   const isCompanyOwner = session?.code_type === 'CompanyOwner';
 
   const tutorialConfig = tutorialRegistry[COMPANY_OWNER_TUTORIAL_ID];
-  const { seen: seenKey, completed: completedKey, dismissed: dismissedKey } = tutorialConfig.storageKeys;
+  const { seen: seenKeyBase, completed: completedKeyBase, dismissed: dismissedKeyBase } = tutorialConfig.storageKeys;
+  const seenKey = useMemo(() => buildTutorialStorageKey(seenKeyBase, session, 'user'), [seenKeyBase, session]);
+  const completedKey = useMemo(() => buildTutorialStorageKey(completedKeyBase, session, 'user'), [completedKeyBase, session]);
+  const dismissedKey = useMemo(() => buildTutorialStorageKey(dismissedKeyBase, session, 'user'), [dismissedKeyBase, session]);
 
   const [isRunning, setIsRunning] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);

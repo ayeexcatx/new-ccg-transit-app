@@ -905,6 +905,7 @@ export default function DispatchDetailDrawer({
       >
         <DispatchDrawerTopBar
           dispatch={dispatch}
+          session={session}
           displayDate={displayDate}
           isOwner={isOwner}
           isAdmin={isAdmin}

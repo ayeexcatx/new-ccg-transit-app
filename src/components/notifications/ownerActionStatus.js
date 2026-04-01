@@ -6,7 +6,11 @@ import {
 import { getEffectiveView } from '@/components/session/workspaceUtils';
 
 export const CLICK_TO_READ_NOTIFICATION_CATEGORIES = new Set(['dispatch_update_info', 'driver_dispatch_seen']);
-export const NON_CONFIRMATION_NOTIFICATION_CATEGORIES = CLICK_TO_READ_NOTIFICATION_CATEGORIES;
+export const NON_ACTIONABLE_STATUS_CATEGORIES = new Set(['availability_request']);
+export const NON_CONFIRMATION_NOTIFICATION_CATEGORIES = new Set([
+  ...CLICK_TO_READ_NOTIFICATION_CATEGORIES,
+  ...NON_ACTIONABLE_STATUS_CATEGORIES,
+]);
 
 function parseStatusFromDedupKey(notification) {
   return parseStatusFromDispatchStatusKey(notification?.dispatch_status_key);

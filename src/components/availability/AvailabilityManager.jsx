@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { toast } from 'sonner';
+import { createAvailabilityRequestNotifications } from '@/components/notifications/availabilityRequestNotifications';
 import {
   VIEW_MODES,
   STATUS_AVAILABLE,
@@ -85,6 +87,32 @@ export default function AvailabilityManager({ companyId, canSelectCompany = fals
       if (existing) await base44.entities.CompanyAvailabilityOverride.delete(existing.id);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['company-availability-overrides', selectedCompanyId] })
+  });
+
+
+  const requestAvailabilityMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedCompanyId) throw new Error('Select a company first.');
+      const selectedCompany = companies.find((company) => String(company.id) === String(selectedCompanyId));
+      const requestedByLabel = 'CCG Admin';
+      return createAvailabilityRequestNotifications({
+        companyId: selectedCompanyId,
+        companyName: selectedCompany?.name,
+        requestedByLabel,
+      });
+    },
+    onSuccess: ({ ownerCount, companyName }) => {
+      if (!ownerCount) {
+        toast.error(`No active company owner access code found for ${companyName || 'this company'}.`);
+        return;
+      }
+
+      toast.success(`Availability request sent to ${ownerCount} owner${ownerCount === 1 ? '' : 's'}${companyName ? ` for ${companyName}` : ''}.`);
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+    onError: (error) => {
+      toast.error(error?.message || 'Failed to send availability request.');
+    },
   });
 
   const defaultMap = useMemo(() => {
@@ -428,6 +456,15 @@ export default function AvailabilityManager({ companyId, canSelectCompany = fals
                 )}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="flex justify-end">
+              <Button
+                size="sm"
+                onClick={() => requestAvailabilityMutation.mutate()}
+                disabled={!selectedCompanyId || requestAvailabilityMutation.isPending}
+              >
+                {requestAvailabilityMutation.isPending ? 'Sending…' : 'Request Availability'}
+              </Button>
             </div>
           </CardContent>
         </Card>

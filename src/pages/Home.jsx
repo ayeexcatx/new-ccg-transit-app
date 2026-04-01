@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { useSession } from '../components/session/SessionContext';
@@ -14,6 +14,7 @@ import { createPageUrl } from '@/utils';
 import { buildDispatchOpenPath } from '@/lib/dispatchOpenOrchestration';
 import { Link, useNavigate } from 'react-router-dom';
 import ActionNeededSection from '@/components/notifications/ActionNeededSection';
+import AvailabilityRequestPrompt from '@/components/availability/AvailabilityRequestPrompt';
 import { getNotificationTruckBadges } from '@/components/notifications/notificationTruckDisplay';
 import { useOwnerNotifications } from '../components/notifications/useOwnerNotifications';
 import { useConfirmationsQuery } from '../components/notifications/useConfirmationsQuery';
@@ -30,6 +31,11 @@ import {
 } from '@/lib/dispatchVisibility';
 import { listDriverDispatchesForDriver } from '@/lib/driverDispatch';
 import { resolveCompanyOwnerCompanyId, resolveDriverIdentity } from '@/services/currentAppIdentityService';
+import {
+  isAvailabilityRequestNotification,
+  isAvailabilityRequestUnresolved,
+  getLatestAvailabilityUpdateMs,
+} from '@/components/notifications/availabilityRequestNotifications';
 
 const dateOnly = (v) => (typeof v === 'string' ? v.slice(0, 10) : v);
 const normalizeId = (value) => normalizeVisibilityId(value);
@@ -221,6 +227,75 @@ export default function Home() {
     enabled: isOwner && !!activeCompanyId,
   });
   const ownerScopeTrucks = Array.isArray(ownerCompany?.trucks) ? ownerCompany.trucks : [];
+  const { data: ownerAvailabilityDefaults = [] } = useQuery({
+    queryKey: ['home-owner-availability-defaults', activeCompanyId],
+    queryFn: () => base44.entities.CompanyAvailabilityDefault.filter({ company_id: activeCompanyId }, '-created_date', 500),
+    enabled: isOwner && !!activeCompanyId,
+  });
+  const { data: ownerAvailabilityOverrides = [] } = useQuery({
+    queryKey: ['home-owner-availability-overrides', activeCompanyId],
+    queryFn: () => base44.entities.CompanyAvailabilityOverride.filter({ company_id: activeCompanyId }, '-created_date', 1000),
+    enabled: isOwner && !!activeCompanyId,
+  });
+
+  const { latestUnresolvedAvailabilityRequest } = useMemo(() => {
+    const latestAvailabilityUpdateMs = getLatestAvailabilityUpdateMs({
+      defaults: ownerAvailabilityDefaults,
+      overrides: ownerAvailabilityOverrides,
+    });
+    const unresolved = notifications
+      .filter((notification) => isAvailabilityRequestNotification(notification))
+      .filter((notification) => isAvailabilityRequestUnresolved(notification, latestAvailabilityUpdateMs))
+      .sort((a, b) => new Date(b.created_date || 0) - new Date(a.created_date || 0));
+
+    return {
+      latestUnresolvedAvailabilityRequest: unresolved[0] || null,
+    };
+  }, [notifications, ownerAvailabilityDefaults, ownerAvailabilityOverrides]);
+
+  const [dismissedAvailabilityPromptIds, setDismissedAvailabilityPromptIds] = useState([]);
+
+  useEffect(() => {
+    if (!session?.id) {
+      setDismissedAvailabilityPromptIds([]);
+      return;
+    }
+
+    const storageKey = `availability-request-prompt-dismissed:${session.id}`;
+    try {
+      const raw = window.sessionStorage.getItem(storageKey);
+      if (!raw) {
+        setDismissedAvailabilityPromptIds([]);
+        return;
+      }
+      const parsed = JSON.parse(raw);
+      setDismissedAvailabilityPromptIds(Array.isArray(parsed) ? parsed : []);
+    } catch {
+      setDismissedAvailabilityPromptIds([]);
+    }
+  }, [session?.id]);
+
+  const activeAvailabilityRequestPrompt = useMemo(() => {
+    if (!latestUnresolvedAvailabilityRequest) return null;
+    if (dismissedAvailabilityPromptIds.includes(String(latestUnresolvedAvailabilityRequest.id))) return null;
+    return latestUnresolvedAvailabilityRequest;
+  }, [latestUnresolvedAvailabilityRequest, dismissedAvailabilityPromptIds]);
+
+  const dismissAvailabilityPromptForNow = (notificationId) => {
+    if (!session?.id || !notificationId) return;
+    const id = String(notificationId);
+    setDismissedAvailabilityPromptIds((prev) => {
+      if (prev.includes(id)) return prev;
+      const next = [...prev, id];
+      const storageKey = `availability-request-prompt-dismissed:${session.id}`;
+      try {
+        window.sessionStorage.setItem(storageKey, JSON.stringify(next));
+      } catch {
+        // no-op
+      }
+      return next;
+    });
+  };
 
   const { data: allAnnouncements = [] } = useQuery({
     queryKey: ['announcements'],
@@ -294,6 +369,7 @@ export default function Home() {
             ownerAllowedTrucks: ownerScopeTrucks,
           });
         if (effectiveReadFlag) return false;
+        if (notification.notification_category === 'availability_request') return false;
         if (!notification.related_dispatch_id) return true;
         return Boolean(dispatchMap[normalizeId(notification.related_dispatch_id)]);
       })
@@ -332,6 +408,16 @@ export default function Home() {
       <div>
         <h2 className="text-2xl font-semibold text-slate-900" data-tour="home-overview">{homeHeading}</h2>
       </div>
+
+      {isOwner && activeAvailabilityRequestPrompt && (
+        <AvailabilityRequestPrompt
+          onGoToAvailability={() => {
+            dismissAvailabilityPromptForNow(activeAvailabilityRequestPrompt.id);
+            navigate(createPageUrl('Availability'));
+          }}
+          onDismiss={() => dismissAvailabilityPromptForNow(activeAvailabilityRequestPrompt.id)}
+        />
+      )}
 
       {/* Announcements */}
       {announcements.length > 0 && (

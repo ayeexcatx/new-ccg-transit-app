@@ -2,18 +2,21 @@ import React from 'react';
 
 function getMessageParts(notification, message) {
   if (typeof message !== 'string') {
-    return { leadingText: message, customText: '' };
+    return { leadingText: message, customText: '', shouldRenderSingleLineAsCustom: false };
   }
 
   const isOwnerInformationalUpdate = notification?.notification_category === 'dispatch_update_info';
   if (!isOwnerInformationalUpdate) {
-    return { leadingText: message, customText: '' };
+    return { leadingText: message, customText: '', shouldRenderSingleLineAsCustom: false };
   }
 
   const [leadingText, ...customLines] = message.split('\n');
+  const customText = customLines.join('\n');
+
   return {
     leadingText,
-    customText: customLines.join('\n'),
+    customText,
+    shouldRenderSingleLineAsCustom: !customText,
   };
 }
 
@@ -22,7 +25,11 @@ export default function NotificationMessageText({
   message,
   className = '',
 }) {
-  const { leadingText, customText } = getMessageParts(notification, message);
+  const { leadingText, customText, shouldRenderSingleLineAsCustom } = getMessageParts(notification, message);
+
+  if (shouldRenderSingleLineAsCustom) {
+    return <p className={className}><span className="text-red-600">{leadingText}</span></p>;
+  }
 
   if (!customText) {
     return <p className={className}>{message}</p>;

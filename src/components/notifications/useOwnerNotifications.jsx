@@ -38,7 +38,13 @@ export function useOwnerNotifications(session) {
   const ownerWorkspaceCompanyId = resolveCompanyOwnerCompanyId({ currentAppIdentity, session });
   const notificationScopeCompanyId = isOwner ? ownerWorkspaceCompanyId : null;
 
-  const queryKey = ['notifications', session?.id];
+  const queryKey = [
+    'notifications',
+    session?.id || null,
+    effectiveView || null,
+    session?.raw_code_type || null,
+    notificationScopeCompanyId || null,
+  ];
 
   const { data: rawNotifications = [], isLoading } = useQuery({
     queryKey,

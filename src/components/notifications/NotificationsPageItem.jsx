@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { ExternalLink } from 'lucide-react';
 import NotificationStatusBadge from './NotificationStatusBadge';
-import { formatAdminNotificationTime } from './notificationTimeFormat';
+import { formatNotificationTime } from './notificationTimeFormat';
 
 export default function NotificationsPageItem({
   notification,
@@ -39,7 +39,7 @@ export default function NotificationsPageItem({
               />
             </div>
             <p className="text-xs text-slate-400 mt-2">
-              {formatAdminNotificationTime(notification.created_date, { withYear: true })}
+              {formatNotificationTime(notification.created_date, { withYear: true })}
             </p>
           </div>
         </div>

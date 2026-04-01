@@ -9,7 +9,7 @@ export default function DriverSmsStatus({ driver, desktop = false }) {
     <div className={desktop ? 'mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs' : 'mt-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs shadow-sm shadow-slate-200/50'}>
       <div className="space-y-1.5">
         <p className="text-slate-700">
-          <span className="font-medium text-slate-600">Owner enabled:</span>{' '}
+          <span className="font-medium text-slate-600">Do you want this driver to receive SMS?</span>{' '}
           <span className={smsState.ownerEnabled ? 'font-semibold text-emerald-700' : 'font-semibold text-red-600'}>
             {smsState.ownerEnabled ? 'Yes' : 'No'}
           </span>

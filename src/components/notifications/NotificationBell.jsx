@@ -26,6 +26,7 @@ import {
 } from '@/lib/dispatchVisibility';
 import { listDriverDispatchesForDriver } from '@/lib/driverDispatch';
 import { resolveDriverIdentity } from '@/services/currentAppIdentityService';
+import { getNotificationTruckBadges } from './notificationTruckDisplay';
 
 const normalizeId = (value) => normalizeVisibilityId(value);
 
@@ -185,7 +186,9 @@ export default function NotificationBell({ session }) {
                   dispatch={dispatch}
                   confirmations={confirmations}
                   ownerAllowedTrucks={ownerScopeTrucks}
-                  visibleTrucks={isOwner && dispatch ? getVisibleTrucksForDispatch(dispatch) : []}
+                  visibleTrucks={isOwner && dispatch
+                    ? getNotificationTruckBadges(n, getVisibleTrucksForDispatch(dispatch))
+                    : []}
                   onClick={() => handleNotificationClick(n)}
                 />
               );

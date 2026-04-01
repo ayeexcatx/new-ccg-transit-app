@@ -14,6 +14,7 @@ import { createPageUrl } from '@/utils';
 import { buildDispatchOpenPath } from '@/lib/dispatchOpenOrchestration';
 import { Link, useNavigate } from 'react-router-dom';
 import ActionNeededSection from '@/components/notifications/ActionNeededSection';
+import { getNotificationTruckBadges } from '@/components/notifications/notificationTruckDisplay';
 import { useOwnerNotifications } from '../components/notifications/useOwnerNotifications';
 import { useConfirmationsQuery } from '../components/notifications/useConfirmationsQuery';
 import { getActiveCompanyId, getEffectiveView, getWorkspaceDisplayLabel } from '../components/session/workspaceUtils';
@@ -253,6 +254,8 @@ export default function Home() {
       driverAssignedTrucks: driverAssignedTrucksByDispatch.get(normalizeId(dispatch.id)) || [],
     });
   };
+  const getVisibleTrucksForNotification = (notification, dispatch) =>
+    getNotificationTruckBadges(notification, getVisibleTrucksForDispatch(dispatch));
 
   const filteredDispatches = useMemo(() => {
     return dispatches.filter((dispatch) => canUserSeeDispatch(session, dispatch, { driverDispatchIds, ownerCompanyId: dispatchCompanyId }));
@@ -358,7 +361,7 @@ export default function Home() {
           actionItems={actionItems}
           confirmations={confirmations}
           ownerAllowedTrucks={ownerScopeTrucks}
-          getVisibleTrucksForDispatch={getVisibleTrucksForDispatch}
+          getVisibleTrucksForNotification={getVisibleTrucksForNotification}
           onNotificationClick={handleNotificationClick}
         />
       )}

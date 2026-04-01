@@ -15,7 +15,7 @@ export default function ActionNeededSection({
   actionItems,
   confirmations,
   ownerAllowedTrucks,
-  getVisibleTrucksForDispatch,
+  getVisibleTrucksForNotification,
   onNotificationClick,
 }) {
   return (
@@ -47,7 +47,7 @@ export default function ActionNeededSection({
                   display={display}
                   confirmations={confirmations}
                   ownerAllowedTrucks={ownerAllowedTrucks}
-                  visibleTrucks={dispatch ? getVisibleTrucksForDispatch(dispatch) : []}
+                  visibleTrucks={dispatch ? getVisibleTrucksForNotification(notification, dispatch) : []}
                   onClick={() => onNotificationClick(notification)}
                 />
               );

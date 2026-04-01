@@ -316,6 +316,7 @@ ${lineTwo}`,
         read_flag: false,
         notification_category: DRIVER_SEEN_NOTIFICATION_CATEGORY,
         dispatch_status_key: `${seenStatusKey}:${ownerCode.id}`,
+        required_trucks: relevantTrucks,
       });
     }));
   } catch (error) {

@@ -1,31 +1,34 @@
 import React from 'react';
+import { Check, X } from 'lucide-react';
 import { getDriverSmsState } from '@/lib/sms';
 
 export default function DriverSmsStatus({ driver, desktop = false }) {
   const smsState = getDriverSmsState(driver);
-  const items = [
-    { label: 'Owner enabled', value: smsState.ownerEnabled ? 'Yes' : 'No' },
-    { label: 'Driver opted in', value: smsState.driverOptedIn ? 'Yes' : 'No', muted: true },
-    {
-      label: 'Overall SMS',
-      value: smsState.effective ? 'Enabled' : 'Not enabled',
-      valueClassName: smsState.effective ? 'text-emerald-700' : 'text-slate-900',
-    },
-  ];
 
   return (
-    <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-      {items.map((item) => (
-        <div
-          key={item.label}
-          className={desktop
-            ? `rounded-lg border bg-slate-50 px-3 py-2 text-xs ${item.muted ? 'opacity-80' : ''}`
-            : `rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs shadow-sm shadow-slate-200/50 ${item.muted ? 'opacity-80' : ''} ${item.label === 'Overall SMS' ? 'col-span-2' : ''}`}
-        >
-          <p className={desktop ? 'text-slate-500' : 'text-[11px] font-medium uppercase tracking-wide text-slate-500'}>{item.label}</p>
-          <p className={`${desktop ? 'font-medium text-slate-900' : `mt-1 text-sm font-semibold ${item.valueClassName || 'text-slate-900'}`}`}>{item.value}</p>
-        </div>
-      ))}
+    <div className={desktop ? 'mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs' : 'mt-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs shadow-sm shadow-slate-200/50'}>
+      <div className="space-y-1.5">
+        <p className="text-slate-700">
+          <span className="font-medium text-slate-600">Owner enabled:</span>{' '}
+          <span className={smsState.ownerEnabled ? 'font-semibold text-emerald-700' : 'font-semibold text-red-600'}>
+            {smsState.ownerEnabled ? 'Yes' : 'No'}
+          </span>
+        </p>
+        <p className="text-slate-700">
+          <span className="font-medium text-slate-600">Driver opted in:</span>{' '}
+          <span className={smsState.driverOptedIn ? 'font-semibold text-emerald-700' : 'font-semibold text-red-600'}>
+            {smsState.driverOptedIn ? 'Yes' : 'No'}
+          </span>
+        </p>
+        <p className="flex items-center gap-1 text-slate-700">
+          <span className="font-medium text-slate-600">SMS enabled:</span>
+          {smsState.effective ? (
+            <><Check className="h-3.5 w-3.5 text-emerald-700" /><span className="font-semibold text-emerald-700">Yes</span></>
+          ) : (
+            <><X className="h-3.5 w-3.5 text-red-600" /><span className="font-semibold text-red-600">No</span></>
+          )}
+        </p>
+      </div>
     </div>
   );
 }

@@ -81,7 +81,6 @@ export default function DriverCard({ driver, onEdit, onDelete, onRequestCode, re
 
           <div className="flex flex-wrap gap-1.5">
             <Badge variant={smsState.effective ? 'default' : 'secondary'} className="text-[11px]">{smsState.effective ? <><Check className="mr-1 h-3 w-3" />SMS Active</> : 'SMS Not Active'}</Badge>
-            <Badge variant="outline" className="text-[11px]">{accessCodeStatus}</Badge>
           </div>
 
           {driver.phone && (
@@ -103,7 +102,6 @@ export default function DriverCard({ driver, onEdit, onDelete, onRequestCode, re
               <UserRound className="h-4 w-4 text-slate-500" />
               <p className="font-medium text-slate-900">{driver.driver_name || 'Unnamed driver'}</p>
               <Badge variant={status === 'Active' ? 'default' : 'secondary'}>{status}</Badge>
-              <Badge variant="outline">{accessCodeStatus}</Badge>
               <Badge variant={smsState.effective ? 'default' : 'secondary'} className="text-[11px]">{smsState.effective ? <><Check className="h-3 w-3 mr-1" />SMS Active</> : 'SMS Not Active'}</Badge>
             </div>
             {driver.phone && <p className="text-sm text-slate-600">Phone: {driver.phone}</p>}

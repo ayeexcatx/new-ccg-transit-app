@@ -727,15 +727,47 @@ export async function expandCurrentStatusRequiredTrucks(dispatch, addedTrucks = 
       const newlyAddedRequired = nextRequired.filter((truck) => !existingRequired.includes(truck));
       const message = buildOwnerDispatchMessage(dispatch, statusText, nextRequired);
       const allConfirmed = areAllRequiredTrucksConfirmed(nextRequired, confirmedTruckSet);
+      const hasNewActionableTrucks = newlyAddedRequired.some((truck) => !confirmedTruckSet.has(truck));
+      const shouldCreateFreshReopenNotification = Boolean(
+        existingNotification &&
+        existingNotification.read_flag &&
+        hasNewActionableTrucks &&
+        !allConfirmed
+      );
 
       if (existingNotification) {
+        if (shouldCreateFreshReopenNotification) {
+          const notification = await base44.entities.Notification.create({
+            recipient_type: 'AccessCode',
+            recipient_access_code_id: ownerCode.id,
+            recipient_id: ownerCode.id,
+            recipient_company_id: dispatch.company_id,
+            title: `Status: ${statusText}`,
+            message,
+            related_dispatch_id: dispatch.id,
+            read_flag: false,
+            dispatch_status_key: dedupKey,
+            required_trucks: nextRequired,
+          });
+
+          console.log('Notification created before SMS delivery (expandCurrentStatusRequiredTrucks:reopen)', {
+            notificationId: notification?.id,
+            recipientType: notification?.recipient_type,
+            recipientAccessCodeId: notification?.recipient_access_code_id || null,
+            recipientId: notification?.recipient_id || null,
+            relatedDispatchId: notification?.related_dispatch_id || null,
+          });
+
+          await sendNotificationSmsIfEligible(notification);
+          continue;
+        }
+
         const updatedNotification = await base44.entities.Notification.update(existingNotification.id, {
           required_trucks: nextRequired,
           message,
           read_flag: allConfirmed,
         });
 
-        const hasNewActionableTrucks = newlyAddedRequired.some((truck) => !confirmedTruckSet.has(truck));
         if (hasNewActionableTrucks) {
           await sendNotificationSmsIfEligible({
             ...existingNotification,
@@ -822,11 +854,23 @@ export async function reconcileOwnerNotificationsForDispatch(dispatch, accessCod
       }, '-confirmed_at', 500),
     };
 
+    const newestPerOwnerStatusKey = new Set();
+
     for (const notification of ownerNotifications) {
       if (notification.notification_category === 'dispatch_update_info') continue;
 
       const status = parseStatusFromDedupKey(notification);
       if (!status) continue;
+      const recipientId = notification.recipient_access_code_id || notification.recipient_id;
+      const ownerStatusKey = `${recipientId}:${status}`;
+
+      if (newestPerOwnerStatusKey.has(ownerStatusKey)) {
+        if (!notification.read_flag) {
+          await base44.entities.Notification.update(notification.id, { read_flag: true });
+        }
+        continue;
+      }
+      newestPerOwnerStatusKey.add(ownerStatusKey);
 
       if (status !== currentStatus) {
         if (!notification.read_flag) {

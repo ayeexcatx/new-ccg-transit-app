@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useConfirmationsQuery } from './useConfirmationsQuery';
 import { getNotificationEffectiveReadFlag } from './ownerActionStatus';
 import { notifyOwnerDriverSeen } from './createNotifications';
-import { getActiveCompanyId, getEffectiveView } from '@/components/session/workspaceUtils';
+import { getEffectiveView } from '@/components/session/workspaceUtils';
 import {
   canUserSeeNotification,
   getDriverDispatchIdSet,
@@ -32,12 +32,11 @@ export function useOwnerNotifications(session) {
   const pendingDriverSeenKeysRef = useRef(new Set());
   const driverIdentity = resolveDriverIdentity({ currentAppIdentity, session });
   const effectiveView = getEffectiveView(session);
-  const activeCompanyId = getActiveCompanyId(session);
   const isDriver = effectiveView === 'Driver';
   const isOwner = effectiveView === 'CompanyOwner';
   const isAdmin = effectiveView === 'Admin';
   const ownerWorkspaceCompanyId = resolveCompanyOwnerCompanyId({ currentAppIdentity, session });
-  const notificationScopeCompanyId = isOwner ? ownerWorkspaceCompanyId : activeCompanyId;
+  const notificationScopeCompanyId = isOwner ? ownerWorkspaceCompanyId : null;
 
   const queryKey = ['notifications', session?.id];
 

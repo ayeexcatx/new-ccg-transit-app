@@ -713,6 +713,8 @@ export async function expandCurrentStatusRequiredTrucks(dispatch, addedTrucks = 
       const ownerAddedTrucks = getCompanyScopedDispatchTrucks({ trucks_assigned: normalizedAdded }, company);
       if (!ownerAddedTrucks.length) continue;
 
+      await resolveStaleOwnerStatusNotifications(dispatch.id, ownerCode.id, status);
+
       const dedupKey = `${dispatch.id}:${status}:${ownerCode.id}`;
       const existing = await base44.entities.Notification.filter({
         recipient_access_code_id: ownerCode.id,

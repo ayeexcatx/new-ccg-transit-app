@@ -157,7 +157,6 @@ function DriverDispatchLogMobileCard({ row, onClick }) {
       </div>
 
       <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3">
-        <MobileField label="Sent At" value={formatNotificationDateTime(row.sentAt)} />
         <MobileField label="Seen At" value={formatNotificationDateTime(row.seenAt)} />
         <MobileField label="Dispatch Date" value={formatDispatchDate(row.dispatchDate)} />
         <MobileField label="Company" value={row.companyName} />
@@ -203,7 +202,7 @@ export default function AdminConfirmations() {
   
   const { data: driverDispatchLogs = [], isLoading: driverDispatchLogsLoading } = useQuery({
     queryKey: ['driver-dispatch-log-admin'],
-    queryFn: () => base44.entities.DriverDispatchLog.list('-sent_at', 1000),
+    queryFn: () => base44.entities.DriverDispatchLog.list('-seen_at', 1000),
   });
 
   const dispatchById = useMemo(
@@ -275,7 +274,6 @@ export default function AdminConfirmations() {
     .map((entry) => ({
       id: entry.id,
       dispatchId: entry.dispatch_id,
-      sentAt: entry.sent_at || entry.created_date || null,
       seenAt: entry.seen_at || entry.created_date || null,
       driverName: entry.driver_name_snapshot || 'Unknown Driver',
       companyName: entry.company_name_snapshot || companyById.get(entry.company_id)?.name || 'Unknown Company',
@@ -288,9 +286,9 @@ export default function AdminConfirmations() {
       clientName: entry.client_name_snapshot || '—',
       jobNumber: entry.job_number_snapshot || '—',
       referenceTag: entry.reference_tag_snapshot || '—',
-      eventType: String(entry.event_type || '').toLowerCase() === 'seen' ? 'Seen' : 'Pending',
+      eventType: entry.event_type || 'driver_dispatch_seen',
     }))
-    .sort((a, b) => new Date(b.sentAt || b.seenAt || 0).getTime() - new Date(a.sentAt || a.seenAt || 0).getTime()),
+    .sort((a, b) => new Date(b.seenAt || 0).getTime() - new Date(a.seenAt || 0).getTime()),
   [driverDispatchLogs, companyById]);
 
   const openDispatch = (dispatchId) => {
@@ -466,7 +464,7 @@ export default function AdminConfirmations() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h3 className="text-sm font-semibold text-slate-700">Driver Dispatch Log</h3>
-                <p className="text-xs text-slate-500">Internal audit history for driver dispatch lifecycle events (pending to seen).</p>
+                <p className="text-xs text-slate-500">Internal audit history for driver dispatch seen events.</p>
               </div>
               <Badge variant="secondary" className="self-start sm:self-auto">{driverDispatchLogRows.length} records</Badge>
             </div>
@@ -493,7 +491,6 @@ export default function AdminConfirmations() {
                   <table className="w-full text-sm">
                     <thead className="bg-slate-50 text-slate-600">
                       <tr>
-                        <th className="text-left font-medium px-3 py-2">Sent At</th>
                         <th className="text-left font-medium px-3 py-2">Seen At</th>
                         <th className="text-left font-medium px-3 py-2">Driver</th>
                         <th className="text-left font-medium px-3 py-2">Company</th>
@@ -514,7 +511,6 @@ export default function AdminConfirmations() {
                           className={`border-t border-slate-100 ${row.dispatchId ? 'hover:bg-slate-50 cursor-pointer' : ''}`}
                           onClick={() => openDispatch(row.dispatchId)}
                         >
-                          <td className="px-3 py-2">{formatNotificationDateTime(row.sentAt)}</td>
                           <td className="px-3 py-2">{formatNotificationDateTime(row.seenAt)}</td>
                           <td className="px-3 py-2">{row.driverName || '—'}</td>
                           <td className="px-3 py-2">{row.companyName || '—'}</td>

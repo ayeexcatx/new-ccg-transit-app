@@ -32,6 +32,7 @@ import LiveDispatchBoard from '@/components/admin/admin-dispatches/LiveDispatchB
 import AdminDispatchCard from '@/components/admin/admin-dispatches/AdminDispatchCard';
 import { resolveAdminDisplayNameFromSession } from '@/lib/adminIdentity';
 import { getTruckOverrideField } from '@/lib/dispatchTruckOverrides';
+import { validateAdminAccessCode } from '@/lib/adminAccessCodeValidation';
 
 const STATUS_ORDER = ['Scheduled', 'Dispatch', 'Amended', 'Cancelled'];
 const ACTIVE_LIVE_EXCLUDED_STATUSES = new Set(['Cancelled', 'Scheduled']);
@@ -929,9 +930,9 @@ export default function AdminDispatches() {
   };
 
   const handleDeleteConfirm = () => {
-    const sessionCode = accessCodes.find((ac) => ac.id === session?.id);
-    if (!sessionCode || sessionCode.code !== deleteCode || sessionCode.code_type !== 'Admin') {
-      setDeleteError('Invalid admin code. Please try again.');
+    const validation = validateAdminAccessCode(deleteCode, accessCodes);
+    if (!validation.isValid) {
+      setDeleteError(validation.error);
       return;
     }
     deleteMutation.mutate(deleteTarget.id);

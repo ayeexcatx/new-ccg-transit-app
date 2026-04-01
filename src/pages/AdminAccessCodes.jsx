@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import DeleteConfirmationDialog from '@/components/admin/DeleteConfirmationDialog';
 import { Key, Plus, Pencil, Trash2, Building2, Shield, Copy, UserRound } from 'lucide-react';
 import { getCompanyOwnerSmsState, getDriverSmsState, normalizeSmsPhone as normalizePhoneShared, formatPhoneNumber as formatPhoneShared } from '@/lib/sms';
+import { validateAdminAccessCode } from '@/lib/adminAccessCodeValidation';
 import { toast } from 'sonner';
 
 function formatPhoneNumber(value) {
@@ -34,6 +35,8 @@ export default function AdminAccessCodes() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [accessCodePendingDelete, setAccessCodePendingDelete] = useState(null);
+  const [deleteAdminCode, setDeleteAdminCode] = useState('');
+  const [deleteAdminCodeError, setDeleteAdminCodeError] = useState('');
   const [form, setForm] = useState({
     code: '',
     label: '',
@@ -257,8 +260,19 @@ export default function AdminAccessCodes() {
 
   const confirmDeleteAccessCode = () => {
     if (!accessCodePendingDelete) return;
+
+    const validation = validateAdminAccessCode(deleteAdminCode, codes);
+    if (!validation.isValid) {
+      setDeleteAdminCodeError(validation.error);
+      return;
+    }
+
     deleteMutation.mutate(accessCodePendingDelete.id, {
-      onSuccess: () => setAccessCodePendingDelete(null),
+      onSuccess: () => {
+        setAccessCodePendingDelete(null);
+        setDeleteAdminCode('');
+        setDeleteAdminCodeError('');
+      },
     });
   };
 
@@ -394,11 +408,23 @@ export default function AdminAccessCodes() {
 
       <DeleteConfirmationDialog
         open={!!accessCodePendingDelete}
-        onOpenChange={(openState) => !openState && setAccessCodePendingDelete(null)}
+        onOpenChange={(openState) => {
+          if (openState) return;
+          setAccessCodePendingDelete(null);
+          setDeleteAdminCode('');
+          setDeleteAdminCodeError('');
+        }}
         title="Delete Access Code?"
-        description="Are you sure you want to delete this access code? This action cannot be undone."
+        description="This action permanently deletes this access code. Enter an active admin access code to continue."
         onConfirm={confirmDeleteAccessCode}
         isDeleting={deleteMutation.isPending}
+        requireAdminAccessCode
+        adminAccessCode={deleteAdminCode}
+        onAdminAccessCodeChange={(value) => {
+          setDeleteAdminCode(value);
+          setDeleteAdminCodeError('');
+        }}
+        adminAccessCodeError={deleteAdminCodeError}
       />
 
       <Dialog open={open} onOpenChange={setOpen}>

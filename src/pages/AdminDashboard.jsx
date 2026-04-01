@@ -7,6 +7,7 @@ import { Clock, FileText, CheckCircle2 } from 'lucide-react';
 import { createPageUrl } from '../utils';
 import { buildOpenConfirmationRows } from '@/components/notifications/openConfirmations';
 import { createRuntimeVersionToken, APP_RUNTIME_VERSION_CONFIG_KEY } from '@/lib/runtimeVersion';
+import { validateAdminAccessCode } from '@/lib/adminAccessCodeValidation';
 import DashboardSummaryCards from '@/components/admin/admin-dashboard/DashboardSummaryCards';
 import ActiveAnnouncementsSection from '@/components/admin/admin-dashboard/ActiveAnnouncementsSection';
 import QuickActionsSection from '@/components/admin/admin-dashboard/QuickActionsSection';
@@ -187,15 +188,9 @@ export default function AdminDashboard() {
   };
 
   const handleForceRefreshConfirm = () => {
-    const trimmedCode = refreshAdminCode.trim();
-    if (!trimmedCode) {
-      setRefreshConfirmError('Enter an admin access code to continue.');
-      return;
-    }
-
-    const match = codes.find((code) => code.code === trimmedCode && code.code_type === 'Admin' && code.active_flag !== false);
-    if (!match) {
-      setRefreshConfirmError('Invalid admin access code.');
+    const validation = validateAdminAccessCode(refreshAdminCode, codes);
+    if (!validation.isValid) {
+      setRefreshConfirmError(validation.error);
       return;
     }
 

@@ -16,6 +16,7 @@ import { Building2, Plus, Pencil, Trash2, X, TrendingUp, TrendingDown, Minus, Sh
 import { format } from 'date-fns';
 import { calculateCompanyScore, SCORING_EVENT_TYPES, SCORING_PERIODS } from '@/lib/companyScoring';
 import { getCompanySmsContact, getDriverSmsState } from '@/lib/sms';
+import { validateAdminAccessCode } from '@/lib/adminAccessCodeValidation';
 
 const CONTACT_TYPE_OPTIONS = ['Office', 'Cell', 'Email', 'Fax', 'Other'];
 const PHONE_CONTACT_TYPES = ['Office', 'Cell', 'Fax'];
@@ -347,6 +348,8 @@ export default function AdminCompanies() {
   const [selectedCompanyDetail, setSelectedCompanyDetail] = useState(null);
   const [eventForm, setEventForm] = useState(initialEventForm);
   const [companyPendingDelete, setCompanyPendingDelete] = useState(null);
+  const [deleteAdminCode, setDeleteAdminCode] = useState('');
+  const [deleteAdminCodeError, setDeleteAdminCodeError] = useState('');
 
   const { data: companies = [], isLoading } = useQuery({ queryKey: ['companies'], queryFn: () => base44.entities.Company.list() });
   const { data: dispatches = [] } = useQuery({ queryKey: ['scoring-dispatches'], queryFn: () => base44.entities.Dispatch.list('-date', 1000) });
@@ -513,8 +516,19 @@ export default function AdminCompanies() {
 
   const confirmDeleteCompany = () => {
     if (!companyPendingDelete) return;
+
+    const validation = validateAdminAccessCode(deleteAdminCode, accessCodes);
+    if (!validation.isValid) {
+      setDeleteAdminCodeError(validation.error);
+      return;
+    }
+
     deleteMutation.mutate(companyPendingDelete.id, {
-      onSuccess: () => setCompanyPendingDelete(null),
+      onSuccess: () => {
+        setCompanyPendingDelete(null);
+        setDeleteAdminCode('');
+        setDeleteAdminCodeError('');
+      },
     });
   };
 
@@ -627,11 +641,23 @@ export default function AdminCompanies() {
 
       <DeleteConfirmationDialog
         open={!!companyPendingDelete}
-        onOpenChange={(openState) => !openState && setCompanyPendingDelete(null)}
+        onOpenChange={(openState) => {
+          if (openState) return;
+          setCompanyPendingDelete(null);
+          setDeleteAdminCode('');
+          setDeleteAdminCodeError('');
+        }}
         title="Delete Company?"
-        description="Are you sure you want to delete this company? This action cannot be undone."
+        description="This action permanently deletes this company. Enter an active admin access code to continue."
         onConfirm={confirmDeleteCompany}
         isDeleting={deleteMutation.isPending}
+        requireAdminAccessCode
+        adminAccessCode={deleteAdminCode}
+        onAdminAccessCodeChange={(value) => {
+          setDeleteAdminCode(value);
+          setDeleteAdminCodeError('');
+        }}
+        adminAccessCodeError={deleteAdminCodeError}
       />
 
       <Dialog open={open} onOpenChange={setOpen}>

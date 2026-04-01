@@ -19,7 +19,7 @@ import { sendSmsWelcomeIfNeeded } from '@/lib/smsIntro';
 import DriverProfileSmsCard from '@/components/profile/DriverProfileSmsCard';
 import { CompanyOwnerProfileOverview, CompanyOwnerSmsCard } from '@/components/profile/CompanyOwnerProfileSections';
 import SmsConsentDisclosure from '@/components/profile/SmsConsentDisclosure';
-import { getActiveCompanyId, getEffectiveView } from '@/components/session/workspaceUtils';
+import { getEffectiveView } from '@/components/session/workspaceUtils';
 import { resolveAdminDisplayName, resolveProfileName } from '@/lib/adminIdentity';
 import { resolveCompanyOwnerCompanyId } from '@/services/currentAppIdentityService';
 
@@ -406,9 +406,8 @@ function DriverProfile({ session }) {
 
 function CompanyOwnerProfile({ session }) {
   const { currentAppIdentity } = useAuth();
-  const activeCompanyId = getActiveCompanyId(session);
   const ownerWorkspaceCompanyId = resolveCompanyOwnerCompanyId({ currentAppIdentity, session });
-  const profileCompanyId = ownerWorkspaceCompanyId || activeCompanyId;
+  const profileCompanyId = ownerWorkspaceCompanyId ?? null;
   const queryClient = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
   const [form, setForm] = useState({ name: '', address: '', contact_methods: [{ type: 'Office', value: '' }] });

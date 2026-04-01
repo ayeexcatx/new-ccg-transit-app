@@ -4,17 +4,18 @@ import { base44 } from '@/api/base44Client';
 export const confirmationsQueryKey = ['confirmations'];
 
 export function useConfirmationsQuery(enabled = true, companyId = null) {
+  const scopedCompanyId = companyId ?? null;
   return useQuery({
-    queryKey: [...confirmationsQueryKey, companyId || null],
+    queryKey: [...confirmationsQueryKey, scopedCompanyId],
     queryFn: async () => {
-      const confirmations = await base44.entities.Confirmation.list('-confirmed_at', 500);
-      if (!companyId) return confirmations || [];
+      if (!scopedCompanyId) return [];
 
-      const companyDispatches = await base44.entities.Dispatch.filter({ company_id: companyId }, '-date', 500);
+      const confirmations = await base44.entities.Confirmation.list('-confirmed_at', 500);
+      const companyDispatches = await base44.entities.Dispatch.filter({ company_id: scopedCompanyId }, '-date', 500);
       const companyDispatchIds = new Set((companyDispatches || []).map((dispatch) => String(dispatch.id || '')));
       return (confirmations || []).filter((confirmation) => companyDispatchIds.has(String(confirmation.dispatch_id || '')));
     },
-    enabled,
+    enabled: enabled && !!scopedCompanyId,
     refetchInterval: 30000,
   });
 }

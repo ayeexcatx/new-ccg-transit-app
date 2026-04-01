@@ -45,15 +45,11 @@ export function resolveDriverIdentity({ currentAppIdentity, authenticatedUser, s
 export function resolveCompanyOwnerCompanyId({ currentAppIdentity, authenticatedUser, session } = {}) {
   const effectiveView = session?.activeViewMode || session?.code_type || null;
   if (effectiveView === 'CompanyOwner') {
-    return session?.activeCompanyId
-      || session?.company_id
-      || currentAppIdentity?.company_id
-      || authenticatedUser?.company_id
-      || null;
+    return session?.activeCompanyId ?? session?.company_id ?? null;
   }
 
   return currentAppIdentity?.company_id
-    || authenticatedUser?.company_id
-    || session?.company_id
-    || null;
+    ?? authenticatedUser?.company_id
+    ?? session?.company_id
+    ?? null;
 }

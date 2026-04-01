@@ -3,8 +3,7 @@ import {
   parseStatusFromDispatchStatusKey,
   reconcileRequiredTruckList,
 } from './confirmationStateHelpers';
-
-const NON_CONFIRMATION_CATEGORIES = new Set(['dispatch_update_info']);
+import { NON_CONFIRMATION_NOTIFICATION_CATEGORIES } from './ownerActionStatus';
 
 const dedupeTruckRows = (rows) => {
   const seen = new Set();
@@ -16,9 +15,7 @@ const dedupeTruckRows = (rows) => {
   });
 };
 
-const parseStatusFromDedupKey = (notification) => {
-  return parseStatusFromDispatchStatusKey(notification?.dispatch_status_key);
-};
+const parseStatusFromDedupKey = (notification) => parseStatusFromDispatchStatusKey(notification?.dispatch_status_key);
 
 const resolveRequiredTrucks = (notification, dispatch, ownerScopeTrucks = []) => {
   const baseRequired = Array.isArray(notification?.required_trucks)
@@ -53,16 +50,16 @@ export function buildOpenConfirmationRows({
 
   notifications.forEach((notification) => {
     const isOwnerNotification = notification.recipient_type === 'AccessCode';
-    const isUnread = !notification.read_flag;
-    const isConfirmationCategory = !NON_CONFIRMATION_CATEGORIES.has(notification.notification_category);
+    const isConfirmationCategory = !NON_CONFIRMATION_NOTIFICATION_CATEGORIES.has(notification.notification_category);
 
-    if (!isOwnerNotification || !isUnread || !isConfirmationCategory) return;
+    if (!isOwnerNotification || !isConfirmationCategory) return;
 
     const status = parseStatusFromDedupKey(notification);
     if (!status) return;
 
     const dispatch = dispatchById.get(notification.related_dispatch_id);
     if (!dispatch) return;
+    if (String(dispatch.status || '').trim() !== status) return;
 
     const ownerCodeId = notification.recipient_access_code_id || notification.recipient_id;
     const ownerCode = accessCodeById.get(ownerCodeId);
@@ -79,11 +76,12 @@ export function buildOpenConfirmationRows({
       status,
     });
 
+    const pendingTrucks = requiredTrucks.filter((truckNumber) => !confirmedTrucks.has(truckNumber));
+    if (!pendingTrucks.length) return;
+
     const companyName = companyById.get(dispatch.company_id)?.name || 'Unknown Company';
 
-    requiredTrucks.forEach((truckNumber) => {
-      if (confirmedTrucks.has(truckNumber)) return;
-
+    pendingTrucks.forEach((truckNumber) => {
       rows.push({
         id: `${notification.id}:${truckNumber}`,
         notificationId: notification.id,

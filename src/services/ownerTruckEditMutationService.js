@@ -182,7 +182,10 @@ export async function runOwnerTruckEditMutation({
       await Promise.all(removeConfirmationIds.map((id) => base44.entities.Confirmation.delete(id)));
     }
 
-    await Promise.all(addedTrucks.map((truck) =>
+    const transferableConfirmationCount = removeConfirmationIds.length;
+    const trucksToTransferConfirmation = addedTrucks.slice(0, transferableConfirmationCount);
+
+    await Promise.all(trucksToTransferConfirmation.map((truck) =>
       base44.entities.Confirmation.create({
         dispatch_id: dispatch.id,
         access_code_id: session.id,
@@ -275,7 +278,10 @@ export async function runOwnerTruckEditMutation({
     await Promise.all(removeConfirmationIds.map((id) => base44.entities.Confirmation.delete(id)));
   }
 
-  await Promise.all(addedTrucks.map((truck) =>
+  const transferableConfirmationCount = removeConfirmationIds.length;
+  const trucksToTransferConfirmation = addedTrucks.slice(0, transferableConfirmationCount);
+
+  await Promise.all(trucksToTransferConfirmation.map((truck) =>
     base44.entities.Confirmation.create({
       dispatch_id: dispatch.id,
       access_code_id: session.id,

@@ -24,6 +24,51 @@ const NON_CONFIRMATION_CATEGORIES = NON_CONFIRMATION_NOTIFICATION_CATEGORIES;
 const DRIVER_NOTIFICATION_CATEGORY = 'driver_dispatch_update';
 const DRIVER_SEEN_NOTIFICATION_CATEGORY = 'driver_dispatch_seen';
 
+async function createDriverDispatchSeenAuditLog({
+  dispatch,
+  notification = null,
+  seenAt,
+  driverId = null,
+  driverAccessCodeId = null,
+  driverName = null,
+  company = null,
+  seenKind = 'assigned',
+  seenVersionKey = null,
+  relevantTrucks = [],
+  title = '',
+  message = '',
+}) {
+  try {
+    if (!dispatch?.id) return;
+
+    await base44.entities.DriverDispatchLog.create({
+      dispatch_id: dispatch.id,
+      notification_id: notification?.id || null,
+      driver_access_code_id: driverAccessCodeId || null,
+      driver_id: driverId || null,
+      company_id: dispatch.company_id || company?.id || null,
+      event_type: DRIVER_SEEN_NOTIFICATION_CATEGORY,
+      seen_kind: String(seenKind || 'assigned'),
+      seen_version_key: String(seenVersionKey || '').trim() || null,
+      seen_at: seenAt || new Date().toISOString(),
+      driver_name_snapshot: String(driverName || '').trim() || null,
+      company_name_snapshot: String(company?.name || '').trim() || null,
+      dispatch_date_snapshot: dispatch?.date || null,
+      dispatch_status_snapshot: dispatch?.status || null,
+      shift_label_snapshot: dispatch?.shift_time || null,
+      job_number_snapshot: dispatch?.job_number || null,
+      reference_tag_snapshot: dispatch?.reference_tag || null,
+      client_name_snapshot: dispatch?.client_name || null,
+      truck_numbers_snapshot: [...new Set((relevantTrucks || []).filter(Boolean))],
+      dispatch_timezone_snapshot: dispatch?.timezone || null,
+      message_snapshot: String(message || '').trim() || null,
+      title_snapshot: String(title || '').trim() || null,
+    });
+  } catch (error) {
+    console.error('DriverDispatchLog create failed during driver seen notification flow:', error);
+  }
+}
+
 function getDriverSeenTitle(driverName, seenKind) {
   const actorLabel = String(driverName || 'Driver').trim() || 'Driver';
   const normalizedKind = String(seenKind || '').toLowerCase();
@@ -280,6 +325,12 @@ export async function notifyOwnerDriverSeen({
     const normalizedSeenKind = String(seenKind || 'assigned').toLowerCase();
     const normalizedSeenVersionKey = String(seenVersionKey || `${dispatch.id}:${normalizedSeenKind}`).trim().toLowerCase();
     const seenStatusKey = `${dispatch.id}:${normalizedDriverKey}:${normalizedSeenKind}:${normalizedSeenVersionKey}`;
+    const seenAt = new Date().toISOString();
+    let driverAccessCodeId = null;
+    if (driverId) {
+      const driverAccessCodeMap = await buildDriverAccessCodeMap([driverId]);
+      driverAccessCodeId = driverAccessCodeMap.get(driverId) || null;
+    }
 
     await Promise.all((ownerCodes || []).map(async (ownerCode) => {
       const relevantTrucks = scopedConfirmedTrucks;
@@ -304,19 +355,35 @@ export async function notifyOwnerDriverSeen({
 
       if (existing?.length) return;
 
-      await base44.entities.Notification.create({
+      const message = `${formatDispatchDateTimeLine(dispatch, 'at', driverSeenStartTime)}
+${lineTwo}`;
+      const notification = await base44.entities.Notification.create({
         recipient_type: 'AccessCode',
         recipient_access_code_id: ownerCode.id,
         recipient_id: ownerCode.id,
         recipient_company_id: dispatch.company_id,
         title,
-        message: `${formatDispatchDateTimeLine(dispatch, 'at', driverSeenStartTime)}
-${lineTwo}`,
+        message,
         related_dispatch_id: dispatch.id,
         read_flag: false,
         notification_category: DRIVER_SEEN_NOTIFICATION_CATEGORY,
         dispatch_status_key: `${seenStatusKey}:${ownerCode.id}`,
         required_trucks: relevantTrucks,
+      });
+
+      await createDriverDispatchSeenAuditLog({
+        dispatch,
+        notification,
+        seenAt,
+        driverId,
+        driverAccessCodeId,
+        driverName,
+        company,
+        seenKind,
+        seenVersionKey,
+        relevantTrucks,
+        title,
+        message,
       });
     }));
   } catch (error) {

@@ -56,6 +56,8 @@ export async function upsertDriverAssignment({
       await createDriverDispatchNotification({
         dispatch,
         driverAccessCodeId: existing.driver_user_id,
+        driverId: existing.driver_id || null,
+        driverName: existing.driver_name || null,
         title: 'Dispatch Removed',
         message: 'This dispatch assignment is no longer available',
         notificationType: 'driver_removed',
@@ -122,6 +124,8 @@ export async function sendDriverAssignment({ dispatch, driverDispatch, session }
     await createDriverDispatchNotification({
       dispatch,
       driverAccessCodeId: saved.driver_user_id,
+      driverId: saved.driver_id || null,
+      driverName: saved.driver_name || null,
       title: 'Dispatch Assigned',
       message: 'You have been assigned to a dispatch',
       notificationType: 'driver_assigned',
@@ -150,6 +154,8 @@ export async function deactivateDriverAssignment({ dispatch, driverAssignments =
       await createDriverDispatchNotification({
         dispatch,
         driverAccessCodeId: row.driver_user_id,
+        driverId: row.driver_id || null,
+        driverName: row.driver_name || null,
         title: 'Dispatch Removed',
         message: 'This dispatch assignment is no longer available',
         notificationType: 'driver_removed',
@@ -183,6 +189,8 @@ export async function clearRemovedTruckDriverAssignments({ dispatch, removedTruc
       await createDriverDispatchNotification({
         dispatch,
         driverAccessCodeId: row.driver_user_id,
+        driverId: row.driver_id || null,
+        driverName: row.driver_name || null,
         title: 'Dispatch Removed',
         message: 'This dispatch assignment is no longer available',
         notificationType: 'driver_removed',

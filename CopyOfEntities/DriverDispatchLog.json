@@ -88,12 +88,16 @@
     "title_snapshot": {
       "type": "string",
       "description": "Notification title snapshot"
+    },
+    "sent_at": {
+      "type": "string",
+      "description": "Timestamp when the driver-facing dispatch action/notification was created"
     }
   },
   "required": [
     "dispatch_id",
     "event_type",
     "seen_kind",
-    "seen_at"
+    "sent_at"
   ]
 }

@@ -86,7 +86,9 @@ function buildLinkedUserSession({
   fallbackSession,
   workspace,
 }) {
-  const codeType = normalizeAppRoleToAccessCodeType(linkedIdentity?.app_role);
+  const inferredCodeType = normalizeAppRoleToAccessCodeType(linkedIdentity?.app_role);
+  const fallbackCodeType = fallbackSession?.raw_code_type || fallbackSession?.code_type || null;
+  const codeType = fallbackCodeType === 'Admin' ? 'Admin' : inferredCodeType;
   if (!SUPPORTED_CODE_TYPES.has(codeType)) return null;
 
   if (codeType !== 'Admin' && !fallbackSession?.id) return null;
@@ -130,7 +132,7 @@ function buildLinkedUserSession({
     ? (workspace.activeViewMode || 'Admin')
     : codeType;
   const activeCompanyId = activeViewMode === 'CompanyOwner'
-    ? (workspace.activeCompanyId || companyId || null)
+    ? (companyId || workspace.activeCompanyId || null)
     : null;
 
   return {

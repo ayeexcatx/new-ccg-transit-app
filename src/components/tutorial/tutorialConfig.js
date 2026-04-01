@@ -5,6 +5,7 @@ export const COMPANY_OWNER_TUTORIAL_LANGUAGE = {
   ENGLISH: 'en',
   PORTUGUESE: 'pt',
 };
+export const COMPANY_OWNER_TUTORIAL_SEEN_KEY = 'companyOwnerTutorialSeen';
 export const COMPANY_OWNER_TUTORIAL_DISMISSED_KEY = 'companyOwnerTutorialDismissed';
 export const COMPANY_OWNER_TUTORIAL_COMPLETED_KEY = 'companyOwnerTutorialCompleted';
 export const DISPATCH_DRAWER_TUTORIAL_SEEN_KEY = 'dispatchDrawerTutorialSeen';
@@ -319,6 +320,7 @@ export const tutorialRegistry = {
     completionStepsByLanguage: COMPANY_OWNER_TUTORIAL_COMPLETION_STEPS,
     defaultLanguage: COMPANY_OWNER_TUTORIAL_LANGUAGE.ENGLISH,
     storageKeys: {
+      seen: COMPANY_OWNER_TUTORIAL_SEEN_KEY,
       dismissed: COMPANY_OWNER_TUTORIAL_DISMISSED_KEY,
       completed: COMPANY_OWNER_TUTORIAL_COMPLETED_KEY,
     },

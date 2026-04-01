@@ -9,7 +9,7 @@ import {
   tutorialRegistry,
 } from './tutorialConfig';
 
-export default function DispatchDrawerTutorial({ isOwner, drawerOpen }) {
+export default function DispatchDrawerTutorial({ isOwner, drawerOpen, dispatchStatus }) {
   const tutorialConfig = tutorialRegistry.dispatchDrawer;
   const { seen: seenKey, completed: completedKey } = tutorialConfig.storageKeys;
 
@@ -44,11 +44,14 @@ export default function DispatchDrawerTutorial({ isOwner, drawerOpen }) {
     setTargetRect(null);
   }, [setTargetRect]);
 
-  const openTutorialWelcome = useCallback(() => {
+  const openTutorialWelcome = useCallback(({ markSeen = false } = {}) => {
     if (!isOwner || !drawerOpen) return;
+    if (markSeen) {
+      localStorage.setItem(seenKey, 'true');
+    }
     stopTutorial();
     setShowWelcome(true);
-  }, [drawerOpen, isOwner, stopTutorial]);
+  }, [drawerOpen, isOwner, seenKey, stopTutorial]);
 
   const startTutorial = useCallback((language = tutorialConfig.defaultLanguage) => {
     if (!isOwner || !drawerOpen) return;
@@ -68,9 +71,10 @@ export default function DispatchDrawerTutorial({ isOwner, drawerOpen }) {
   }, [startTutorial]);
 
   const handleFinish = useCallback(() => {
+    localStorage.setItem(seenKey, 'true');
     localStorage.setItem(completedKey, 'true');
     stopTutorial();
-  }, [completedKey, stopTutorial]);
+  }, [completedKey, seenKey, stopTutorial]);
 
   const handleSkipForNow = useCallback(() => {
     setShowWelcome(false);
@@ -94,12 +98,13 @@ export default function DispatchDrawerTutorial({ isOwner, drawerOpen }) {
   }, [handleStepChange, isCompletion, stepIndex, totalSteps]);
 
   useEffect(() => {
-    if (!isOwner || !drawerOpen || isRunning || showWelcome) return;
+    const isEligibleStatus = dispatchStatus !== 'Scheduled';
+    if (!isOwner || !drawerOpen || !isEligibleStatus || isRunning || showWelcome) return;
     const seen = localStorage.getItem(seenKey) === 'true';
     if (!seen) {
-      openTutorialWelcome();
+      openTutorialWelcome({ markSeen: true });
     }
-  }, [drawerOpen, isOwner, isRunning, openTutorialWelcome, seenKey, showWelcome]);
+  }, [dispatchStatus, drawerOpen, isOwner, isRunning, openTutorialWelcome, seenKey, showWelcome]);
 
   useEffect(() => {
     if (!drawerOpen) {

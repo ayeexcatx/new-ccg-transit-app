@@ -37,7 +37,7 @@ export default function TutorialProvider({ session, children }) {
   const isCompanyOwner = session?.code_type === 'CompanyOwner';
 
   const tutorialConfig = tutorialRegistry[COMPANY_OWNER_TUTORIAL_ID];
-  const { completed: completedKey, dismissed: dismissedKey } = tutorialConfig.storageKeys;
+  const { seen: seenKey, completed: completedKey, dismissed: dismissedKey } = tutorialConfig.storageKeys;
 
   const [isRunning, setIsRunning] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
@@ -80,11 +80,14 @@ export default function TutorialProvider({ session, children }) {
     setIsRunning(true);
   }, [isCompanyOwner, setStepIndex, tutorialConfig.defaultLanguage]);
 
-  const openTutorialWelcome = useCallback(() => {
+  const openTutorialWelcome = useCallback(({ markSeen = false } = {}) => {
     if (!isCompanyOwner) return;
+    if (markSeen) {
+      localStorage.setItem(seenKey, 'true');
+    }
     stopTutorial();
     setShowWelcome(true);
-  }, [isCompanyOwner, stopTutorial]);
+  }, [isCompanyOwner, seenKey, stopTutorial]);
 
   const startEnglishTutorial = useCallback(() => {
     startTutorial(COMPANY_OWNER_TUTORIAL_LANGUAGE.ENGLISH);
@@ -95,8 +98,9 @@ export default function TutorialProvider({ session, children }) {
   }, [startTutorial]);
 
   const markCompleted = useCallback(() => {
+    localStorage.setItem(seenKey, 'true');
     localStorage.setItem(completedKey, 'true');
-  }, [completedKey]);
+  }, [completedKey, seenKey]);
 
   const handleSkipForNow = useCallback(() => {
     setShowWelcome(false);
@@ -104,10 +108,11 @@ export default function TutorialProvider({ session, children }) {
   }, [stopTutorial]);
 
   const handleDismissPermanently = useCallback(() => {
+    localStorage.setItem(seenKey, 'true');
     localStorage.setItem(dismissedKey, 'true');
     setShowWelcome(false);
     stopTutorial();
-  }, [dismissedKey, stopTutorial]);
+  }, [dismissedKey, seenKey, stopTutorial]);
 
   const handleFinish = useCallback(() => {
     markCompleted();
@@ -155,13 +160,14 @@ export default function TutorialProvider({ session, children }) {
       return;
     }
 
+    const seen = localStorage.getItem(seenKey) === 'true';
     const dismissed = localStorage.getItem(dismissedKey) === 'true';
     const completed = localStorage.getItem(completedKey) === 'true';
 
-    if (!dismissed && !completed) {
-      setShowWelcome(true);
+    if (!seen && !dismissed && !completed) {
+      openTutorialWelcome({ markSeen: true });
     }
-  }, [completedKey, dismissedKey, isCompanyOwner, stopTutorial]);
+  }, [completedKey, dismissedKey, isCompanyOwner, openTutorialWelcome, seenKey, stopTutorial]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;

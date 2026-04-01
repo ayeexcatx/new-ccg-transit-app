@@ -110,6 +110,7 @@ export default function DispatchDrawerTopBar({
       <DispatchDrawerTutorial
         isOwner={isOwner}
         drawerOpen={open}
+        dispatchStatus={dispatch?.status}
       />
     </div>
   );

@@ -23,11 +23,20 @@ const NON_CONFIRMATION_CATEGORIES = NON_CONFIRMATION_NOTIFICATION_CATEGORIES;
 
 const DRIVER_NOTIFICATION_CATEGORY = 'driver_dispatch_update';
 const DRIVER_SEEN_NOTIFICATION_CATEGORY = 'driver_dispatch_seen';
+const DRIVER_DISPATCH_LOG_EVENT_PENDING = 'pending';
+const DRIVER_DISPATCH_LOG_EVENT_SEEN = 'seen';
 
-async function createDriverDispatchSeenAuditLog({
+function getSeenKindFromNotificationType(notificationType) {
+  const normalizedType = String(notificationType || '').toLowerCase();
+  if (normalizedType === 'driver_removed') return 'removed';
+  if (normalizedType === 'driver_amended') return 'amended';
+  if (normalizedType === 'driver_cancelled') return 'cancelled';
+  return 'assigned';
+}
+
+async function createDriverDispatchPendingAuditLog({
   dispatch,
-  notification = null,
-  seenAt,
+  notification,
   driverId = null,
   driverAccessCodeId = null,
   driverName = null,
@@ -39,18 +48,18 @@ async function createDriverDispatchSeenAuditLog({
   message = '',
 }) {
   try {
-    if (!dispatch?.id) return;
+    if (!dispatch?.id || !notification?.id) return;
 
     await base44.entities.DriverDispatchLog.create({
       dispatch_id: dispatch.id,
-      notification_id: notification?.id || null,
+      notification_id: notification.id,
       driver_access_code_id: driverAccessCodeId || null,
       driver_id: driverId || null,
       company_id: dispatch.company_id || company?.id || null,
-      event_type: DRIVER_SEEN_NOTIFICATION_CATEGORY,
+      event_type: DRIVER_DISPATCH_LOG_EVENT_PENDING,
+      sent_at: notification?.created_date || new Date().toISOString(),
       seen_kind: String(seenKind || 'assigned'),
-      seen_version_key: String(seenVersionKey || '').trim() || null,
-      seen_at: seenAt || new Date().toISOString(),
+      seen_version_key: String(seenVersionKey || notification.id || '').trim() || null,
       driver_name_snapshot: String(driverName || '').trim() || null,
       company_name_snapshot: String(company?.name || '').trim() || null,
       dispatch_date_snapshot: dispatch?.date || null,
@@ -65,7 +74,87 @@ async function createDriverDispatchSeenAuditLog({
       title_snapshot: String(title || '').trim() || null,
     });
   } catch (error) {
-    console.error('DriverDispatchLog create failed during driver seen notification flow:', error);
+    console.error('DriverDispatchLog pending create failed during driver dispatch notification flow:', error);
+  }
+}
+
+async function createDriverDispatchSeenAuditLog({
+  dispatch,
+  ownerSeenNotification = null,
+  seenAt,
+  driverId = null,
+  driverAccessCodeId = null,
+  driverName = null,
+  company = null,
+  seenKind = 'assigned',
+  seenVersionKey = null,
+  relevantTrucks = [],
+  title = '',
+  message = '',
+}) {
+  try {
+    if (!dispatch?.id) return;
+
+    const normalizedSeenVersionKey = String(seenVersionKey || '').trim() || null;
+    let matchingPendingEntry = null;
+
+    if (dispatch?.id && normalizedSeenVersionKey) {
+      const pendingByVersion = await base44.entities.DriverDispatchLog.filter({
+        dispatch_id: dispatch.id,
+        seen_version_key: normalizedSeenVersionKey,
+        event_type: DRIVER_DISPATCH_LOG_EVENT_PENDING,
+      }, '-created_date', 5);
+      matchingPendingEntry = pendingByVersion?.[0] || null;
+    }
+
+    if (!matchingPendingEntry && dispatch?.id && driverAccessCodeId) {
+      const pendingByAccessCode = await base44.entities.DriverDispatchLog.filter({
+        dispatch_id: dispatch.id,
+        driver_access_code_id: driverAccessCodeId,
+        seen_kind: String(seenKind || 'assigned'),
+        event_type: DRIVER_DISPATCH_LOG_EVENT_PENDING,
+      }, '-created_date', 5);
+      matchingPendingEntry = pendingByAccessCode?.[0] || null;
+    }
+
+    if (!matchingPendingEntry && dispatch?.id && driverId) {
+      const pendingByDriver = await base44.entities.DriverDispatchLog.filter({
+        dispatch_id: dispatch.id,
+        driver_id: driverId,
+        seen_kind: String(seenKind || 'assigned'),
+        event_type: DRIVER_DISPATCH_LOG_EVENT_PENDING,
+      }, '-created_date', 5);
+      matchingPendingEntry = pendingByDriver?.[0] || null;
+    }
+
+    if (!matchingPendingEntry) return;
+
+    await base44.entities.DriverDispatchLog.update(matchingPendingEntry.id, {
+      event_type: DRIVER_DISPATCH_LOG_EVENT_SEEN,
+      seen_at: seenAt || new Date().toISOString(),
+      company_id: matchingPendingEntry.company_id || dispatch.company_id || company?.id || null,
+      driver_access_code_id: matchingPendingEntry.driver_access_code_id || driverAccessCodeId || null,
+      driver_id: matchingPendingEntry.driver_id || driverId || null,
+      seen_kind: matchingPendingEntry.seen_kind || String(seenKind || 'assigned'),
+      seen_version_key: matchingPendingEntry.seen_version_key || normalizedSeenVersionKey,
+      company_name_snapshot: matchingPendingEntry.company_name_snapshot || String(company?.name || '').trim() || null,
+      driver_name_snapshot: matchingPendingEntry.driver_name_snapshot || String(driverName || '').trim() || null,
+      notification_id: matchingPendingEntry.notification_id || ownerSeenNotification?.id || null,
+      dispatch_date_snapshot: matchingPendingEntry.dispatch_date_snapshot || dispatch?.date || null,
+      dispatch_status_snapshot: dispatch?.status || matchingPendingEntry.dispatch_status_snapshot || null,
+      shift_label_snapshot: matchingPendingEntry.shift_label_snapshot || dispatch?.shift_time || null,
+      job_number_snapshot: matchingPendingEntry.job_number_snapshot || dispatch?.job_number || null,
+      reference_tag_snapshot: matchingPendingEntry.reference_tag_snapshot || dispatch?.reference_tag || null,
+      client_name_snapshot: matchingPendingEntry.client_name_snapshot || dispatch?.client_name || null,
+      truck_numbers_snapshot: matchingPendingEntry.truck_numbers_snapshot?.length
+        ? matchingPendingEntry.truck_numbers_snapshot
+        : [...new Set((relevantTrucks || []).filter(Boolean))],
+      dispatch_timezone_snapshot: matchingPendingEntry.dispatch_timezone_snapshot || dispatch?.timezone || null,
+      message_snapshot: matchingPendingEntry.message_snapshot || String(message || '').trim() || null,
+      title_snapshot: matchingPendingEntry.title_snapshot || String(title || '').trim() || null,
+    });
+  } catch (error) {
+    console.error('DriverDispatchLog seen update failed during driver seen notification flow:', error);
   }
 }
 
@@ -216,6 +305,9 @@ async function buildDriverAccessCodeMap(driverIds = []) {
 export async function createDriverDispatchNotification({
   dispatch,
   driverAccessCodeId,
+  driverId = null,
+  driverName = null,
+  company = null,
   title,
   message,
   notificationType,
@@ -287,6 +379,21 @@ export async function createDriverDispatchNotification({
   });
 
   await sendNotificationSmsIfEligible(notification);
+
+  await createDriverDispatchPendingAuditLog({
+    dispatch,
+    notification,
+    driverId,
+    driverAccessCodeId,
+    driverName,
+    company,
+    seenKind: getSeenKindFromNotificationType(notificationType),
+    seenVersionKey: String(notification?.id || '').trim() || null,
+    relevantTrucks: normalizedRequiredTrucks,
+    title,
+    message: fullMessage,
+  });
+
   return notification;
 }
 
@@ -373,7 +480,7 @@ ${lineTwo}`;
 
       await createDriverDispatchSeenAuditLog({
         dispatch,
-        notification,
+        ownerSeenNotification: notification,
         seenAt,
         driverId,
         driverAccessCodeId,
@@ -404,11 +511,25 @@ export async function notifyDriverAssignmentChanges(dispatch, previousAssignment
     if (!impactedDriverIds.length) return;
 
     const driverAccessCodeMap = await buildDriverAccessCodeMap(impactedDriverIds);
+    const companyRecords = dispatch?.company_id
+      ? await base44.entities.Company.filter({ id: dispatch.company_id }, '-created_date', 1)
+      : [];
+    const company = companyRecords?.[0] || null;
+    const driverRecords = impactedDriverIds.length
+      ? await Promise.all(impactedDriverIds.map((driverId) => base44.entities.Driver.filter({ id: driverId }, '-created_date', 1)))
+      : [];
+    const driverNameMap = new Map(driverRecords
+      .map((entries) => entries?.[0])
+      .filter(Boolean)
+      .map((driver) => [driver.id, driver.name || driver.label || null]));
 
     await Promise.all([
       ...removedDriverIds.map((driverId) => createDriverDispatchNotification({
         dispatch,
         driverAccessCodeId: driverAccessCodeMap.get(driverId),
+        driverId,
+        driverName: driverNameMap.get(driverId) || null,
+        company,
         title: 'Dispatch Removed',
         message: 'This dispatch assignment is no longer available',
         notificationType: 'driver_removed',
@@ -420,6 +541,9 @@ export async function notifyDriverAssignmentChanges(dispatch, previousAssignment
       ...addedDriverIds.map((driverId) => createDriverDispatchNotification({
         dispatch,
         driverAccessCodeId: driverAccessCodeMap.get(driverId),
+        driverId,
+        driverName: driverNameMap.get(driverId) || null,
+        company,
         title: 'Dispatch Assigned',
         message: 'You have been assigned to a dispatch',
         notificationType: 'driver_assigned',
@@ -442,11 +566,25 @@ export async function notifyDriversForDispatchUpdate(dispatch, driverAssignments
     if (!assignedDriverIds.length) return;
 
     const driverAccessCodeMap = await buildDriverAccessCodeMap(assignedDriverIds);
+    const companyRecords = dispatch?.company_id
+      ? await base44.entities.Company.filter({ id: dispatch.company_id }, '-created_date', 1)
+      : [];
+    const company = companyRecords?.[0] || null;
+    const driverRecords = await Promise.all(assignedDriverIds.map((driverId) =>
+      base44.entities.Driver.filter({ id: driverId }, '-created_date', 1)
+    ));
+    const driverNameMap = new Map(driverRecords
+      .map((entries) => entries?.[0])
+      .filter(Boolean)
+      .map((driver) => [driver.id, driver.name || driver.label || null]));
     const { title, message, notificationType } = getDriverDispatchStatusNotification(dispatch.status);
 
     await Promise.all(assignedDriverIds.map((driverId) => createDriverDispatchNotification({
       dispatch,
       driverAccessCodeId: driverAccessCodeMap.get(driverId),
+      driverId,
+      driverName: driverNameMap.get(driverId) || null,
+      company,
       title,
       message,
       notificationType,
@@ -483,6 +621,17 @@ export async function notifyDriversForDispatchEdit({
     if (!driverIdsToNotify.length) return;
 
     const driverAccessCodeMap = await buildDriverAccessCodeMap(driverIdsToNotify);
+    const companyRecords = nextDispatch?.company_id
+      ? await base44.entities.Company.filter({ id: nextDispatch.company_id }, '-created_date', 1)
+      : [];
+    const company = companyRecords?.[0] || null;
+    const driverRecords = await Promise.all(driverIdsToNotify.map((driverId) =>
+      base44.entities.Driver.filter({ id: driverId }, '-created_date', 1)
+    ));
+    const driverNameMap = new Map(driverRecords
+      .map((entries) => entries?.[0])
+      .filter(Boolean)
+      .map((driver) => [driver.id, driver.name || driver.label || null]));
 
     if (statusChanged) {
       const normalizedNextStatus = String(nextStatus || '').toLowerCase();
@@ -493,6 +642,9 @@ export async function notifyDriversForDispatchEdit({
         await Promise.all(driverIdsToNotify.map((driverId) => createDriverDispatchNotification({
           dispatch: nextDispatch,
           driverAccessCodeId: driverAccessCodeMap.get(driverId),
+          driverId,
+          driverName: driverNameMap.get(driverId) || null,
+          company,
           title,
           message,
           notificationType,
@@ -509,6 +661,9 @@ export async function notifyDriversForDispatchEdit({
     await Promise.all(driverIdsToNotify.map((driverId) => createDriverDispatchNotification({
       dispatch: nextDispatch,
       driverAccessCodeId: driverAccessCodeMap.get(driverId),
+      driverId,
+      driverName: driverNameMap.get(driverId) || null,
+      company,
       title: 'Dispatch Updated',
       message: 'Your dispatch has been updated',
       notificationType: 'driver_updated',

@@ -14,6 +14,24 @@ const shouldResetReceiptConfirmationForStatusChange = (previousStatus, nextStatu
   previousStatus !== nextStatus && (nextStatus === 'Amended' || nextStatus === 'Cancelled')
 );
 
+async function clearRemovedTruckConfirmationsForCurrentStatus({ dispatchId, status, removedTrucks = [] }) {
+  const normalizedRemoved = getNormalizedTrucks(removedTrucks);
+  if (!dispatchId || !status || normalizedRemoved.length === 0) return;
+
+  const currentStatusConfirmations = await base44.entities.Confirmation.filter({
+    dispatch_id: dispatchId,
+    confirmation_type: status,
+  }, '-confirmed_at', 1000);
+
+  const removalIds = (currentStatusConfirmations || [])
+    .filter((confirmation) => normalizedRemoved.includes(confirmation?.truck_number))
+    .map((confirmation) => confirmation?.id)
+    .filter(Boolean);
+
+  if (removalIds.length === 0) return;
+  await Promise.all(removalIds.map((id) => base44.entities.Confirmation.delete(id)));
+}
+
 /**
  * Preserves existing owner notification fanout flow for admin create/update writes.
  */
@@ -95,6 +113,12 @@ export async function runAdminDispatchMutation({
       dispatch: savedDispatch,
       removedTrucks,
       session,
+    });
+
+    await clearRemovedTruckConfirmationsForCurrentStatus({
+      dispatchId: savedDispatch.id,
+      status: savedDispatch.status,
+      removedTrucks,
     });
 
     if (shouldResetReceiptConfirmationForStatusChange(editing?.status, savedDispatch.status)) {

@@ -16,8 +16,8 @@ const HELP_KEYWORDS = new Set(['HELP', 'SUPPORT']);
 const START_KEYWORDS = new Set(['START', 'YES', 'SUBSCRIBE']);
 
 const MESSAGES = {
-  stop: 'CCG Transit: You have been unsubscribed from SMS notifications and will no longer receive text messages. To re-enable SMS, log into the app and update your Profile settings.',
-  help: 'CCG Transit: You are receiving work-related dispatch and operational text notifications. For help, contact alex@ccgnj.com. Reply STOP to opt out.',
+  stop: 'CCG Transit: You have been unsubscribed from SMS notifications and will no longer receive text messages. To re-enable, log into the app & update your Profile.',
+  help: 'CCG Transit: You are receiving CCG related text notifications. For help, contact alex@ccgnj.com. Reply STOP to opt out.',
   resubscribeBlocked: 'CCG Transit: To re-enable SMS notifications, please log into the app and enable SMS in your Profile settings.',
 };
 

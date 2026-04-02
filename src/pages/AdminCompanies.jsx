@@ -15,7 +15,7 @@ import DeleteConfirmationDialog from '@/components/admin/DeleteConfirmationDialo
 import { Building2, Plus, Pencil, Trash2, X, TrendingUp, TrendingDown, Minus, ShieldCheck, ShieldAlert, MessageSquare, Smartphone, UserRound, KeyRound, Clock3, Truck, ChevronRight, Briefcase } from 'lucide-react';
 import { format } from 'date-fns';
 import { calculateCompanyScore, SCORING_EVENT_TYPES, SCORING_PERIODS } from '@/lib/companyScoring';
-import { getCompanySmsContact, getDriverSmsState } from '@/lib/sms';
+import { formatPhoneNumber, getCompanySmsContact, getDriverSmsState } from '@/lib/sms';
 import { validateAdminAccessCode } from '@/lib/adminAccessCodeValidation';
 import { reviewCompanyProfileChangeRequest } from '@/services/companyProfileChangeReviewService';
 import { activeDriverProtocolQueryKey, getCurrentActiveDriverProtocol } from '@/services/driverProtocolService';
@@ -23,14 +23,6 @@ import { toast } from 'sonner';
 
 const CONTACT_TYPE_OPTIONS = ['Office', 'Cell', 'Email', 'Fax', 'Other'];
 const PHONE_CONTACT_TYPES = ['Office', 'Cell', 'Fax'];
-
-const formatPhoneNumber = (value) => {
-  const digits = value.replace(/\D/g, '').slice(0, 10);
-  if (!digits) return '';
-  if (digits.length < 4) return `(${digits}`;
-  if (digits.length < 7) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
-  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
-};
 
 const normalizeContactMethods = (company) => {
   if (Array.isArray(company?.contact_methods) && company.contact_methods.length > 0) {
@@ -802,7 +794,7 @@ export default function AdminCompanies() {
                                 </div>
                                 <div>
                                   <p className="text-sm font-semibold text-slate-900">{driver.driver_name || 'Unnamed driver'}</p>
-                                  <p className="text-xs text-slate-500 mt-1">{formatDisplayValue(driver.phone, 'Not available')}</p>
+                                  <p className="text-xs text-slate-500 mt-1">{driver.phone ? formatPhoneNumber(driver.phone) : 'Not available'}</p>
                                 </div>
                               </div>
                               <Badge variant={smsState.effective ? 'default' : 'secondary'} className={smsState.effective ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100' : 'bg-amber-100 text-amber-700 hover:bg-amber-100'}>{smsState.effective ? 'SMS Active' : 'SMS Off'}</Badge>

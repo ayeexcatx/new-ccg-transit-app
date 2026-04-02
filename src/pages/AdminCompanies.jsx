@@ -18,7 +18,7 @@ import { calculateCompanyScore, SCORING_EVENT_TYPES, SCORING_PERIODS } from '@/l
 import { getCompanySmsContact, getDriverSmsState } from '@/lib/sms';
 import { validateAdminAccessCode } from '@/lib/adminAccessCodeValidation';
 import { reviewCompanyProfileChangeRequest } from '@/services/companyProfileChangeReviewService';
-import { DRIVER_PROTOCOL_VERSION } from '@/constants/driverProtocols';
+import { activeDriverProtocolQueryKey, getCurrentActiveDriverProtocol } from '@/services/driverProtocolService';
 import { toast } from 'sonner';
 
 const CONTACT_TYPE_OPTIONS = ['Office', 'Cell', 'Email', 'Fax', 'Other'];
@@ -364,6 +364,10 @@ export default function AdminCompanies() {
     queryKey: ['admin-driver-protocol-acknowledgments'],
     queryFn: () => base44.entities.DriverProtocolAcknowledgment.list('-accepted_at', 2000),
   });
+  const { data: currentActiveProtocol = null } = useQuery({
+    queryKey: activeDriverProtocolQueryKey,
+    queryFn: () => getCurrentActiveDriverProtocol(),
+  });
 
   const saveMutation = useMutation({
     mutationFn: (data) => (editing ? base44.entities.Company.update(editing.id, data) : base44.entities.Company.create(data)),
@@ -435,20 +439,27 @@ export default function AdminCompanies() {
     map.get(companyId).push(driver);
     return map;
   }, new Map()), [drivers]);
-  const protocolAckByDriver = useMemo(() => driverProtocolAcknowledgments.reduce((map, record) => {
-    if (!record?.driver_id || record.protocol_version !== DRIVER_PROTOCOL_VERSION) return map;
-    const current = map.get(record.driver_id);
-    if (!current) {
-      map.set(record.driver_id, record);
-      return map;
-    }
-    const currentTime = new Date(current.accepted_at || 0).getTime();
-    const nextTime = new Date(record.accepted_at || 0).getTime();
-    if (nextTime > currentTime) {
-      map.set(record.driver_id, record);
-    }
-    return map;
-  }, new Map()), [driverProtocolAcknowledgments]);
+  const protocolAckByDriver = useMemo(() => {
+    const currentAckByDriver = new Map();
+    const latestAckByDriver = new Map();
+
+    driverProtocolAcknowledgments.forEach((record) => {
+      if (!record?.driver_id) return;
+      const existingLatest = latestAckByDriver.get(record.driver_id);
+      if (!existingLatest || new Date(record.accepted_at || 0).getTime() > new Date(existingLatest.accepted_at || 0).getTime()) {
+        latestAckByDriver.set(record.driver_id, record);
+      }
+
+      if (currentActiveProtocol?.id && record.driver_protocol_id === currentActiveProtocol.id) {
+        const existingCurrent = currentAckByDriver.get(record.driver_id);
+        if (!existingCurrent || new Date(record.accepted_at || 0).getTime() > new Date(existingCurrent.accepted_at || 0).getTime()) {
+          currentAckByDriver.set(record.driver_id, record);
+        }
+      }
+    });
+
+    return { currentAckByDriver, latestAckByDriver };
+  }, [driverProtocolAcknowledgments, currentActiveProtocol?.id]);
 
   const sortedCompanies = useMemo(() => companies.slice().sort((a, b) => (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" })), [companies]);
   const selectedCompanyDetail = useMemo(() => companies.find((company) => company.id === selectedCompanyDetailId) || null, [companies, selectedCompanyDetailId]);
@@ -780,7 +791,8 @@ export default function AdminCompanies() {
                         const smsState = getDriverSmsState(driver);
                         const driverCode = accessCodeById.get(driver.access_code_id);
                         const consentRecorded = driverCode?.sms_consent_given === true;
-                        const protocolAck = protocolAckByDriver.get(driver.id);
+                        const protocolAck = protocolAckByDriver.currentAckByDriver.get(driver.id);
+                        const latestProtocolAck = protocolAckByDriver.latestAckByDriver.get(driver.id);
                         return (
                           <div key={driver.id} className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm space-y-3 text-sm">
                             <div className="flex items-start justify-between gap-3">
@@ -805,8 +817,10 @@ export default function AdminCompanies() {
                               <InfoValueCard label="Opt-out timestamp" value={formatDateTime(driverCode?.sms_opted_out_at)} icon={Clock3} tone={driverCode?.sms_opted_out_at ? 'warning' : 'neutral'} />
                               <InfoValueCard label="Intro/welcome sent" value={formatDateTime(driverCode?.sms_intro_sent_at)} icon={MessageSquare} />
                               <InfoValueCard label="SMS phone" value={smsState.normalizedPhone ? formatPhoneNumber(smsState.normalizedPhone) : 'Not available'} icon={Smartphone} />
-                              <InfoValueCard label="Protocols acknowledged" value={protocolAck ? 'Recorded' : 'Not recorded'} icon={protocolAck ? ShieldCheck : ShieldAlert} tone={protocolAck ? 'success' : 'warning'} />
-                              <InfoValueCard label="Protocols timestamp" value={formatDateTime(protocolAck?.accepted_at)} icon={Clock3} />
+                              <InfoValueCard label={`Protocols v${currentActiveProtocol?.version_number || '—'}`} value={protocolAck ? 'Recorded' : 'Not recorded'} icon={protocolAck ? ShieldCheck : ShieldAlert} tone={protocolAck ? 'success' : 'warning'} />
+                              <InfoValueCard label="Current version timestamp" value={formatDateTime(protocolAck?.accepted_at)} icon={Clock3} />
+                              <InfoValueCard label="Latest acknowledged version" value={latestProtocolAck?.protocol_version || 'Not recorded'} icon={ShieldCheck} />
+                              <InfoValueCard label="Latest acknowledged timestamp" value={formatDateTime(latestProtocolAck?.accepted_at)} icon={Clock3} />
                             </div>
                           </div>
                         );

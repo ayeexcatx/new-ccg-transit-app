@@ -38,7 +38,7 @@ import {
 } from '@/components/notifications/availabilityRequestNotifications';
 import {
   driverProtocolAckQueryKey,
-  getDriverProtocolAcknowledgment,
+  getDriverProtocolState,
 } from '@/services/driverProtocolAcknowledgmentService';
 
 const dateOnly = (v) => (typeof v === 'string' ? v.slice(0, 10) : v);
@@ -214,11 +214,13 @@ export default function Home() {
     queryFn: () => listDriverDispatchesForDriver(driverIdentity),
     enabled: isDriver && !!driverIdentity,
   });
-  const { data: protocolAcknowledgment = null } = useQuery({
+  const { data: protocolState = { activeProtocol: null, acknowledgment: null } } = useQuery({
     queryKey: driverProtocolAckQueryKey(driverIdentity),
-    queryFn: () => getDriverProtocolAcknowledgment(driverIdentity),
+    queryFn: () => getDriverProtocolState(driverIdentity),
     enabled: isDriver && !!driverIdentity,
   });
+  const protocolAcknowledgment = protocolState?.acknowledgment || null;
+  const activeProtocol = protocolState?.activeProtocol || null;
 
   const { data: dispatches = [] } = useQuery({
     queryKey: ['portal-dispatches', dispatchCompanyId],
@@ -428,7 +430,7 @@ export default function Home() {
         />
       )}
 
-      {isDriver && !protocolAcknowledgment && (
+      {isDriver && activeProtocol && !protocolAcknowledgment && (
         <Card className="rounded-2xl border-2 border-amber-300 bg-amber-50 shadow-sm">
           <CardContent className="p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>

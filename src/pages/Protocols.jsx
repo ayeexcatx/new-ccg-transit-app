@@ -12,9 +12,8 @@ import DriverProtocolContent from '@/components/protocols/DriverProtocolContent'
 import {
   createDriverProtocolAcknowledgment,
   driverProtocolAckQueryKey,
-  getDriverProtocolAcknowledgment,
+  getDriverProtocolState,
 } from '@/services/driverProtocolAcknowledgmentService';
-import { DRIVER_PROTOCOL_TITLE, DRIVER_PROTOCOL_VERSION } from '@/constants/driverProtocols';
 
 export default function Protocols() {
   const queryClient = useQueryClient();
@@ -29,11 +28,14 @@ export default function Protocols() {
 
   const companyId = session?.company_id || currentAppIdentity?.company_id || null;
 
-  const { data: acknowledgment = null, isLoading } = useQuery({
+  const { data: protocolState = { activeProtocol: null, acknowledgment: null }, isLoading } = useQuery({
     queryKey: driverProtocolAckQueryKey(driverId),
-    queryFn: () => getDriverProtocolAcknowledgment(driverId),
+    queryFn: () => getDriverProtocolState(driverId),
     enabled: !!driverId,
   });
+
+  const activeProtocol = protocolState?.activeProtocol || null;
+  const acknowledgment = protocolState?.acknowledgment || null;
 
   const acknowledgeMutation = useMutation({
     mutationFn: async () => createDriverProtocolAcknowledgment({
@@ -44,6 +46,7 @@ export default function Protocols() {
     onSuccess: () => {
       toast.success('Protocols acknowledged. Thank you.');
       queryClient.invalidateQueries({ queryKey: driverProtocolAckQueryKey(driverId) });
+      queryClient.invalidateQueries({ queryKey: ['admin-driver-protocol-acknowledgments'] });
       setChecked(false);
     },
     onError: () => {
@@ -56,9 +59,11 @@ export default function Protocols() {
       <Card className="rounded-2xl border border-slate-200 shadow-sm">
         <CardHeader>
           <CardTitle className="text-xl text-slate-900">Protocols</CardTitle>
-          <p className="text-sm text-slate-600">
-            {DRIVER_PROTOCOL_TITLE} • Version {DRIVER_PROTOCOL_VERSION}
-          </p>
+          {activeProtocol && (
+            <p className="text-sm text-slate-600">
+              {activeProtocol.title} • Version {activeProtocol.version_number}
+            </p>
+          )}
           {acknowledgment?.accepted_at && (
             <p className="text-xs text-emerald-700">
               You acknowledged this version on {new Date(acknowledgment.accepted_at).toLocaleString()}.
@@ -66,7 +71,7 @@ export default function Protocols() {
           )}
         </CardHeader>
         <CardContent className="space-y-6">
-          <DriverProtocolContent />
+          <DriverProtocolContent contentHtml={activeProtocol?.content_html} />
 
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
             <div className="flex items-start gap-2">
@@ -82,7 +87,7 @@ export default function Protocols() {
             </div>
             <Button
               onClick={() => acknowledgeMutation.mutate()}
-              disabled={Boolean(acknowledgment) || !checked || acknowledgeMutation.isPending || isLoading}
+              disabled={Boolean(acknowledgment) || !checked || acknowledgeMutation.isPending || isLoading || !activeProtocol}
               className="bg-slate-900 hover:bg-slate-800"
             >
               {acknowledgment ? 'Already Acknowledged' : acknowledgeMutation.isPending ? 'Saving...' : 'Acknowledge Protocols'}

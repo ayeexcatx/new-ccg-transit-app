@@ -75,7 +75,7 @@ function LayoutInner({ children, currentPageName }) {
       return;
     }
 
-    const adminPages = ['AdminDashboard', 'AdminCompanies', 'AdminConfirmations', 'AdminAccessCodes', 'AdminDispatches', 'AdminTemplateNotes', 'AdminAnnouncements', 'AdminAvailability', 'AdminSmsCenter'];
+    const adminPages = ['AdminDashboard', 'AdminCompanies', 'AdminConfirmations', 'AdminAccessCodes', 'AdminDispatches', 'AdminTemplateNotes', 'AdminAnnouncements', 'AdminAvailability', 'AdminSmsCenter', 'AdminDriverProtocol'];
     const ownerPages = ['Availability', 'Drivers'];
 
     if (adminPages.includes(currentPageName) && !isAdmin) {
@@ -265,6 +265,7 @@ function LayoutInner({ children, currentPageName }) {
                       <Link to={createPageUrl('AdminCompanies')}><Button variant="ghost" size="sm" className={getNavItemClassName(isActive('AdminCompanies'))}><Building2 className="h-3 w-3" /><span>Companies</span>{pendingCompanyProfileRequestsCount > 0 && (<span className="ml-1 inline-flex min-w-4 h-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-semibold leading-none text-white">{pendingCompanyProfileRequestsCount}</span>)}</Button></Link>
                       <Link to={createPageUrl('AdminAccessCodes')}><Button variant="ghost" size="sm" className={getNavItemClassName(isActive('AdminAccessCodes'))}><Shield className="h-3 w-3" /><span>Access Codes</span>{pendingDriverRequestsCount > 0 && (<span className="ml-1 inline-flex min-w-4 h-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-semibold leading-none text-white">{pendingDriverRequestsCount}</span>)}</Button></Link>
                       <Link to={createPageUrl('AdminTemplateNotes')}><Button variant="ghost" size="sm" className={getNavItemClassName(isActive('AdminTemplateNotes'))}><FileText className="h-3 w-3" />Notes</Button></Link>
+                      <Link to={createPageUrl('AdminDriverProtocol')}><Button variant="ghost" size="sm" className={getNavItemClassName(isActive('AdminDriverProtocol'))}><BookOpenText className="h-3 w-3" />Driver Protocol</Button></Link>
                       <Link to={createPageUrl('AdminSmsCenter')}><Button variant="ghost" size="sm" className={getNavItemClassName(isActive('AdminSmsCenter'))}><MessageSquare className="h-3 w-3" />SMS</Button></Link>
                     </nav>
                   )}
@@ -315,6 +316,7 @@ function LayoutInner({ children, currentPageName }) {
               <Link to={createPageUrl('AdminCompanies')}><Button variant="ghost" size="sm" className={getMobileNavItemClassName(isActive('AdminCompanies'))}><Building2 className="h-3 w-3" /><span>Companies</span>{pendingCompanyProfileRequestsCount > 0 && (<span className="ml-1 inline-flex min-w-4 h-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-semibold leading-none text-white">{pendingCompanyProfileRequestsCount}</span>)}</Button></Link>
               <Link to={createPageUrl('AdminAccessCodes')}><Button variant="ghost" size="sm" className={getMobileNavItemClassName(isActive('AdminAccessCodes'))}><Shield className="h-3 w-3" /><span>Access Codes</span>{pendingDriverRequestsCount > 0 && (<span className="ml-1 inline-flex min-w-4 h-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-semibold leading-none text-white">{pendingDriverRequestsCount}</span>)}</Button></Link>
               <Link to={createPageUrl('AdminTemplateNotes')}><Button variant="ghost" size="sm" className={getMobileNavItemClassName(isActive('AdminTemplateNotes'))}><FileText className="h-3 w-3" />Notes</Button></Link>
+              <Link to={createPageUrl('AdminDriverProtocol')}><Button variant="ghost" size="sm" className={getMobileNavItemClassName(isActive('AdminDriverProtocol'))}><BookOpenText className="h-3 w-3" />Driver Protocol</Button></Link>
               <Link to={createPageUrl('AdminSmsCenter')}><Button variant="ghost" size="sm" className={getMobileNavItemClassName(isActive('AdminSmsCenter'))}><MessageSquare className="h-3 w-3" />SMS</Button></Link>
             </div>
           )}

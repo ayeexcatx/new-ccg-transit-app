@@ -8,6 +8,7 @@ type SignalWireInboundPayload = {
   From?: string;
   To?: string;
   Body?: string;
+  [key: string]: unknown;
 };
 
 const STOP_KEYWORDS = new Set(['STOP', 'UNSUBSCRIBE', 'CANCEL', 'QUIT']);
@@ -27,6 +28,16 @@ function normalizePhoneForMatch(value: string): string {
   if (digits.length === 10) return `1${digits}`;
   if (digits.length === 11 && digits.startsWith('1')) return digits;
   return digits;
+}
+
+function pickPayloadValue(payload: SignalWireInboundPayload, keys: string[]): string {
+  for (const key of keys) {
+    const value = payload[key];
+    if (value != null && String(value).trim()) {
+      return String(value).trim();
+    }
+  }
+  return '';
 }
 
 function normalizeKeyword(value: string): string {
@@ -75,8 +86,10 @@ function xmlResponse(message?: string | null): Response {
 async function createInboundLog(base44: ReturnType<typeof createClient>, payload: Record<string, unknown>) {
   try {
     await base44.entities.General.create(payload);
+    return true;
   } catch (error) {
     console.error('signalwireSmsInboundWebhook: failed to create sms_inbound_log', error);
+    return false;
   }
 }
 
@@ -85,12 +98,12 @@ Deno.serve(async (req: Request) => {
     const contentType = req.headers.get('content-type') || '';
     const payload = await parseInboundPayload(req, contentType);
 
-    const from = String(payload.From || '').trim();
-    const to = String(payload.To || '').trim();
-    const body = String(payload.Body || '').trim();
+    const from = pickPayloadValue(payload, ['From', 'from']);
+    const to = pickPayloadValue(payload, ['To', 'to']);
+    const body = pickPayloadValue(payload, ['Body', 'body']);
     const keyword = normalizeKeyword(body);
 
-    const providerMessageId = String(payload.MessageSid || payload.SmsSid || '').trim() || null;
+    const providerMessageId = pickPayloadValue(payload, ['MessageSid', 'SmsSid', 'message_sid', 'sms_sid']) || null;
 
     const base44 = createClient({
       appId: Deno.env.get('BASE44_APP_ID') || '',
@@ -98,6 +111,14 @@ Deno.serve(async (req: Request) => {
     });
 
     const normalizedFrom = normalizePhoneForMatch(from);
+    console.log('signalwireSmsInboundWebhook inbound received', {
+      from,
+      to,
+      body,
+      keyword,
+      normalizedFrom,
+      providerMessageId,
+    });
 
     const candidates = await base44.entities.AccessCode.filter({
       sms_phone: from,
@@ -116,6 +137,22 @@ Deno.serve(async (req: Request) => {
       const hyphenCandidates = await base44.entities.AccessCode.filter({ sms_phone: local10 }, '-created_date', 5);
       accessCode = hyphenCandidates?.[0] || null;
     }
+
+    if (!accessCode && normalizedFrom) {
+      const normalizedCandidates = await base44.entities.AccessCode.filter({}, '-created_date', 500);
+      accessCode = (normalizedCandidates || []).find((candidate: any) =>
+        normalizePhoneForMatch(String(candidate?.sms_phone || '')) === normalizedFrom
+      ) || null;
+    }
+
+    console.log('signalwireSmsInboundWebhook access code lookup', {
+      from,
+      normalizedFrom,
+      accessCodeFound: Boolean(accessCode),
+      accessCodeId: accessCode?.id || null,
+      accessCodeType: accessCode?.code_type || null,
+      accessCodeSmsPhone: accessCode?.sms_phone || null,
+    });
 
     let action = 'ignored';
     let status: 'queued' | 'sent' | 'failed' | 'skipped' = 'skipped';
@@ -140,12 +177,18 @@ Deno.serve(async (req: Request) => {
     } else {
       action = 'unsupported_keyword';
     }
+    console.log('signalwireSmsInboundWebhook action resolved', {
+      action,
+      keyword,
+      hasResponseMessage: Boolean(responseMessage),
+      willSetStatus: responseMessage ? 'sent' : 'skipped',
+    });
 
     if (responseMessage) {
       status = 'sent';
     }
 
-    await createInboundLog(base44, {
+    const logCreated = await createInboundLog(base44, {
       record_type: 'sms_inbound_log',
       status,
       recipient_access_code_id: accessCode?.id || null,
@@ -166,6 +209,12 @@ Deno.serve(async (req: Request) => {
       }),
       sent_at: responseMessage ? new Date().toISOString() : null,
       error_message: null,
+    });
+    console.log('signalwireSmsInboundWebhook inbound log result', {
+      created: logCreated,
+      action,
+      status,
+      recipientAccessCodeId: accessCode?.id || null,
     });
 
     if (!responseMessage) {

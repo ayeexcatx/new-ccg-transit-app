@@ -132,47 +132,42 @@ const InfoValueCard = ({ label, value, icon: Icon, tone = 'neutral', badge }) =>
 
 const SUBSECTION_ACCENT_STYLES = {
   blue: {
-    container: 'border-blue-100 bg-blue-50/70 border-t-2 border-t-blue-200',
-    icon: 'text-blue-600',
-    title: 'text-blue-700',
+    header: 'bg-blue-100 text-blue-800 ring-1 ring-blue-200/90',
+    icon: 'bg-white/90 text-blue-700 ring-blue-200/80',
   },
   amber: {
-    container: 'border-amber-100 bg-amber-50/70 border-t-2 border-t-amber-200',
-    icon: 'text-amber-600',
-    title: 'text-amber-700',
+    header: 'bg-amber-100 text-amber-800 ring-1 ring-amber-200/90',
+    icon: 'bg-white/90 text-amber-700 ring-amber-200/80',
   },
   emerald: {
-    container: 'border-emerald-100 bg-emerald-50/70 border-t-2 border-t-emerald-200',
-    icon: 'text-emerald-600',
-    title: 'text-emerald-700',
+    header: 'bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200/90',
+    icon: 'bg-white/90 text-emerald-700 ring-emerald-200/80',
   },
   purple: {
-    container: 'border-purple-100 bg-purple-50/70 border-t-2 border-t-purple-200',
-    icon: 'text-purple-600',
-    title: 'text-purple-700',
+    header: 'bg-purple-100 text-purple-800 ring-1 ring-purple-200/90',
+    icon: 'bg-white/90 text-purple-700 ring-purple-200/80',
   },
   neutral: {
-    container: 'border-slate-200/80 bg-slate-50/70',
-    icon: 'text-slate-600',
-    title: 'text-slate-900',
+    header: 'bg-slate-100 text-slate-800 ring-1 ring-slate-200/90',
+    icon: 'bg-white text-slate-600 ring-slate-200/80',
   },
 };
 
 const SubsectionBlock = ({ title, icon: Icon, description, children, className = '', accent = 'neutral' }) => {
   const accentStyles = SUBSECTION_ACCENT_STYLES[accent] || SUBSECTION_ACCENT_STYLES.neutral;
   return (
-  <div className={`rounded-2xl border p-4 shadow-sm ${accentStyles.container} ${className}`}>
-    <div className="mb-3 flex items-start gap-2">
-      <span className={`mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-md bg-white ring-1 ring-slate-200/80 ${accentStyles.icon}`}>
-        <Icon className="h-3.5 w-3.5" />
-      </span>
-      <div>
-        <p className={`text-sm font-semibold ${accentStyles.title}`}>{title}</p>
-        {description && <p className="mt-0.5 text-xs text-slate-500">{description}</p>}
+    <div className={`rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm ${className}`}>
+      <div className="mb-3">
+        <div className={`inline-flex max-w-full items-center gap-2 rounded-xl px-3 py-2 ${accentStyles.header}`}>
+          <span className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md ring-1 ${accentStyles.icon}`}>
+            <Icon className="h-3.5 w-3.5" />
+          </span>
+          <p className="truncate text-sm font-semibold">{title}</p>
+        </div>
+        {description && <p className="mt-2 text-xs text-slate-500">{description}</p>}
       </div>
+      {children}
     </div>
-    {children}
-  </div>
   );
 };
 

@@ -10,21 +10,6 @@ type SignalWireInboundPayload = {
   Body?: string;
 };
 
-type ProviderConfig = {
-  projectId: string;
-  authToken: string;
-  spaceUrl: string;
-  fromPhone: string;
-  configured: boolean;
-};
-
-type SmsSendResult = {
-  ok: boolean;
-  providerMessageId: string | null;
-  sentAt: string | null;
-  error?: string;
-};
-
 const STOP_KEYWORDS = new Set(['STOP', 'UNSUBSCRIBE', 'CANCEL', 'QUIT']);
 const HELP_KEYWORDS = new Set(['HELP', 'SUPPORT']);
 const START_KEYWORDS = new Set(['START', 'YES', 'SUBSCRIBE']);
@@ -34,34 +19,6 @@ const MESSAGES = {
   help: 'CCG Transit: You are receiving work-related dispatch and operational text notifications. For help, contact alex@ccgnj.com. Reply STOP to opt out.',
   resubscribeBlocked: 'CCG Transit: To re-enable SMS notifications, please log into the app and enable SMS in your Profile settings.',
 };
-
-function normalizeSpaceUrl(value: string): string {
-  const trimmed = String(value || '').trim();
-  if (!trimmed) return '';
-  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-    return trimmed.replace(/\/+$/, '');
-  }
-  return `https://${trimmed.replace(/\/+$/, '')}`;
-}
-
-function getProviderConfig(): ProviderConfig {
-  const projectId = String(Deno.env.get('SIGNALWIRE_PROJECT_ID') || '').trim();
-  const authToken = String(Deno.env.get('SIGNALWIRE_AUTH_TOKEN') || '').trim();
-  const spaceUrl = normalizeSpaceUrl(String(Deno.env.get('SIGNALWIRE_SPACE_URL') || ''));
-  const fromPhone = String(Deno.env.get('SIGNALWIRE_FROM_PHONE') || '').trim();
-
-  return {
-    projectId,
-    authToken,
-    spaceUrl,
-    fromPhone,
-    configured: Boolean(projectId && authToken && spaceUrl && fromPhone),
-  };
-}
-
-function getSignalWireMessagesUrl(config: ProviderConfig): string {
-  return `${config.spaceUrl}/api/laml/2010-04-01/Accounts/${encodeURIComponent(config.projectId)}/Messages.json`;
-}
 
 function normalizePhoneForMatch(value: string): string {
   const digits = String(value || '').replace(/\D/g, '');
@@ -90,50 +47,29 @@ function parseInboundPayload(req: Request, contentType: string): Promise<SignalW
   return req.formData().then((form) => Object.fromEntries(form.entries()) as SignalWireInboundPayload);
 }
 
-async function sendSms(config: ProviderConfig, to: string, message: string): Promise<SmsSendResult> {
-  if (!config.configured) {
-    return { ok: false, providerMessageId: null, sentAt: null, error: 'SignalWire provider not configured' };
+function escapeXml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+function buildCxmlResponse(message?: string | null): string {
+  const trimmed = String(message || '').trim();
+  if (!trimmed) {
+    return '<?xml version="1.0" encoding="UTF-8"?><Response></Response>';
   }
 
-  const authHeader = `Basic ${btoa(`${config.projectId}:${config.authToken}`)}`;
-  const body = new URLSearchParams({
-    To: to,
-    From: config.fromPhone,
-    Body: message,
+  return `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${escapeXml(trimmed)}</Message></Response>`;
+}
+
+function xmlResponse(message?: string | null): Response {
+  return new Response(buildCxmlResponse(message), {
+    status: 200,
+    headers: { 'Content-Type': 'application/xml; charset=utf-8' },
   });
-
-  const providerResponse = await fetch(getSignalWireMessagesUrl(config), {
-    method: 'POST',
-    headers: {
-      Authorization: authHeader,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body,
-  });
-
-  const responseText = await providerResponse.text();
-  let responseJson: Record<string, unknown> = {};
-
-  try {
-    responseJson = responseText ? JSON.parse(responseText) as Record<string, unknown> : {};
-  } catch {
-    responseJson = {};
-  }
-
-  if (!providerResponse.ok) {
-    return {
-      ok: false,
-      providerMessageId: typeof responseJson.sid === 'string' ? responseJson.sid : null,
-      sentAt: null,
-      error: String(responseJson.error_message || responseJson.message || responseText || 'SignalWire send failed'),
-    };
-  }
-
-  return {
-    ok: true,
-    providerMessageId: typeof responseJson.sid === 'string' ? responseJson.sid : null,
-    sentAt: typeof responseJson.date_created === 'string' ? responseJson.date_created : new Date().toISOString(),
-  };
 }
 
 async function createInboundLog(base44: ReturnType<typeof createClient>, payload: Record<string, unknown>) {
@@ -184,7 +120,6 @@ Deno.serve(async (req: Request) => {
     let action = 'ignored';
     let status: 'queued' | 'sent' | 'failed' | 'skipped' = 'skipped';
     let responseMessage: string | null = null;
-    let responseSendResult: SmsSendResult | null = null;
 
     if (!accessCode) {
       action = 'unknown_sender';
@@ -206,10 +141,8 @@ Deno.serve(async (req: Request) => {
       action = 'unsupported_keyword';
     }
 
-    if (responseMessage && from) {
-      const providerConfig = getProviderConfig();
-      responseSendResult = await sendSms(providerConfig, from, responseMessage);
-      status = responseSendResult.ok ? 'sent' : 'failed';
+    if (responseMessage) {
+      status = 'sent';
     }
 
     await createInboundLog(base44, {
@@ -229,29 +162,20 @@ Deno.serve(async (req: Request) => {
         action,
         to,
         responseMessage,
-        responseSendResult,
+        responseDelivery: responseMessage ? 'cxml_inline' : 'none',
       }),
-      sent_at: responseSendResult?.ok ? responseSendResult.sentAt : null,
-      error_message: responseSendResult?.ok ? null : (responseSendResult?.error || null),
+      sent_at: responseMessage ? new Date().toISOString() : null,
+      error_message: null,
     });
 
-    return new Response(JSON.stringify({
-      ok: true,
-      action,
-      keyword: keyword || null,
-    }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    if (!responseMessage) {
+      return xmlResponse();
+    }
+
+    return xmlResponse(responseMessage);
   } catch (error) {
     console.error('signalwireSmsInboundWebhook error', error);
 
-    return new Response(JSON.stringify({
-      ok: false,
-      error: error instanceof Error ? error.message : String(error),
-    }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return xmlResponse();
   }
 });

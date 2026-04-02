@@ -34,8 +34,8 @@ export default function DriverGuidanceTabs({ helpLanguage, onLanguageChange }) {
               <h3 className="text-lg font-semibold text-slate-900">Driver Portal</h3>
               <p className="text-sm leading-6 text-slate-700">
                 A driver portal <span className="font-medium">ONLY</span> has the ability to view driver-specific announcements, dispatches that they are
-                assigned to (normal dispatch details only), and have the ability to report incidents. <span className="font-medium">They do not</span> have the ability to view or see
-                ANYTHING else, including the confirmation logs, other drivers, or even other trucks assigned to the same dispatch.
+                assigned to (normal dispatch details only; no editing), driver profile, protocols, and have the ability to report incidents. <span className="font-medium">They do not</span> have the ability to view or see
+                ANYTHING else, including the confirmation logs, other drivers, or even other trucks/drivers assigned to the same dispatch.
               </p>
             </section>
 
@@ -44,21 +44,19 @@ export default function DriverGuidanceTabs({ helpLanguage, onLanguageChange }) {
               <ul className="list-disc pl-5 space-y-2 text-sm leading-6 text-slate-700">
                 <li>
                   A driver can only see a dispatch and receive notifications <span className="font-medium">IF</span> and <span className="font-medium">WHEN</span> you assign them to a
-                  truck number on a dispatch.
+                  truck number on a specific dispatch and click "SEND".
                 </li>
                 <li>
-                  When you <span className="font-medium">select a driver</span> on a dispatch, a copy of the dispatch and a notification will be sent to the
-                  driver. <span className="font-medium text-emerald-600">“Dispatch Assigned: You have been assigned to a dispatch”</span>
-                </li>
-                <li>
-                  Do not select a driver <span className="font-medium">until</span> you are ready to share the dispatch with them.
+                  When you <span className="font-medium">select a driver</span> on a dispatch and click "SEND", a copy of the dispatch and a notification will be sent to the
+                  driver. <span className="font-medium text-emerald-600">“Dispatch Assigned: You have been assigned to a dispatch”</span><br />
+                  IT WILL NOT SEND IF YOU DO NOT CLICK "SEND" !!
                 </li>
                 <li>
                   Any changes made <span className="font-medium">by the dispatcher</span> (CCG) after a driver is assigned will also be received by the driver as long
                   as they remain assigned. (<span className="text-amber-600">Amendments</span>, <span className="text-red-600">Cancellations</span>)
                 </li>
                 <li>
-                  If you <span className="font-medium">remove a driver</span> from the dispatch assignment, they will immediately receive a
+                  If you <span className="font-medium">"CANCEL" a driver</span> from the dispatch assignment, they will immediately receive a
                   <span className="font-medium text-red-600"> No Longer Available</span> notification.
                 </li>
               </ul>
@@ -69,11 +67,11 @@ export default function DriverGuidanceTabs({ helpLanguage, onLanguageChange }) {
               <ul className="list-disc pl-5 space-y-2 text-sm leading-6 text-slate-700">
                 <li>
                   If you have a driver assigned and you <span className="font-medium">switch the driver</span> in the dropdown menu, the driver you removed will immediately receive a
-                  <span className="text-red-600"> No Longer Available</span> notification, and the driver you added will immediately receive a <span className="text-emerald-600">new "Dispatch Assigned"</span> notification.
+                  <span className="text-red-600"> No Longer Available</span> notification, and the driver you added will immediately receive a <span className="text-emerald-600">new "Dispatch Assigned"</span> notification when you click "SEND".
                 </li>
               </ul>
               <p className="pl-5 text-sm text-slate-500 italic leading-6">
-                Example: Switch Driver 1 to Driver 2<br />
+                Example: Switch Driver 1 to Driver 2 and click "SEND"<br />
                 Driver 1 = "Dispatch Removed: This dispatch assignment is no longer available" notification<br />
                 Driver 2 = "Dispatch Assigned: You have been assigned to a dispatch" notification
               </p>
@@ -95,11 +93,11 @@ export default function DriverGuidanceTabs({ helpLanguage, onLanguageChange }) {
               </ul>
               <p className="pl-5 text-sm text-slate-500 italic leading-6">
                 Example: Truck 1 has Driver 1 assigned AND is switched to Truck 2 that has Driver 2 assigned:<br />
-                Both trucks will have their drivers RESET (drivers removed), so both drivers will receive a "No Longer Available" notification. Reassign them to send the new dispatch assignment.
+                Both trucks will have their drivers RESET (drivers removed), so both drivers will receive a "No Longer Available" notification. Reassign them and click "SEND" to send the new dispatch assignment.
               </p>
               <ul className="list-disc pl-5 space-y-2 text-sm leading-6 text-slate-700">
                 <li>
-                  Please make sure to double-check all the selections and changes you make, and that you <span className="font-medium">reassign</span> the drivers to the correct dispatch if you <span className="font-medium">switch trucks</span>.
+                  Please make sure to double-check all the selections and changes you make, and that you <span className="font-medium">reassign and "SEND"</span> the drivers to the correct dispatch if you <span className="font-medium">switch trucks</span>.
                 </li>
                 <li>
                   It is still your responsibility to follow up with your drivers to get verbal or written confirmation that they have the correct dispatch and that they understand the assignment.
@@ -111,10 +109,10 @@ export default function DriverGuidanceTabs({ helpLanguage, onLanguageChange }) {
               <h3 className="text-lg font-semibold text-slate-900">Passive Driver Notifications</h3>
               <ul className="list-disc pl-5 space-y-2 text-sm leading-6 text-slate-700">
                 <li>
-                  If you <span className="font-medium">select a driver and do nothing else</span>, they will receive notifications and dispatch updates the same way you receive them, except they will only receive the ones pertaining to the dispatch they are <span className="font-medium">assigned</span> to.
+                  If you <span className="font-medium">select a driver, click "SEND" and do nothing else</span>, they will receive notifications and dispatch updates the same way you receive them, except they will only receive the ones pertaining to the dispatch they are <span className="font-medium">assigned</span> to.
                 </li>
                 <li>
-                  What you see on your screen is exactly how things stand. If you have a driver selected to a dispatch, your driver can also see that dispatch. <br />
+                  What you see on your screen is exactly how things stand. If you have a driver selected to a dispatch (& "SENT"), your driver can also see that dispatch. <br />
                   If you have <span className="font-medium">'No Driver Selected'</span> on your dispatch, then your driver cannot see that dispatch.
                 </li>
               </ul>
@@ -135,20 +133,17 @@ export default function DriverGuidanceTabs({ helpLanguage, onLanguageChange }) {
               <h3 className="text-lg font-semibold text-slate-900">Atribuição de Motoristas</h3>
               <ul className="list-disc pl-5 space-y-2 text-sm leading-6 text-slate-700">
                 <li>
-                  Um motorista só consegue ver um despacho e receber notificações <span className="font-medium">SE</span> e <span className="font-medium">QUANDO</span> for atribuído a um número de camião num despacho.
+                  Um motorista só consegue ver um despacho e receber notificações <span className="font-medium">SE</span> e <span className="font-medium">QUANDO</span> for atribuído a um número de camião num despacho e clique "SEND".
                 </li>
                 <li>
-                  Ao <span className="font-medium">selecionar um motorista</span> num despacho, será enviada uma cópia do despacho e uma notificação ao motorista: <span className="font-medium text-emerald-600">“Você foi designado para um despacho”</span>
-                </li>
-                <li>
-                  Não selecione um motorista <span className="font-medium">até</span> estar pronto para partilhar o despacho com ele.
+                  Ao <span className="font-medium">selecionar um motorista</span> num despacho e clique "SEND", será enviada uma cópia do despacho e uma notificação ao motorista: <span className="font-medium text-emerald-600">“Você foi designado para um despacho”</span>
                 </li>
                 <li>
                   Quaisquer alterações feitas pelo <span className="font-medium">despachante</span> (CCG) após a atribuição também serão recebidas pelo motorista, desde que ele continue atribuído.
                   (<span className="text-amber-600">alterações</span>, <span className="text-red-600">cancelamentos</span>)
                 </li>
                 <li>
-                  Se <span className="font-medium">remover um motorista</span> da atribuição do despacho, ele receberá imediatamente uma notificação de <span className="font-medium text-red-600">"A atribuição do despacho não está mais disponível"</span>.
+                  Se <span className="font-medium">"CANCEL" um motorista</span> da atribuição do despacho, ele receberá imediatamente uma notificação de <span className="font-medium text-red-600">"A atribuição do despacho não está mais disponível"</span>.
                 </li>
               </ul>
             </section>
@@ -157,11 +152,11 @@ export default function DriverGuidanceTabs({ helpLanguage, onLanguageChange }) {
               <h3 className="text-lg font-semibold text-slate-900">Alterar Motoristas / Camiões</h3>
               <ul className="list-disc pl-5 space-y-2 text-sm leading-6 text-slate-700">
                 <li>
-                  Se tiver um motorista atribuído e o trocar no menu suspenso, o motorista removido receberá imediatamente uma notificação de <span className="text-red-600">"A atribuição do despacho não está mais disponível"</span>, e o novo motorista receberá uma notificação de <span className="text-emerald-600">"Despacho atribuído: Você foi designado para um despacho."</span>.
+                  Se tiver um motorista atribuído e o trocar no menu suspenso e clique "SEND", o motorista removido receberá imediatamente uma notificação de <span className="text-red-600">"A atribuição do despacho não está mais disponível"</span>, e o novo motorista receberá uma notificação de <span className="text-emerald-600">"Despacho atribuído: Você foi designado para um despacho."</span>.
                 </li>
               </ul>
               <p className="pl-5 text-sm text-slate-500 italic leading-6">
-                Exemplo: Trocar Motorista 1 por Motorista 2<br />
+                Exemplo: Trocar Motorista 1 por Motorista 2 e clique "SEND"<br />
                 Motorista 1 = notificação de <span className="text-red-600">"A atribuição do despacho não está mais disponível"</span><br />
                 Motorista 2 = notificação de <span className="text-emerald-600">"Você foi designado para um despacho"</span>
               </p>
@@ -174,22 +169,22 @@ export default function DriverGuidanceTabs({ helpLanguage, onLanguageChange }) {
                 Exemplo:<br />
                 Camião 1 (com Motorista 1 atribuído) é alterado para Camião 2 (sem despacho):<br />
                 A atribuição é <span className="font-medium">REINICIADA</span> (motorista removido), pelo que o Motorista 1 receberá uma notificação de <span className="text-red-600">"A atribuição do despacho não está mais disponível"</span>.<br />
-                Reatribua-o ao Camião 2 para enviar uma nova notificação de <span className="text-emerald-600">"Você foi designado para um despacho"</span>, ou selecione outro motorista.
+                Reatribua-o ao Camião 2 e clique "SEND" para enviar uma nova notificação de <span className="text-emerald-600">"Você foi designado para um despacho"</span>, ou selecione outro motorista.
               </p>
               <ul className="list-disc pl-5 space-y-2 text-sm leading-6 text-slate-700">
                 <li>
-                  Se trocar camiões que já têm motoristas atribuídos, ambas as atribuições serão <span className="font-medium">REINICIADAS</span> e ambos os motoristas receberão uma notificação de <span className="text-red-600">"A atribuição do despacho não está mais disponível"</span>. Deixarão de conseguir ver os despachos até serem novamente atribuídos.
+                  Se trocar camiões que já têm motoristas atribuídos, ambas as atribuições serão <span className="font-medium">REINICIADAS</span> e ambos os motoristas receberão uma notificação de <span className="text-red-600">"A atribuição do despacho não está mais disponível"</span>. Deixarão de conseguir ver os despachos até serem novamente atribuídos e clique "SEND".
                 </li>
               </ul>
               <p className="pl-5 text-sm text-slate-500 italic leading-6">
                 Exemplo:<br />
                 Camião 1 com Motorista 1 é trocado com Camião 2 com Motorista 2:<br />
                 Ambos os camiões terão os motoristas removidos, e ambos receberão uma notificação de <span className="text-red-600">"A atribuição do despacho não está mais disponível"</span>.<br />
-                Reatribua-os para enviar novos <span className="text-emerald-600">"Você foi designado para um despacho"</span>.
+                Reatribua-os e clique "SEND" para enviar novos <span className="text-emerald-600">"Você foi designado para um despacho"</span>.
               </p>
               <ul className="list-disc pl-5 space-y-2 text-sm leading-6 text-slate-700">
                 <li>
-                  Por favor, verifique sempre cuidadosamente todas as seleções e alterações efetuadas e confirme que os motoristas estão atribuídos ao despacho correto após qualquer troca de camiões.
+                  Por favor, verifique sempre cuidadosamente todas as seleções e alterações efetuadas e confirme que os motoristas estão atribuídos e clique "SEND" ao despacho correto após qualquer troca de camiões.
                 </li>
                 <li>
                   Ainda é sua responsabilidade entrar em contato com seus motoristas para confirmar, verbalmente ou por escrito, que eles receberam o despacho correto e entenderam a tarefa.
@@ -201,7 +196,7 @@ export default function DriverGuidanceTabs({ helpLanguage, onLanguageChange }) {
               <h3 className="text-lg font-semibold text-slate-900">Notificações Passivas do Motorista</h3>
               <ul className="list-disc pl-5 space-y-2 text-sm leading-6 text-slate-700">
                 <li>
-                  Se <span className="font-medium">selecionar um motorista e não fizer mais nada</span>, ele receberá notificações e atualizações de despachos da mesma forma que você, mas apenas relacionadas com os despachos aos quais está <span className="font-medium">atribuído</span>.
+                  Se <span className="font-medium">selecionar um motorista e clique "SEND" e não fizer mais nada</span>, ele receberá notificações e atualizações de despachos da mesma forma que você, mas apenas relacionadas com os despachos aos quais está <span className="font-medium">atribuído</span>.
                 </li>
                 <li>
                   O que vê no seu ecrã corresponde exatamente ao estado atual. Se um motorista estiver atribuído a um despacho, ele também consegue vê-lo. <br />

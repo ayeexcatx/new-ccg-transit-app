@@ -1,7 +1,6 @@
-export const DRIVER_PROTOCOL_TITLE = 'OPERATIONS PROTOCOL';
-export const DRIVER_PROTOCOL_VERSION = '2026-04-01';
+export const LEGACY_DRIVER_PROTOCOL_TITLE = 'OPERATIONS PROTOCOL';
 
-export const DRIVER_PROTOCOL_CONTENT = [
+export const LEGACY_DRIVER_PROTOCOL_CONTENT = [
   {
     heading: 'JOBSITE PROTOCOL',
     body: [
@@ -64,3 +63,18 @@ export const DRIVER_PROTOCOL_CONTENT = [
     ],
   },
 ];
+
+const escapeHtml = (value) => String(value)
+  .replaceAll('&', '&amp;')
+  .replaceAll('<', '&lt;')
+  .replaceAll('>', '&gt;');
+
+export const buildLegacyDriverProtocolHtml = () => LEGACY_DRIVER_PROTOCOL_CONTENT
+  .map((section) => {
+    const items = section.body
+      .map((line) => `<li>${escapeHtml(line)}</li>`)
+      .join('');
+
+    return `<section><h3>${escapeHtml(section.heading)}</h3><ol>${items}</ol></section>`;
+  })
+  .join('');

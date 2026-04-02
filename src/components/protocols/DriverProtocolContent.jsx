@@ -1,19 +1,14 @@
 import React from 'react';
-import { DRIVER_PROTOCOL_CONTENT } from '@/constants/driverProtocols';
 
-export default function DriverProtocolContent() {
+export default function DriverProtocolContent({ contentHtml }) {
+  if (!contentHtml) {
+    return <p className="text-sm text-slate-500">No driver protocol has been published yet.</p>;
+  }
+
   return (
-    <div className="space-y-6">
-      {DRIVER_PROTOCOL_CONTENT.map((section) => (
-        <section key={section.heading} className="space-y-2">
-          <h3 className="text-base font-semibold text-slate-900">{section.heading}</h3>
-          <ul className="space-y-1.5 list-disc pl-5 text-sm text-slate-700">
-            {section.body.map((line) => (
-              <li key={line}>{line}</li>
-            ))}
-          </ul>
-        </section>
-      ))}
-    </div>
+    <div
+      className="driver-protocol-content space-y-4 text-sm text-slate-700 [&_h1]:text-2xl [&_h1]:font-semibold [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:text-base [&_h3]:font-semibold [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5 [&_li]:mb-1"
+      dangerouslySetInnerHTML={{ __html: contentHtml }}
+    />
   );
 }

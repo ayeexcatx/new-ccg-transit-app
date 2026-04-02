@@ -10,17 +10,17 @@
       "type": "string",
       "description": "Driver company at acknowledgment time"
     },
+    "driver_protocol_id": {
+      "type": "string",
+      "description": "DriverProtocol version record that was acknowledged"
+    },
+    "protocol_version": {
+      "type": "number",
+      "description": "Version number of the protocol at acknowledgment time"
+    },
     "accepted_at": {
       "type": "string",
       "description": "Timestamp when protocol acknowledgment was accepted"
-    },
-    "protocol_title": {
-      "type": "string",
-      "description": "Protocol title shown to driver"
-    },
-    "protocol_version": {
-      "type": "string",
-      "description": "Version key for the acknowledged protocol"
     },
     "accepted_by_access_code_id": {
       "type": "string",
@@ -29,8 +29,8 @@
   },
   "required": [
     "driver_id",
-    "accepted_at",
-    "protocol_title",
-    "protocol_version"
+    "driver_protocol_id",
+    "protocol_version",
+    "accepted_at"
   ]
 }

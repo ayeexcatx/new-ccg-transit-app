@@ -97,6 +97,14 @@ const INFO_CARD_TONE = {
   warning: 'text-amber-700',
   danger: 'text-rose-700',
 };
+const MUTED_VALUE_SET = new Set([
+  'Not available',
+  'Not recorded',
+  'No',
+  'SMS Off',
+  'No SMS phone selected',
+  '—',
+]);
 
 const DrawerSection = ({ title, icon: Icon = Building2, children }) => (
   <section className={SECTION_WRAPPER_CLASS}>
@@ -116,9 +124,24 @@ const InfoValueCard = ({ label, value, icon: Icon, tone = 'neutral', badge }) =>
       {Icon && <Icon className="h-4 w-4 text-slate-400" />}
     </div>
     <div className="mt-2 flex items-center gap-2">
-      <p className={`text-sm font-semibold ${value === 'Not available' ? 'text-slate-500 font-medium italic' : INFO_CARD_TONE[tone]}`}>{formatDisplayValue(value)}</p>
+      <p className={`text-sm font-semibold ${MUTED_VALUE_SET.has(formatDisplayValue(value)) ? 'text-slate-500 font-medium italic' : INFO_CARD_TONE[tone]}`}>{formatDisplayValue(value)}</p>
       {badge && <Badge variant="outline" className={badge.className}>{badge.label}</Badge>}
     </div>
+  </div>
+);
+
+const SubsectionBlock = ({ title, icon: Icon, description, children, className = '' }) => (
+  <div className={`rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 shadow-sm ${className}`}>
+    <div className="mb-3 flex items-start gap-2">
+      <span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-md bg-white text-slate-600 ring-1 ring-slate-200/80">
+        <Icon className="h-3.5 w-3.5" />
+      </span>
+      <div>
+        <p className="text-sm font-semibold text-slate-900">{title}</p>
+        {description && <p className="mt-0.5 text-xs text-slate-500">{description}</p>}
+      </div>
+    </div>
+    {children}
   </div>
 );
 
@@ -753,19 +776,27 @@ export default function AdminCompanies() {
                   const ownerConsentRecorded = ownerCode?.sms_consent_given === true;
                   const ownerSmsEnabled = ownerCode?.sms_enabled === true;
                   return (
-                    <div className="grid sm:grid-cols-2 gap-3 text-sm">
-                      <InfoValueCard label="SMS contact" value={smsContact.phone ? formatPhoneNumber(smsContact.phone) : 'No SMS phone selected'} icon={Smartphone} tone={smsContact.phone ? 'neutral' : 'warning'} />
-                      <InfoValueCard
-                        label="Owner SMS enabled"
-                        value={ownerSmsEnabled ? 'Yes' : 'No'}
-                        icon={MessageSquare}
-                        tone={ownerSmsEnabled ? 'success' : 'warning'}
-                        badge={ownerSmsEnabled ? { label: 'SMS On', className: 'border-emerald-200 bg-emerald-50 text-emerald-700 text-[11px]' } : { label: 'SMS Off', className: 'border-amber-200 bg-amber-50 text-amber-700 text-[11px]' }}
-                      />
-                      <InfoValueCard label="Owner consent" value={ownerConsentRecorded ? 'Recorded' : 'Not recorded'} icon={ownerConsentRecorded ? ShieldCheck : ShieldAlert} tone={ownerConsentRecorded ? 'success' : 'danger'} />
-                      <InfoValueCard label="Owner consent timestamp" value={formatDateTime(ownerCode?.sms_consent_at)} icon={Clock3} />
-                      <InfoValueCard label="Owner opt-out timestamp" value={formatDateTime(ownerCode?.sms_opted_out_at)} icon={Clock3} tone={ownerCode?.sms_opted_out_at ? 'warning' : 'neutral'} />
-                      <InfoValueCard label="Owner intro/welcome sent" value={formatDateTime(ownerCode?.sms_intro_sent_at)} icon={MessageSquare} />
+                    <div className="space-y-3.5 text-sm">
+                      <SubsectionBlock title="A. SMS Setup" icon={Smartphone} description="Primary SMS configuration for owner communications.">
+                        <div className="grid gap-2.5 sm:grid-cols-2">
+                          <InfoValueCard label="SMS contact" value={smsContact.phone ? formatPhoneNumber(smsContact.phone) : 'No SMS phone selected'} icon={Smartphone} tone={smsContact.phone ? 'neutral' : 'warning'} />
+                          <InfoValueCard
+                            label="Owner SMS enabled"
+                            value={ownerSmsEnabled ? 'Yes' : 'No'}
+                            icon={MessageSquare}
+                            tone={ownerSmsEnabled ? 'success' : 'warning'}
+                            badge={ownerSmsEnabled ? { label: 'SMS On', className: 'border-emerald-200 bg-emerald-50 text-emerald-700 text-[11px]' } : { label: 'SMS Off', className: 'border-amber-200 bg-amber-50 text-amber-700 text-[11px]' }}
+                          />
+                        </div>
+                      </SubsectionBlock>
+                      <SubsectionBlock title="B. Consent / History" icon={ShieldCheck} description="Owner consent and messaging history.">
+                        <div className="grid gap-2.5 sm:grid-cols-2">
+                          <InfoValueCard label="Owner consent" value={ownerConsentRecorded ? 'Recorded' : 'Not recorded'} icon={ownerConsentRecorded ? ShieldCheck : ShieldAlert} tone={ownerConsentRecorded ? 'success' : 'danger'} />
+                          <InfoValueCard label="Owner consent timestamp" value={formatDateTime(ownerCode?.sms_consent_at)} icon={Clock3} />
+                          <InfoValueCard label="Owner opt-out timestamp" value={formatDateTime(ownerCode?.sms_opted_out_at)} icon={Clock3} tone={ownerCode?.sms_opted_out_at ? 'warning' : 'neutral'} />
+                          <InfoValueCard label="Owner intro/welcome sent" value={formatDateTime(ownerCode?.sms_intro_sent_at)} icon={MessageSquare} />
+                        </div>
+                      </SubsectionBlock>
                     </div>
                   );
                 })()}
@@ -786,7 +817,7 @@ export default function AdminCompanies() {
                         const protocolAck = protocolAckByDriver.currentAckByDriver.get(driver.id);
                         const latestProtocolAck = protocolAckByDriver.latestAckByDriver.get(driver.id);
                         return (
-                          <div key={driver.id} className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm space-y-3 text-sm">
+                          <div key={driver.id} className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm space-y-3.5 text-sm">
                             <div className="flex items-start justify-between gap-3">
                               <div className="flex items-center gap-3">
                                 <div className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
@@ -799,20 +830,42 @@ export default function AdminCompanies() {
                               </div>
                               <Badge variant={smsState.effective ? 'default' : 'secondary'} className={smsState.effective ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100' : 'bg-amber-100 text-amber-700 hover:bg-amber-100'}>{smsState.effective ? 'SMS Active' : 'SMS Off'}</Badge>
                             </div>
-                            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-                              <InfoValueCard label="Access code status" value={driver.access_code_status || 'Not Requested'} icon={KeyRound} />
-                              <InfoValueCard label="Owner enabled" value={smsState.ownerEnabled ? 'Yes' : 'No'} icon={MessageSquare} tone={smsState.ownerEnabled ? 'success' : 'warning'} />
-                              <InfoValueCard label="Driver opted in" value={smsState.driverOptedIn ? 'Yes' : 'No'} icon={UserRound} tone={smsState.driverOptedIn ? 'success' : 'neutral'} />
-                              <InfoValueCard label="Consent status" value={consentRecorded ? 'Recorded' : 'Not recorded'} icon={consentRecorded ? ShieldCheck : ShieldAlert} tone={consentRecorded ? 'success' : 'danger'} />
-                              <InfoValueCard label="Consent timestamp" value={formatDateTime(driverCode?.sms_consent_at)} icon={Clock3} />
-                              <InfoValueCard label="Consent method" value={driverCode?.sms_consent_method} icon={ShieldCheck} />
-                              <InfoValueCard label="Opt-out timestamp" value={formatDateTime(driverCode?.sms_opted_out_at)} icon={Clock3} tone={driverCode?.sms_opted_out_at ? 'warning' : 'neutral'} />
-                              <InfoValueCard label="Intro/welcome sent" value={formatDateTime(driverCode?.sms_intro_sent_at)} icon={MessageSquare} />
-                              <InfoValueCard label="SMS phone" value={smsState.normalizedPhone ? formatPhoneNumber(smsState.normalizedPhone) : 'Not available'} icon={Smartphone} />
-                              <InfoValueCard label={`Protocols v${currentActiveProtocol?.version_number || '—'}`} value={protocolAck ? 'Recorded' : 'Not recorded'} icon={protocolAck ? ShieldCheck : ShieldAlert} tone={protocolAck ? 'success' : 'warning'} />
-                              <InfoValueCard label="Current version timestamp" value={formatDateTime(protocolAck?.accepted_at)} icon={Clock3} />
-                              <InfoValueCard label="Latest acknowledged version" value={latestProtocolAck?.protocol_version || 'Not recorded'} icon={ShieldCheck} />
-                              <InfoValueCard label="Latest acknowledged timestamp" value={formatDateTime(latestProtocolAck?.accepted_at)} icon={Clock3} />
+                            <div className="grid gap-3 lg:grid-cols-2">
+                              <SubsectionBlock title="A. Driver Identity" icon={UserRound} description="Core profile and messaging status.">
+                                <div className="grid gap-2.5 sm:grid-cols-2">
+                                  <InfoValueCard label="Driver name" value={driver.driver_name || 'Not available'} icon={UserRound} />
+                                  <InfoValueCard label="Phone" value={driver.phone ? formatPhoneNumber(driver.phone) : 'Not available'} icon={Smartphone} />
+                                  <InfoValueCard label="SMS status" value={smsState.effective ? 'SMS Active' : 'SMS Off'} icon={MessageSquare} tone={smsState.effective ? 'success' : 'warning'} badge={smsState.effective ? { label: 'Active', className: 'border-emerald-200 bg-emerald-50 text-emerald-700 text-[11px]' } : { label: 'Off', className: 'border-amber-200 bg-amber-50 text-amber-700 text-[11px]' }} />
+                                </div>
+                              </SubsectionBlock>
+
+                              <SubsectionBlock title="B. Access / SMS" icon={KeyRound} description="Driver access state and SMS eligibility toggles.">
+                                <div className="grid gap-2.5 sm:grid-cols-2">
+                                  <InfoValueCard label="Access code status" value={driver.access_code_status || 'Not requested'} icon={KeyRound} />
+                                  <InfoValueCard label="Owner enabled" value={smsState.ownerEnabled ? 'Yes' : 'No'} icon={MessageSquare} tone={smsState.ownerEnabled ? 'success' : 'warning'} />
+                                  <InfoValueCard label="Driver opted in" value={smsState.driverOptedIn ? 'Yes' : 'No'} icon={UserRound} tone={smsState.driverOptedIn ? 'success' : 'neutral'} />
+                                  <InfoValueCard label="SMS phone" value={smsState.normalizedPhone ? formatPhoneNumber(smsState.normalizedPhone) : 'Not available'} icon={Smartphone} />
+                                </div>
+                              </SubsectionBlock>
+
+                              <SubsectionBlock title="C. Consent / History" icon={ShieldCheck} description="Consent records and messaging timeline.">
+                                <div className="grid gap-2.5 sm:grid-cols-2">
+                                  <InfoValueCard label="Consent status" value={consentRecorded ? 'Recorded' : 'Not recorded'} icon={consentRecorded ? ShieldCheck : ShieldAlert} tone={consentRecorded ? 'success' : 'danger'} />
+                                  <InfoValueCard label="Consent timestamp" value={formatDateTime(driverCode?.sms_consent_at)} icon={Clock3} />
+                                  <InfoValueCard label="Consent method" value={driverCode?.sms_consent_method} icon={ShieldCheck} />
+                                  <InfoValueCard label="Opt-out timestamp" value={formatDateTime(driverCode?.sms_opted_out_at)} icon={Clock3} tone={driverCode?.sms_opted_out_at ? 'warning' : 'neutral'} />
+                                  <InfoValueCard label="Intro/welcome sent" value={formatDateTime(driverCode?.sms_intro_sent_at)} icon={MessageSquare} />
+                                </div>
+                              </SubsectionBlock>
+
+                              <SubsectionBlock title="D. Protocols" icon={ShieldAlert} description="Current and latest driver protocol acknowledgments.">
+                                <div className="grid gap-2.5 sm:grid-cols-2">
+                                  <InfoValueCard label={`Current protocol v${currentActiveProtocol?.version_number || '—'}`} value={protocolAck ? 'Recorded' : 'Not recorded'} icon={protocolAck ? ShieldCheck : ShieldAlert} tone={protocolAck ? 'success' : 'warning'} />
+                                  <InfoValueCard label="Current version timestamp" value={formatDateTime(protocolAck?.accepted_at)} icon={Clock3} />
+                                  <InfoValueCard label="Latest acknowledged version" value={latestProtocolAck?.protocol_version || 'Not recorded'} icon={ShieldCheck} />
+                                  <InfoValueCard label="Latest acknowledged timestamp" value={formatDateTime(latestProtocolAck?.accepted_at)} icon={Clock3} />
+                                </div>
+                              </SubsectionBlock>
                             </div>
                           </div>
                         );

@@ -102,10 +102,12 @@ export function buildCompanyProfileRequestPayload({ form, currentCompany }) {
   return {
     requested_name: form.name.trim(),
     requested_address: form.address.trim(),
+    requested_additional_contact_name: (form.additional_contact_name || '').trim(),
     requested_contact_methods: cleanedContactMethods,
     requested_contact_info: cleanedContactMethods.map((method) => `${method.name ? `${method.name} | ` : ''}${method.type}: ${method.value}`).join(' • '),
     current_name: currentCompany?.name || '',
     current_address: currentCompany?.address || '',
+    current_additional_contact_name: currentCompany?.additional_contact_name || '',
     current_contact_methods: normalizeContactMethods(currentCompany),
     current_contact_info: currentCompany?.contact_info || '',
     status: 'Pending',

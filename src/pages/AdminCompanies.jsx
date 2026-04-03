@@ -387,7 +387,13 @@ export default function AdminCompanies() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [pageTab, setPageTab] = useState('company-info');
-  const [form, setForm] = useState({ name: '', address: '', contact_methods: [{ name: '', type: 'Office', value: '' }], trucks: [], status: 'active' });
+  const [form, setForm] = useState({
+    name: '',
+    address: '',
+    contact_methods: [{ name: '', type: 'Office', value: '' }],
+    trucks: [],
+    status: 'active'
+  });
   const [truckInput, setTruckInput] = useState('');
   const [periodKey, setPeriodKey] = useState('last30');
   const [selectedScoringCompany, setSelectedScoringCompany] = useState(null);
@@ -520,7 +526,13 @@ export default function AdminCompanies() {
 
   const openNew = () => {
     setEditing(null);
-    setForm({ name: '', address: '', contact_methods: [{ name: '', type: 'Office', value: '' }], trucks: [], status: 'active' });
+  setForm({
+    name: '',
+    address: '',
+    contact_methods: [{ name: '', type: 'Office', value: '' }],
+    trucks: [],
+    status: 'active'
+   });
     setTruckInput('');
     setOpen(true);
   };
@@ -530,6 +542,7 @@ export default function AdminCompanies() {
     setForm({
       name: company.name || '',
       address: company.address || '',
+      additional_contact_name: company.additional_contact_name || '',
       contact_methods: normalizeContactMethods(company),
       trucks: company.trucks || [],
       status: company.status || 'active',
@@ -556,6 +569,7 @@ export default function AdminCompanies() {
 
     saveMutation.mutate({
       ...form,
+      additional_contact_name: form.additional_contact_name.trim(),
       contact_methods: cleanedContactMethods,
       contact_info: cleanedContactMethods.map((method) => `${method.name ? `${method.name} | ` : ''}${method.type}: ${method.value}`).join(' • '),
     });
@@ -732,6 +746,10 @@ export default function AdminCompanies() {
             <div>
               <Label>Contact Info</Label>
               <div className="space-y-2 mt-1">
+                <div>
+                  <Label className="text-xs text-slate-500">Additional Contact Name</Label>
+                  <Input value={form.additional_contact_name} onChange={(e) => setForm((prev) => ({ ...prev, additional_contact_name: e.target.value }))} placeholder="Contact person name" />
+                </div>
                 {form.contact_methods.map((method, index) => {
                   const isPhoneType = PHONE_CONTACT_TYPES.includes(method.type);
                   return (
@@ -792,6 +810,10 @@ export default function AdminCompanies() {
                   <div className="rounded-xl bg-slate-50/80 p-3.5 shadow-sm ring-1 ring-slate-200/70 sm:col-span-2">
                     <p className="text-[11px] uppercase tracking-wide text-slate-500">Address</p>
                     <p className={`mt-2 text-sm whitespace-pre-line ${selectedCompanyDetail.address ? 'font-semibold text-slate-900' : 'font-medium italic text-slate-500'}`}>{formatDisplayValue(selectedCompanyDetail.address)}</p>
+                  </div>
+                  <div className="rounded-xl bg-slate-50/80 p-3.5 shadow-sm ring-1 ring-slate-200/70 sm:col-span-2">
+                    <p className="text-[11px] uppercase tracking-wide text-slate-500">Additional contact name</p>
+                    <p className={`mt-2 text-sm ${selectedCompanyDetail.additional_contact_name ? 'font-semibold text-slate-900' : 'font-medium italic text-slate-500'}`}>{formatDisplayValue(selectedCompanyDetail.additional_contact_name)}</p>
                   </div>
                   <div className="rounded-xl bg-slate-50/80 p-3.5 shadow-sm ring-1 ring-slate-200/70 sm:col-span-2">
                     <p className="text-[11px] uppercase tracking-wide text-slate-500 mb-2">Contact methods</p>
@@ -917,6 +939,7 @@ export default function AdminCompanies() {
                     <div className="grid sm:grid-cols-2 gap-2 text-xs text-slate-600">
                       <div><p className="font-semibold text-slate-700">Company name</p><p>Current: {selectedCompanyDetail.pending_profile_change.current_name || selectedCompanyDetail.name || '—'}</p><p>Requested: {selectedCompanyDetail.pending_profile_change.requested_name || '—'}</p></div>
                       <div><p className="font-semibold text-slate-700">Address</p><p className="whitespace-pre-line">Current: {selectedCompanyDetail.pending_profile_change.current_address || selectedCompanyDetail.address || '—'}</p><p className="whitespace-pre-line">Requested: {selectedCompanyDetail.pending_profile_change.requested_address || '—'}</p></div>
+                      <div><p className="font-semibold text-slate-700">Additional contact name</p><p>Current: {selectedCompanyDetail.pending_profile_change.current_additional_contact_name || selectedCompanyDetail.additional_contact_name || '—'}</p><p>Requested: {selectedCompanyDetail.pending_profile_change.requested_additional_contact_name || '—'}</p></div>
                       <div className="sm:col-span-2">
                         <p className="font-semibold text-slate-700">Contact methods</p>
                         <div className="grid sm:grid-cols-2 gap-3">

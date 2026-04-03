@@ -45,6 +45,10 @@ export function CompanyOwnerProfileOverview({
               <p className="mt-1 whitespace-pre-line text-sm text-slate-900">{company.address || '—'}</p>
             </div>
             <div className="rounded-lg border p-4 sm:col-span-2">
+              <p className="text-xs uppercase text-slate-500">Additional contact name</p>
+              <p className="mt-1 text-sm text-slate-900">{company.additional_contact_name || '—'}</p>
+            </div>
+            <div className="rounded-lg border p-4 sm:col-span-2">
               <p className="text-xs uppercase text-slate-500">Contact info</p>
               <div className="mt-2 space-y-1.5 text-sm text-slate-700">
                 {contactSummary.length > 0

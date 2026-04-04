@@ -423,7 +423,7 @@ export default function AvailabilityManager({ companyId, canSelectCompany = fals
 
   const renderWeeklyDefaultsMatrix = () =>
   <Card data-tour="recurring-weekly-defaults">
-      <CardContent className="bg-emerald-50 p-4 space-y-3">
+      <CardContent className="bg-sky-50 p-4 space-y-3">
         <div className="space-y-1">
           <h3 className="text-sm font-semibold text-slate-800">Recurring Weekly Defaults</h3>
           <p className="text-slate-500 text-sm font-medium opacity-100">Select your default availability that is the same every week.</p>

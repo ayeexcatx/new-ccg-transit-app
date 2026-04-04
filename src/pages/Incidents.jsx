@@ -481,8 +481,9 @@ export default function Incidents() {
           <p className="text-sm text-slate-500">View and create incident reports.
 
 An incident report should be created whenever there is an event that causes an irregularity in the operations. 
+
 We recommend that reports get created right after notifying the dispatcher of the incident. 
-As the incident progresses or gets resolved, you can reopen the incident to add updates and/or the time you restarted</p>
+As the incident progresses or gets resolved, you can reopen the incident to add updates and/or the time you restarted.</p>
         </div>
         {!isDriver && <Button onClick={() => setCreateOpen(true)} className="gap-2">
             <Plus className="h-4 w-4" />
@@ -515,10 +516,9 @@ As the incident progresses or gets resolved, you can reopen the incident to add 
           </div>
           <div>
             <Label>Truck Number</Label>
-            <Input
-              placeholder="Filter by truck"
-              value={filters.truck}
-              onChange={(e) => setFilters((p) => ({ ...p, truck: e.target.value }))} />
+            <Input placeholder="Filter by truck"
+            value={filters.truck}
+            onChange={(e) => setFilters((p) => ({ ...p, truck: e.target.value }))} />
             
           </div>
         </CardContent>

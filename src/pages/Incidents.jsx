@@ -481,7 +481,7 @@ export default function Incidents() {
           <p className="text-sm text-slate-500">View and create incident reports.
 
 An incident report should be created whenever there is an event that causes an irregularity in the operations. 
-We recommend owner</p>
+We recommend that reports get c</p>
         </div>
         {!isDriver && <Button onClick={() => setCreateOpen(true)} className="gap-2">
             <Plus className="h-4 w-4" />

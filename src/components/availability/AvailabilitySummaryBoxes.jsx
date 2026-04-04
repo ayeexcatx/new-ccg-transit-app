@@ -115,10 +115,11 @@ export default function AvailabilitySummaryBoxes({ companyId = null, includeAllC
   const compactRows = useMemo(() => summaryData.map((box) => {
     const isOperational = getOperationalShifts(box.date.getDay()).includes(box.shift);
     const dayLabel = box.dateKey === toDateKey(referenceDate || new Date()) ? 'Today' : 'Tomorrow';
+    const dateLabel = format(box.date, 'EEE, MMM d');
     if (!isOperational) {
       return {
         ...box,
-        rowLabel: `${dayLabel} — ${box.shift} Shift`,
+        rowLabel: `${dayLabel} (${dateLabel}) — ${box.shift} Shift`,
         value: 'N/A',
       };
     }
@@ -139,23 +140,26 @@ export default function AvailabilitySummaryBoxes({ companyId = null, includeAllC
       value = count !== null ? String(count) : '0';
     }
 
-    return { ...box, rowLabel: `${dayLabel} — ${box.shift} Shift`, value };
+    return { ...box, rowLabel: `${dayLabel} (${dateLabel}) — ${box.shift} Shift`, value };
   }), [summaryData, companyId, compactDefaultMap, compactOverrideMap, referenceDate]);
 
   if (variant === 'ownerCompact') {
     return (
       <Card className="overflow-hidden border-slate-200 bg-white shadow-sm">
         <CardContent className="p-0">
-          <div className="border-b border-slate-200/80 bg-slate-50/80 px-4 py-2.5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Number of trucks available</p>
+          <div className="border-b border-slate-200/80 bg-slate-50/80 px-4 py-3">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Availability Snapshot</p>
+            <p className="mt-1 text-sm font-semibold leading-tight text-slate-900">Number of trucks available</p>
           </div>
-          <div className="space-y-1.5 px-4 py-3">
+          <div className="space-y-2 px-4 py-3">
             {compactRows.map((row, index) => (
               <React.Fragment key={`${row.label}-${row.dateKey}-${row.shift}`}>
-                {index === 2 && <div className="my-1 border-t border-slate-200/80" />}
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm text-slate-700">{row.rowLabel}</p>
-                  <p className="text-sm font-semibold text-slate-900">{row.value}</p>
+                {index === 2 && <div className="my-1.5 border-t border-dashed border-slate-200/90" />}
+                <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-200/80 bg-slate-50/70 px-3 py-2.5">
+                  <p className="text-[13px] font-medium leading-snug text-slate-700">{row.rowLabel}</p>
+                  <p className="inline-flex min-w-[3rem] justify-center rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-900">
+                    {row.value}
+                  </p>
                 </div>
               </React.Fragment>
             ))}

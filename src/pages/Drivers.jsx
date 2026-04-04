@@ -83,8 +83,18 @@ export default function Drivers() {
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['drivers', activeCompanyId] });
+    queryClient.invalidateQueries({ queryKey: ['driver-access-codes', activeCompanyId] });
     queryClient.invalidateQueries({ queryKey: ['drivers-all'] });
     queryClient.invalidateQueries({ queryKey: ['access-codes'] });
+  };
+
+  const refreshDriverPageData = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['drivers', activeCompanyId] }),
+      queryClient.invalidateQueries({ queryKey: ['driver-access-codes', activeCompanyId] }),
+      queryClient.refetchQueries({ queryKey: ['drivers', activeCompanyId], exact: true }),
+      queryClient.refetchQueries({ queryKey: ['driver-access-codes', activeCompanyId], exact: true }),
+    ]);
   };
 
   const saveMutation = useMutation({
@@ -139,7 +149,9 @@ export default function Drivers() {
         access_code_status: 'Created',
       });
     },
-    onSuccess: invalidate,
+    onSuccess: async () => {
+      await refreshDriverPageData();
+    },
   });
 
   const openCreate = () => {

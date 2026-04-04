@@ -7,6 +7,58 @@ import {
 } from '@/components/notifications/createNotifications';
 import { getConfirmationsForDispatchStatus } from '@/components/notifications/confirmationStateHelpers';
 
+function buildTruckReplacementPairs({ previousTrucks = [], nextTrucks = [] }) {
+  const removed = previousTrucks.filter((truck) => !nextTrucks.includes(truck));
+  const added = nextTrucks.filter((truck) => !previousTrucks.includes(truck));
+  const pairs = [];
+  const pairCount = Math.min(removed.length, added.length);
+
+  for (let index = 0; index < pairCount; index += 1) {
+    pairs.push({
+      fromTruck: removed[index],
+      toTruck: added[index],
+    });
+  }
+
+  return pairs;
+}
+
+async function carryForwardDispatchConfirmations({
+  dispatchId,
+  status,
+  confirmations = [],
+  replacementPairs = [],
+}) {
+  if (!dispatchId || !status || !replacementPairs.length) return;
+
+  const currentStatusConfirmations = getConfirmationsForDispatchStatus({
+    confirmations,
+    dispatchId,
+    status,
+  });
+
+  for (const pair of replacementPairs) {
+    const sourceConfirmation = currentStatusConfirmations.find(
+      (confirmation) => confirmation.truck_number === pair.fromTruck
+    );
+
+    if (!sourceConfirmation?.id) continue;
+
+    const targetAlreadyConfirmed = currentStatusConfirmations.some(
+      (confirmation) => confirmation.truck_number === pair.toTruck
+    );
+
+    if (targetAlreadyConfirmed) {
+      await base44.entities.Confirmation.delete(sourceConfirmation.id);
+      continue;
+    }
+
+    await base44.entities.Confirmation.update(sourceConfirmation.id, {
+      truck_number: pair.toTruck,
+    });
+  }
+}
+
 function formatConflictDispatchSummary(dispatch) {
   const parts = [
     dispatch?.job_number ? `JOB #${dispatch.job_number}` : dispatch?.job_number,
@@ -161,36 +213,20 @@ export async function runOwnerTruckEditMutation({
       session,
     });
 
-    const currentStatusConfirmations = getConfirmationsForDispatchStatus({
-      confirmations,
+    const conflictingStatus = conflictingDispatch.status;
+    await carryForwardDispatchConfirmations({
       dispatchId: dispatch.id,
       status: currentStatus,
+      confirmations,
+      replacementPairs: [{ fromTruck: outgoingTruck, toTruck: incomingTruck }],
     });
 
-    const conflictingStatus = conflictingDispatch.status;
-    const conflictingStatusConfirmations = getConfirmationsForDispatchStatus({
-      confirmations,
+    await carryForwardDispatchConfirmations({
       dispatchId: conflictingDispatch.id,
       status: conflictingStatus,
+      confirmations,
+      replacementPairs: [{ fromTruck: incomingTruck, toTruck: outgoingTruck }],
     });
-
-    const removeConfirmationIds = currentStatusConfirmations
-      .filter((confirmation) => removedTrucks.includes(confirmation.truck_number))
-      .map((confirmation) => confirmation.id)
-      .filter(Boolean);
-
-    if (removeConfirmationIds.length > 0) {
-      await Promise.all(removeConfirmationIds.map((id) => base44.entities.Confirmation.delete(id)));
-    }
-
-    const conflictingRemovedConfirmationIds = conflictingStatusConfirmations
-      .filter((confirmation) => confirmation.truck_number === incomingTruck)
-      .map((confirmation) => confirmation.id)
-      .filter(Boolean);
-
-    if (conflictingRemovedConfirmationIds.length > 0) {
-      await Promise.all(conflictingRemovedConfirmationIds.map((id) => base44.entities.Confirmation.delete(id)));
-    }
 
     await expandCurrentStatusRequiredTrucks(updatedDispatch, addedTrucks);
     await expandCurrentStatusRequiredTrucks(updatedConflictingDispatch, [outgoingTruck]);
@@ -232,20 +268,17 @@ export async function runOwnerTruckEditMutation({
     session,
   });
 
-  const currentStatusConfirmations = getConfirmationsForDispatchStatus({
-    confirmations,
-    dispatchId: dispatch.id,
-    status: currentStatus,
+  const replacementPairs = buildTruckReplacementPairs({
+    previousTrucks,
+    nextTrucks: normalizedNext,
   });
 
-  const removeConfirmationIds = currentStatusConfirmations
-    .filter((confirmation) => removedTrucks.includes(confirmation.truck_number))
-    .map((confirmation) => confirmation.id)
-    .filter(Boolean);
-
-  if (removeConfirmationIds.length > 0) {
-    await Promise.all(removeConfirmationIds.map((id) => base44.entities.Confirmation.delete(id)));
-  }
+  await carryForwardDispatchConfirmations({
+    dispatchId: dispatch.id,
+    status: currentStatus,
+    confirmations,
+    replacementPairs,
+  });
 
   await expandCurrentStatusRequiredTrucks(updatedDispatch, addedTrucks);
   await reconcileOwnerNotificationsForDispatch(updatedDispatch);

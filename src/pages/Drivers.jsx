@@ -225,7 +225,7 @@ export default function Drivers() {
           </p>
           <div className="space-y-2 pt-1">
             <p className="text-sm text-slate-600">To share the app with them, use the link below.</p>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-col items-center gap-2 sm:flex-row sm:items-center">
               <Button type="button" variant="outline" size="sm" className="w-full sm:w-auto" onClick={handleShareAppLink}>
                 <Share2 className="h-4 w-4 mr-1" />Share App Link
               </Button>
@@ -233,7 +233,7 @@ export default function Drivers() {
                 href="https://app.ccgnj.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-600 hover:underline text-sm"
+                className="text-center text-sm text-blue-600 hover:underline sm:text-left"
               >
                 or go to app.ccgnj.com
               </a>

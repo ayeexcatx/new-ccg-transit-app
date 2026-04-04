@@ -29,7 +29,7 @@ function DriverActionButtons({ desktop = false, onEdit, onDelete, onRequestCode,
 
 function DriverBottomControls({ status, onEdit, onDelete }) {
   return (
-    <div className="flex items-center justify-center gap-2.5 pt-1">
+    <div className="flex w-full items-center justify-between pt-1">
       <Button variant="ghost" size="icon" onClick={onEdit} className="h-9 w-9 rounded-full">
         <Pencil className="h-4 w-4" />
       </Button>
@@ -124,16 +124,6 @@ export default function DriverCard({ driver, driverAccessCode, onEdit, onDelete,
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-1.5">
-            <Badge variant={smsState.effective ? 'default' : 'secondary'} className="text-[11px]">{smsState.effective ? <><Check className="mr-1 h-3 w-3" />SMS Active</> : 'SMS Not Active'}</Badge>
-          </div>
-
-          {driver.phone && (
-            <div className="flex items-center gap-2 text-sm text-slate-600">
-              <Phone className="h-4 w-4 text-slate-400" />
-              <span>{formatPhoneNumber(driver.phone)}</span>
-            </div>
-          )}
           {showAccessCodeControls && (
             <div className="rounded-lg border border-slate-200 bg-slate-50/70 px-2.5 py-2">
               <DriverAccessCodeRow
@@ -142,6 +132,17 @@ export default function DriverCard({ driver, driverAccessCode, onEdit, onDelete,
                 onToggleReveal={() => setIsCodeVisible((prev) => !prev)}
                 onCopy={handleCopyAccessCode}
               />
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-1.5">
+            <Badge variant={smsState.effective ? 'default' : 'secondary'} className="text-[11px]">{smsState.effective ? <><Check className="mr-1 h-3 w-3" />SMS Active</> : 'SMS Not Active'}</Badge>
+          </div>
+
+          {driver.phone && (
+            <div className="flex items-center gap-2 text-sm text-slate-600">
+              <Phone className="h-4 w-4 text-slate-400" />
+              <span>{formatPhoneNumber(driver.phone)}</span>
             </div>
           )}
 
@@ -160,7 +161,6 @@ export default function DriverCard({ driver, driverAccessCode, onEdit, onDelete,
               <Badge variant={status === 'Active' ? 'default' : 'secondary'}>{status}</Badge>
               <Badge variant={smsState.effective ? 'default' : 'secondary'} className="text-[11px]">{smsState.effective ? <><Check className="h-3 w-3 mr-1" />SMS Active</> : 'SMS Not Active'}</Badge>
             </div>
-            {driver.phone && <p className="text-sm text-slate-600">Phone: {driver.phone}</p>}
             {showAccessCodeControls && (
               <DriverAccessCodeRow
                 accessCodeValue={accessCodeValue}
@@ -170,6 +170,7 @@ export default function DriverCard({ driver, driverAccessCode, onEdit, onDelete,
                 desktop
               />
             )}
+            {driver.phone && <p className="text-sm text-slate-600">Phone: {driver.phone}</p>}
             {driver.notes && <p className="text-sm text-slate-500">{driver.notes}</p>}
             <DriverSmsStatus driver={driver} desktop />
             <DriverSmsGuidance ownerSmsEnabled={driver.owner_sms_enabled} desktop />

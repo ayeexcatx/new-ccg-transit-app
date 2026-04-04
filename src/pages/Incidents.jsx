@@ -482,7 +482,7 @@ export default function Incidents() {
 
 An incident report should be created whenever there is an event that causes an irregularity in the operations. 
 We recommend that reports get created right after notifying the dispatcher of the incident. 
-As the incident progresses or gets resolved, you can c</p>
+As the incident progresses or gets resolved, you can reopen the incident to add updates and/or restar</p>
         </div>
         {!isDriver && <Button onClick={() => setCreateOpen(true)} className="gap-2">
             <Plus className="h-4 w-4" />

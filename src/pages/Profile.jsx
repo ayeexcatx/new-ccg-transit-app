@@ -551,10 +551,6 @@ function CompanyOwnerProfile({ session }) {
             <div><Label>Company name</Label><Input value={form.name} onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))} /></div>
             <div><Label>Address</Label><Textarea rows={3} value={form.address} onChange={(e) => setForm((prev) => ({ ...prev, address: e.target.value }))} /></div>
             <div>
-              <Label>Additional Contact Name</Label>
-              <Input value={form.additional_contact_name} onChange={(e) => setForm((prev) => ({ ...prev, additional_contact_name: e.target.value }))} />
-            </div>
-            <div>
               <Label>Contact info</Label>
               <p className="text-xs text-slate-500 mb-2">Select which phone contact should be used for company owner SMS.</p>
               <ContactMethodEditor methods={form.contact_methods} setMethods={(updater) => setForm((prev) => ({ ...prev, contact_methods: typeof updater === 'function' ? updater(prev.contact_methods) : updater }))} smsIndex={smsIndex} setSmsIndex={setSmsIndex} />

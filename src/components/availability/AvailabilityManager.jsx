@@ -31,11 +31,11 @@ import {
 
 const WEEKDAY_SHORT_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
-export default function AvailabilityManager({ companyId, canSelectCompany = false, activeDate: controlledActiveDate = null, onActiveDateChange = null }) {
+export default function AvailabilityManager({ companyId, canSelectCompany = false }) {
   const { session } = useSession();
   const queryClient = useQueryClient();
   const [viewMode, setViewMode] = useState('week');
-  const [internalActiveDate, setInternalActiveDate] = useState(new Date());
+  const [activeDate, setActiveDate] = useState(new Date());
   const [defaultsEditorOpen, setDefaultsEditorOpen] = useState(false);
   const [defaultsEditorForm, setDefaultsEditorForm] = useState(null);
   const [overrideEditingDate, setOverrideEditingDate] = useState(null);
@@ -44,8 +44,6 @@ export default function AvailabilityManager({ companyId, canSelectCompany = fals
   const [companySearch, setCompanySearch] = useState('');
   const [adminCompanyId, setAdminCompanyId] = useState('');
   const [requestFeedback, setRequestFeedback] = useState('');
-  const activeDate = controlledActiveDate || internalActiveDate;
-  const setActiveDate = onActiveDateChange || setInternalActiveDate;
 
   const selectedCompanyId = canSelectCompany ? adminCompanyId : companyId;
 

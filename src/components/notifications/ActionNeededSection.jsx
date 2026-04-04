@@ -33,6 +33,12 @@ export default function ActionNeededSection({
             View all notifications
           </Link>
         </div>
+        <div className="border-b border-red-100 bg-red-50/40 px-4 py-2.5">
+          <p className="text-xs leading-relaxed text-slate-600">
+            This section shows dispatches that need your attention right away, such as dispatches waiting for your
+            confirmation. A dispatch will stay here until you open it and click CONFIRM RECEIPT.
+          </p>
+        </div>
         <CardContent className="p-0 divide-y divide-slate-100">
           {actionItems.length === 0 ? (
             <p className="text-sm text-slate-400 text-center py-4">No actions needed</p>

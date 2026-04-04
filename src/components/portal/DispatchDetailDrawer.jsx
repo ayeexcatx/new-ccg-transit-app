@@ -973,7 +973,7 @@ export default function DispatchDetailDrawer({
           <div className="space-y-4 pt-2">
               {(isOwner || isAdmin) &&
             <div className="pt-2 border-t-2 border-slate-200">
-                  <section className="bg-cyan-700 p-3.5 rounded-2xl border border-slate-200 sm:p-4 space-y-3.5">
+                  <section className="bg-indigo-200 p-3.5 rounded-2xl border border-slate-200 sm:p-4 space-y-3.5">
                     <div className="rounded-xl border border-slate-200 bg-white/70 px-3 py-2.5">
                       <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-700">
                         <Settings2 className="h-3.5 w-3.5 text-slate-500" />

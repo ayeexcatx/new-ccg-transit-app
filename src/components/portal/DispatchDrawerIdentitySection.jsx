@@ -89,7 +89,7 @@ export default function DispatchDrawerIdentitySection({
 
                 return (
                   <div key={t} className="grid grid-cols-[auto,1fr,auto] items-center gap-2 rounded-lg border border-slate-200/80 bg-slate-50/60 px-2.5 py-2">
-                      <Badge variant="outline" className="shrink-0 border-slate-700/80 bg-white text-[11px] font-semibold text-slate-800">
+                      <Badge variant="outline" className="bg-white text-slate-950 px-2.5 py-0.5 font-semibold rounded-md inline-flex items-center border transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 shrink-0 border-slate-700/80">
                         {t}
                       </Badge>
                       <span className="min-w-0 break-words text-xs leading-relaxed text-slate-600">

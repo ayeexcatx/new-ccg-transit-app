@@ -476,12 +476,27 @@ export default function Incidents() {
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       <div className="flex items-center justify-between gap-3">
-        <div className="space-y-1">
+        <div className="space-y-3">
           <h2 className="text-2xl font-semibold text-slate-900">Incidents</h2>
-          <p className="text-sm text-slate-500">View and create incident reports.</p>
-          <p className="text-xs text-slate-500">
-            An incident report should be created whenever an event causes an irregularity in operations. We recommend creating the report right after notifying the dispatcher of the incident. As the incident progresses or is resolved, you can reopen the incident to add updates and, if applicable, enter the time operations restarted.
-          </p>
+          <Card className="bg-sky-50/70 border-sky-100">
+            <CardContent className="pt-4 pb-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="h-4 w-4 text-sky-700 mt-0.5 shrink-0" />
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-sky-800">When to create an incident</p>
+                  <ul className="text-sm text-slate-700 list-disc pl-5 space-y-1">
+                    <li>Create an incident report whenever something disrupts normal operations (breakdowns, delays, accidents, inspections, etc.)</li>
+                    <li>Submit the report immediately after notifying the dispatcher</li>
+                    <li>Reopen the incident to add updates as the situation progresses or is resolved</li>
+                    <li>Record the time operations resumed when applicable</li>
+                  </ul>
+                  <p className="text-xs text-slate-500">
+                    This ensures accurate tracking of downtime and helps keep dispatch informed.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
         {!isDriver && <Button onClick={() => setCreateOpen(true)} className="gap-2">
             <Plus className="h-4 w-4" />

@@ -149,18 +149,26 @@ function LayoutInner({ children, currentPageName }) {
     window.location.href = createPageUrl(nextWorkspace.mode === 'Admin' ? 'AdminDashboard' : 'Home');
   };
 
+  const handleLogout = () => {
+    logout();
+    logoutAuth(false);
+    window.location.href = createPageUrl('AccessCodeLogin');
+  };
+
   return (
     <TutorialProvider session={session}>
       <AdminDispatchDrawerProvider session={session} isAdmin={isAdmin}>
       <div className="bg-zinc-50 min-h-screen">
         <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
           <div className="bg-slate-50 mx-auto max-w-7xl px-4 sm:px-6">
-            <div className="h-16 flex items-center justify-between gap-3">
+            <div className="min-h-16 py-2 sm:h-16 sm:py-0 flex items-center justify-between gap-2 sm:gap-3">
               <div className="flex items-center gap-3 min-w-0">
-                <img src="/transitlogo.png" alt="CCG Transit logo" className="h-12 w-12 object-contain" />
+                <img src="/transitlogo.png" alt="CCG Transit logo" className="h-10 w-10 sm:h-12 sm:w-12 object-contain" />
                 <div className="min-w-0">
-                  <h1 className="text-sm font-semibold text-slate-900 tracking-tight">{headerTitle}</h1>
-                  <p className="text-xs text-slate-500 flex items-center gap-1 truncate">
+                  <h1 className="text-xs sm:text-sm font-semibold text-slate-900 tracking-tight leading-tight sm:leading-normal max-w-[16rem] sm:max-w-none [display:-webkit-box] [-webkit-line-clamp:2] sm:[-webkit-line-clamp:1] [-webkit-box-orient:vertical] overflow-hidden">
+                    {headerTitle}
+                  </h1>
+                  <p className="text-[11px] sm:text-xs text-slate-500 flex items-center gap-1 truncate">
                     {isAdmin && <Shield className="h-3 w-3 shrink-0" />}
                     {isOwner && <Building2 className="h-3 w-3 shrink-0" />}
                     {isDriver && <UserRound className="h-3 w-3 shrink-0" />}
@@ -239,6 +247,10 @@ function LayoutInner({ children, currentPageName }) {
                           </Link>
                         </DropdownMenuItem>
                       )}
+                      <DropdownMenuItem onClick={handleLogout} className="sm:hidden cursor-pointer">
+                        <LogOut className="h-4 w-4" />
+                        Log out
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
@@ -246,12 +258,8 @@ function LayoutInner({ children, currentPageName }) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => {
-                    logout();
-                    logoutAuth(false);
-                    window.location.href = createPageUrl('AccessCodeLogin');
-                  }}
-                  className="text-slate-500 hover:text-slate-700"
+                  onClick={handleLogout}
+                  className="hidden sm:inline-flex text-slate-500 hover:text-slate-700"
                 >
                   <LogOut className="h-4 w-4 mr-1" />
                   <span className="bg-transparent text-xs">Log out</span>

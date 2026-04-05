@@ -43,6 +43,8 @@ function LayoutInner({ children, currentPageName }) {
   const isOwner = effectiveView === 'CompanyOwner';
   const isDriver = session?.code_type === 'Driver';
   const canUsePortalTabs = isOwner || isDriver;
+  const adminPages = ['AdminDashboard', 'AdminCompanies', 'AdminConfirmations', 'AdminAccessCodes', 'AdminDispatches', 'AdminTemplateNotes', 'AdminAnnouncements', 'AdminAvailability', 'AdminSmsCenter', 'AdminDriverProtocol'];
+  const ownerPages = ['Availability', 'Drivers'];
 
   const { data: allDrivers = [] } = useQuery({
     queryKey: ['drivers-all-nav'],
@@ -61,50 +63,51 @@ function LayoutInner({ children, currentPageName }) {
   const headerTitle = isAdmin ? 'CCG Transit' : activeCompany?.name || sessionCompanyName || 'CCG Transit';
   const workspaceDisplayLabel = getWorkspaceDisplayLabel(session, activeCompany?.name || sessionCompanyName);
 
-  useEffect(() => {
-    if (loading) return;
+  const getRedirectTarget = () => {
+    if (loading) return null;
+
     if (currentPageName === 'AccessCodeLogin') {
       if (session) {
-        const destination = isAdmin ? 'AdminDashboard' : 'Home';
-        window.location.href = createPageUrl(destination);
+        return isAdmin ? 'AdminDashboard' : 'Home';
       }
-      return;
-    }
-    if (!session) {
-      window.location.href = createPageUrl('AccessCodeLogin');
-      return;
+      return null;
     }
 
-    const adminPages = ['AdminDashboard', 'AdminCompanies', 'AdminConfirmations', 'AdminAccessCodes', 'AdminDispatches', 'AdminTemplateNotes', 'AdminAnnouncements', 'AdminAvailability', 'AdminSmsCenter', 'AdminDriverProtocol'];
-    const ownerPages = ['Availability', 'Drivers'];
+    if (!session) {
+      return 'AccessCodeLogin';
+    }
 
     if (adminPages.includes(currentPageName) && !isAdmin) {
-      window.location.href = createPageUrl('Home');
-      return;
+      return 'Home';
     }
 
     if (ownerPages.includes(currentPageName) && !isOwner) {
-      window.location.href = isAdmin ? createPageUrl('AdminDashboard') : createPageUrl('Home');
-      return;
+      return isAdmin ? 'AdminDashboard' : 'Home';
     }
 
     if (currentPageName === 'Profile' && !(isAdmin || isOwner || isDriver)) {
-      window.location.href = isAdmin ? createPageUrl('AdminDashboard') : createPageUrl('Home');
-      return;
+      return isAdmin ? 'AdminDashboard' : 'Home';
     }
 
     if (currentPageName === 'Notifications' && !(isAdmin || isOwner || isDriver)) {
-      window.location.href = isAdmin ? createPageUrl('AdminDashboard') : createPageUrl('Home');
-      return;
+      return isAdmin ? 'AdminDashboard' : 'Home';
     }
 
     if (currentPageName === 'Protocols' && !isDriver) {
-      window.location.href = isAdmin ? createPageUrl('AdminDashboard') : createPageUrl('Home');
-      return;
+      return isAdmin ? 'AdminDashboard' : 'Home';
     }
 
     if ((currentPageName === 'Home' || currentPageName === 'Portal') && isAdmin) {
-      window.location.href = createPageUrl('AdminDashboard');
+      return 'AdminDashboard';
+    }
+
+    return null;
+  };
+
+  useEffect(() => {
+    const redirectTarget = getRedirectTarget();
+    if (redirectTarget) {
+      window.location.href = createPageUrl(redirectTarget);
     }
   }, [session, loading, currentPageName, isAdmin, isOwner, isDriver]);
 
@@ -114,6 +117,12 @@ function LayoutInner({ children, currentPageName }) {
         <div className="animate-spin h-8 w-8 border-4 border-slate-300 border-t-slate-700 rounded-full" />
       </div>
     );
+  }
+
+  const redirectTarget = getRedirectTarget();
+  if (redirectTarget) {
+    window.location.href = createPageUrl(redirectTarget);
+    return null;
   }
 
   if (currentPageName === 'AccessCodeLogin') return <>{children}</>;

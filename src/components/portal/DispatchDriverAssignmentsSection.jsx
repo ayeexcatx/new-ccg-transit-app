@@ -39,8 +39,8 @@ export default function DispatchDriverAssignmentsSection({
         Driver Dispatch Assignments
       </p>
       <p className="text-xs text-slate-500">
-        <span className="block">Select a driver. Then click Send to deliver the dispatch.</span>
-        <span className="block">Click Cancel to remove the driver and the dispatch from the driver’s portal.</span>
+        <span className="block">Select a driver. Then click <span className="font-semibold">Send</span> to deliver the dispatch.</span>
+        <span className="block">Click <span className="font-semibold text-red-500">Cancel</span> to remove the driver and the dispatch from the driver’s portal.</span>
         <span className="block">Please read all of the information on the driver’s page before assigning drivers.</span>
       </p>
       {eligibleDrivers.length === 0 && (

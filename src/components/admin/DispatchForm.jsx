@@ -84,6 +84,12 @@ export default function DispatchForm({ dispatch, dispatches = [], companies, onS
     return '';
   };
 
+  const activeCompaniesSorted = useMemo(() =>
+    [...(companies || [])]
+      .filter((c) => c.status === 'active')
+      .sort((a, b) => String(a?.name || '').localeCompare(String(b?.name || ''), undefined, { sensitivity: 'base' })),
+  [companies]);
+
   const selectedCompany = companies.find((c) => c.id === form.company_id);
   const availableTrucks = selectedCompany?.trucks || [];
   const unavailableTrucks = useMemo(() => {
@@ -421,7 +427,7 @@ export default function DispatchForm({ dispatch, dispatches = [], companies, onS
           <Select value={form.company_id} onValueChange={(v) => setForm({ ...form, company_id: v, trucks_assigned: [], truck_overrides: [] })}>
             <SelectTrigger><SelectValue placeholder="Select company" /></SelectTrigger>
             <SelectContent>
-              {companies.filter((c) => c.status === 'active').map((c) =>
+              {activeCompaniesSorted.map((c) =>
               <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
               )}
             </SelectContent>

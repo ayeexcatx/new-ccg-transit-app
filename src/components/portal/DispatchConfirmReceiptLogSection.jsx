@@ -45,8 +45,8 @@ export default function DispatchConfirmReceiptLogSection({
                   </div> :
 
                 <Button
-                  size="sm"
-                  className="bg-slate-900 hover:bg-slate-800 h-7 text-xs"
+                  size="sm" className="bg-green-600 text-primary-foreground px-3 text-xs font-medium rounded-md inline-flex items-center justify-center gap-2 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 shadow hover:bg-slate-800 h-7"
+
                   onClick={() => handleConfirmTruck(truck)}>
                   
                     <CheckCircle2 className="h-3.5 w-3.5 mr-1" />

@@ -147,7 +147,7 @@ export default function AvailabilitySummaryBoxes({ companyId = null, includeAllC
     return (
       <Card className="overflow-hidden border-slate-200 bg-white shadow-sm">
         <CardContent className="p-0">
-          <div className="bg-sky-400 px-4 py-3 border-b border-slate-200/80">
+          <div className="bg-sky-200 px-4 py-3 border-b border-slate-200/80">
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Availability Snapshot</p>
             <p className="mt-1 text-sm font-semibold leading-tight text-slate-900">Number of trucks available</p>
           </div>

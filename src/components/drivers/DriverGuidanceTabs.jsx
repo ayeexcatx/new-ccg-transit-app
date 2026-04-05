@@ -6,7 +6,7 @@ export default function DriverGuidanceTabs({ helpLanguage, onLanguageChange }) {
   return (
     <Card className="border-slate-200 bg-slate-50/60">
       <CardContent className="p-5 space-y-6">
-        <div className="bg-cyan-50 text-slate-700 p-3 text-sm rounded-lg border border-amber-200">
+        <div className="bg-lime-50 text-slate-700 p-3 text-sm rounded-lg border border-amber-200">
           Driver SMS reminder: owners can enable the company permission layer here, but each driver still must use <span className="font-medium">Menu → Profile</span> to opt in before SMS becomes active.
         </div>
 

@@ -3,14 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Clock3, Save } from 'lucide-react';
 
 export default function DispatchTimeLogSection({
-  isOwner,
-  isDriverUser,
-  isAdmin,
-  showOwnerAssignmentsAndTimeLogs,
+  showTimeLog,
   dispatchStatus,
-  myTrucks,
-  visibleTrucks,
-  assignedTrucks,
+  timeLogTrucks,
   timeLogSectionRef,
   draftTimeEntries,
   timeEntries,
@@ -25,14 +20,7 @@ export default function DispatchTimeLogSection({
   entriesToSave,
   TruckTimeRow,
 }) {
-  const editableTrucks = isOwner
-    ? myTrucks
-    : isDriverUser
-      ? visibleTrucks
-      : isAdmin
-        ? assignedTrucks
-        : [];
-  const canShowTimeLog = editableTrucks.length > 0 && dispatchStatus !== 'Cancelled' && (isOwner ? showOwnerAssignmentsAndTimeLogs : true);
+  const canShowTimeLog = showTimeLog && timeLogTrucks.length > 0 && dispatchStatus !== 'Cancelled';
 
   return (
     <>
@@ -53,7 +41,7 @@ export default function DispatchTimeLogSection({
             Enter or review check-in/check-out times for each truck. Times are shown in Eastern Time.
           </p>
           <div className="space-y-2.5">
-            {editableTrucks.map((truck) => (
+            {timeLogTrucks.map((truck) => (
               <TruckTimeRow
                 key={truck}
                 truck={truck}
@@ -63,7 +51,7 @@ export default function DispatchTimeLogSection({
                 draft={draftTimeEntries[truck]}
                 onChangeDraft={onChangeDraft}
                 onCopyToAll={onCopyToAll}
-                isFirstRow={truck === editableTrucks[0]}
+                isFirstRow={truck === timeLogTrucks[0]}
                 isEditing={isEditingTimeLogs}
                 showActor={!isEditingTimeLogs}
                 onEdit={onEditTimeLogs}

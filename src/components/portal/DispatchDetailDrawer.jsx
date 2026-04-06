@@ -685,7 +685,7 @@ export default function DispatchDetailDrawer({
   const handleCopyToAll = (sourceStart, sourceEnd) => {
     setDraftTimeEntries((prev) => {
       const next = { ...prev };
-      myTrucks.forEach((truck) => {
+      timeLogTrucks.forEach((truck) => {
         next[truck] = {
           ...(next[truck] || {}),
           ...(sourceStart ? { start: sourceStart } : {}),
@@ -696,7 +696,15 @@ export default function DispatchDetailDrawer({
     });
   };
 
-  const entriesToSave = myTrucks.
+  const timeLogTrucks = isOwner ?
+  myTrucks :
+  isDriverUser ?
+  visibleTrucks :
+  isAdmin ?
+  dispatch.trucks_assigned || [] :
+  [];
+
+  const entriesToSave = timeLogTrucks.
   map((truck) => {
     const existing = timeEntries.find((te) => te.dispatch_id === dispatch.id && te.truck_number === truck);
     const start = draftTimeEntries[truck]?.start ?? existing?.start_time ?? '';
@@ -706,7 +714,7 @@ export default function DispatchDetailDrawer({
   }).
   filter(Boolean);
 
-  const hasUnsavedChanges = myTrucks.some((truck) => {
+  const hasUnsavedChanges = timeLogTrucks.some((truck) => {
     const draft = draftTimeEntries[truck];
     if (!draft) return false;
     const existing = timeEntries.find((te) => te.dispatch_id === dispatch.id && te.truck_number === truck);
@@ -747,6 +755,8 @@ export default function DispatchDetailDrawer({
   Array.isArray(ownerCompanyRecord?.trucks) ? ownerCompanyRecord.trucks : [] :
   [];
   const showOwnerAssignmentsAndTimeLogs = !isOwner || canCompanyOwnerViewAssignmentsAndTimeLogs(dispatch.status);
+  const showTimeLog = showOwnerAssignmentsAndTimeLogs || isDriverUser;
+  const showOperationsPanel = isOwner || isAdmin || (isDriverUser && showTimeLog);
   const requiredTruckCount = (dispatch?.trucks_assigned || []).filter(Boolean).length;
 
   const resetDraftTrucksToCurrentDispatch = () => {
@@ -1002,21 +1012,24 @@ export default function DispatchDetailDrawer({
           </div>
 
           {/* Actions */}
-          {(isOwner || isAdmin || isDriverUser) &&
+          {showOperationsPanel &&
           <div className="space-y-4 pt-2">
-              {(isOwner || isAdmin) &&
             <div className="pt-2 border-t-2 border-slate-200">
-                  <section className="bg-stone-400 p-3.5 rounded-2xl border border-slate-200 sm:p-4 space-y-3.5">
-                    <div className="bg-stone-600 text-slate-50 px-3 py-2.5 rounded-xl border border-slate-200">
-                      <p className="text-neutral-100 font-semibold uppercase tracking-[0.14em] flex items-center gap-2">OPERATIONS PANEL
+                <section className="bg-stone-400 p-3.5 rounded-2xl border border-slate-200 sm:p-4 space-y-3.5">
+                  <div className="bg-stone-600 text-slate-50 px-3 py-2.5 rounded-xl border border-slate-200">
+                    <p className="text-neutral-100 font-semibold uppercase tracking-[0.14em] flex items-center gap-2">OPERATIONS PANEL
 
 
-                  </p>
-                      <p className="text-slate-50 mt-1 text-xs">Internal workflow controls for owner/admin use. These tools are not part of the formal dispatch record.
+                </p>
+                    <p className="text-slate-50 mt-1 text-xs">
+                      {isDriverUser ?
+                    'Use this panel to enter and save truck time logs. Times are shown in Eastern Time.' :
+                    'Internal workflow controls for owner/admin use. These tools are not part of the formal dispatch record.'}
 
-                  </p>
-                    </div>
+                </p>
+                  </div>
 
+                  {(isOwner || isAdmin) &&
                     <DispatchDriverConfirmationSection
                   isOwner={isOwner}
                   isAdmin={isAdmin}
@@ -1044,17 +1057,12 @@ export default function DispatchDetailDrawer({
                   onCancelDispatch={handleCancelDriverDispatch}
                   sendMutationPending={sendDriverDispatchMutation.isPending}
                   cancelMutationPending={cancelDriverDispatchMutation.isPending} />
-                
+                  }
 
-                    <DispatchTimeLogSection
-                  isOwner={isOwner}
-                  isDriverUser={isDriverUser}
-                  isAdmin={isAdmin}
-                  showOwnerAssignmentsAndTimeLogs={showOwnerAssignmentsAndTimeLogs}
+                  <DispatchTimeLogSection
+                  showTimeLog={showTimeLog}
                   dispatchStatus={dispatch.status}
-                  myTrucks={myTrucks}
-                  visibleTrucks={visibleTrucks}
-                  assignedTrucks={dispatch.trucks_assigned || []}
+                  timeLogTrucks={timeLogTrucks}
                   timeLogSectionRef={timeLogSectionRef}
                   draftTimeEntries={draftTimeEntries}
                   timeEntries={timeEntries}
@@ -1068,9 +1076,8 @@ export default function DispatchDetailDrawer({
                   isSavingAll={isSavingAll}
                   entriesToSave={entriesToSave}
                   TruckTimeRow={TruckTimeRow} />
-                  </section>
-                </div>
-            }
+                </section>
+              </div>
 
               {/* Activity — Admin */}
               {isAdmin &&

@@ -39,8 +39,12 @@ export default function DispatchDriverAssignmentsSection({
         Driver Dispatch Assignments
       </p>
       <p className="text-xs text-slate-500">
-        <span className="block">Select a driver. Then click Send to deliver the dispatch.</span>
-        <span className="block">Click Cancel to remove the driver and the dispatch from the driver’s portal.</span>
+        <span className="block">
+          Select a driver. Then click <span className="font-semibold text-green-600">Send</span> to deliver the dispatch.
+        </span>
+        <span className="block">
+          Click <span className="font-semibold text-red-500">Cancel</span> to remove the driver and the dispatch from the driver’s portal.
+        </span>
         <span className="block">Please read all of the information on the driver’s page before assigning drivers.</span>
       </p>
       {eligibleDrivers.length === 0 && (
@@ -83,7 +87,16 @@ export default function DispatchDriverAssignmentsSection({
                 </Select>
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] text-slate-500">Status: {status}</span>
-                  {canSend && <Button type="button" size="sm" className="h-7 text-xs" onClick={() => onSendDispatch(truckNumber)}>Send</Button>}
+                  {canSend && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="h-7 text-xs bg-green-600 hover:bg-green-700 text-white"
+                      onClick={() => onSendDispatch(truckNumber)}
+                    >
+                      Send
+                    </Button>
+                  )}
                   {canCancel && !isDispatchCanceledAndDriverAlreadyAutoCanceled && (
                     <Button type="button" size="sm" variant="outline" className="h-7 text-xs border-amber-300 text-amber-700 hover:bg-amber-50" onClick={() => onCancelDispatch(truckNumber)}>Cancel</Button>
                   )}

@@ -52,6 +52,34 @@ function getSessionActorMetadata(session) {
 
 const normalizeId = (value) => normalizeVisibilityId(value);
 
+function getTimeEntrySortTimestamp(entry) {
+  if (!entry) return 0;
+  const candidates = [entry.last_updated_at, entry.updated_date, entry.created_date];
+  for (const value of candidates) {
+    if (!value) continue;
+    const parsed = new Date(value).getTime();
+    if (!Number.isNaN(parsed)) return parsed;
+  }
+  return 0;
+}
+
+function buildEffectiveTimeEntryByTruck({ timeEntries, dispatchId, trucks }) {
+  if (!dispatchId || !Array.isArray(trucks) || trucks.length === 0) return {};
+  const allowedTrucks = new Set(trucks.filter(Boolean));
+
+  return (timeEntries || [])
+    .filter((entry) =>
+      String(entry?.dispatch_id || '') === String(dispatchId)
+      && allowedTrucks.has(entry?.truck_number)
+    )
+    .sort((a, b) => getTimeEntrySortTimestamp(b) - getTimeEntrySortTimestamp(a))
+    .reduce((map, entry) => {
+      if (!entry?.truck_number || map[entry.truck_number]) return map;
+      map[entry.truck_number] = entry;
+      return map;
+    }, {});
+}
+
 
 export default function Portal() {
   const { session } = useSession();
@@ -157,12 +185,15 @@ export default function Portal() {
   const timeEntryMutation = useMutation({
     mutationFn: async ({ dispatch, entries }) => {
       const savedEntries = [];
+      const effectiveExistingEntryByTruck = buildEffectiveTimeEntryByTruck({
+        timeEntries,
+        dispatchId: dispatch?.id,
+        trucks: entries.map((entry) => entry.truck),
+      });
 
       for (const { truck, start, end } of entries) {
         const nowIso = new Date().toISOString();
-        const existing = timeEntries.find(te =>
-          te.dispatch_id === dispatch.id && te.truck_number === truck
-        );
+        const existing = effectiveExistingEntryByTruck[truck];
 
         if (existing) {
           const updated = await base44.entities.TimeEntry.update(existing.id, {
@@ -195,7 +226,10 @@ export default function Portal() {
 
       return savedEntries;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['time-entries'] }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['time-entries'] });
+      await queryClient.refetchQueries({ queryKey: ['time-entries'], type: 'active' });
+    },
   });
 
   const updateOwnerTrucksMutation = useMutation({

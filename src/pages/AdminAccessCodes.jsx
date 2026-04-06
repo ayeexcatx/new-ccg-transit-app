@@ -258,6 +258,124 @@ export default function AdminAccessCodes() {
 
   const codeTypeIcons = { CompanyOwner: Building2, Admin: Shield, Driver: UserRound };
 
+  const companyById = useMemo(
+    () => new Map(companies.map((company) => [company.id, company])),
+    [companies],
+  );
+
+  const driverById = useMemo(
+    () => new Map(drivers.map((driver) => [driver.id, driver])),
+    [drivers],
+  );
+
+  const sortByLabelThenCode = (a, b) => {
+    const aKey = (a.label || a.code || '').toLowerCase();
+    const bKey = (b.label || b.code || '').toLowerCase();
+    if (aKey !== bKey) return aKey.localeCompare(bKey);
+    return (a.code || '').toLowerCase().localeCompare((b.code || '').toLowerCase());
+  };
+
+  const sortDriversByNameLabelCode = (a, b) => {
+    const aDriverName = driverById.get(a.driver_id)?.driver_name || '';
+    const bDriverName = driverById.get(b.driver_id)?.driver_name || '';
+    const aKey = (aDriverName || a.label || a.code || '').toLowerCase();
+    const bKey = (bDriverName || b.label || b.code || '').toLowerCase();
+    if (aKey !== bKey) return aKey.localeCompare(bKey);
+    return (a.code || '').toLowerCase().localeCompare((b.code || '').toLowerCase());
+  };
+
+  const groupedCodes = useMemo(() => {
+    const adminCodes = codes
+      .filter((code) => code.code_type === 'Admin')
+      .sort(sortByLabelThenCode);
+
+    const companyCodeMap = new Map();
+
+    codes
+      .filter((code) => code.code_type === 'CompanyOwner' || code.code_type === 'Driver')
+      .forEach((code) => {
+        const companyId = code.company_id || 'unknown-company';
+        const companyName = companyById.get(code.company_id)?.name || code.company_name || 'Unknown Company';
+
+        if (!companyCodeMap.has(companyId)) {
+          companyCodeMap.set(companyId, {
+            companyId,
+            companyName,
+            ownerCodes: [],
+            driverCodes: [],
+          });
+        }
+
+        const section = companyCodeMap.get(companyId);
+        if (code.code_type === 'CompanyOwner') section.ownerCodes.push(code);
+        if (code.code_type === 'Driver') section.driverCodes.push(code);
+      });
+
+    const companySections = Array.from(companyCodeMap.values())
+      .map((section) => ({
+        ...section,
+        ownerCodes: section.ownerCodes.sort(sortByLabelThenCode),
+        driverCodes: section.driverCodes.sort(sortDriversByNameLabelCode),
+      }))
+      .sort((a, b) => a.companyName.localeCompare(b.companyName));
+
+    return { adminCodes, companySections };
+  }, [codes, companyById, driverById]);
+
+  const renderCodeCard = (c) => {
+    const Icon = codeTypeIcons[c.code_type] || Key;
+    const comp = companyById.get(c.company_id);
+    const driver = driverById.get(c.driver_id);
+
+    return (
+      <Card key={c.id} className={`transition-shadow hover:shadow-sm ${c.active_flag === false ? 'opacity-50' : ''}`}>
+        <CardContent className="p-4 sm:p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <div className="h-10 w-10 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
+                <Icon className="h-5 w-5 text-slate-500" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-mono text-sm text-slate-900 tracking-wide">{c.code}</span>
+                  <button onClick={() => copyCode(c.code)} className="text-slate-400 hover:text-slate-600">
+                    <Copy className="h-3.5 w-3.5" />
+                  </button>
+                  <Badge variant={c.active_flag !== false ? 'default' : 'secondary'} className="text-xs">
+                    {c.active_flag !== false ? 'Active' : 'Inactive'}
+                  </Badge>
+                  <Badge variant="outline" className="text-xs">{c.code_type}</Badge>
+                </div>
+                {c.label && <p className="text-sm text-slate-600 mt-0.5">Name: {c.label}</p>}
+                <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 flex-wrap">
+                  {comp && <span>Company: {comp.name}</span>}
+                  {driver && <span>Driver: {driver.driver_name || driver.id}</span>}
+                  {c.code_type === 'Admin' && (c.allowed_trucks || []).length > 0 && (
+                    <span>Trucks: {c.allowed_trucks.join(', ')}</span>
+                  )}
+                  {c.code_type === 'Admin' && (c.available_views || []).length > 0 && (
+                    <span>Views: {(c.available_views || []).join(', ')}</span>
+                  )}
+                  {c.code_type === 'Admin' && (c.linked_company_ids || []).length > 0 && (
+                    <span>Linked companies: {(c.linked_company_ids || []).length}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-1">
+              <Button variant="ghost" size="icon" onClick={() => openEdit(c)} className="h-8 w-8">
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={() => setAccessCodePendingDelete(c)} className="h-8 w-8 text-red-500 hover:text-red-600">
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
   const confirmDeleteAccessCode = () => {
     if (!accessCodePendingDelete) return;
 
@@ -349,59 +467,67 @@ export default function AdminAccessCodes() {
       ) : codes.length === 0 ? (
         <div className="text-center py-16 text-slate-500 text-sm">No access codes yet</div>
       ) : (
-        <div className="grid gap-3">
-          {codes.map((c) => {
-            const Icon = codeTypeIcons[c.code_type] || Key;
-            const comp = companies.find((co) => co.id === c.company_id);
-            const driver = drivers.find((d) => d.id === c.driver_id);
-            return (
-              <Card key={c.id} className={`transition-shadow hover:shadow-sm ${c.active_flag === false ? 'opacity-50' : ''}`}>
-                <CardContent className="p-4 sm:p-5">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
-                        <Icon className="h-5 w-5 text-slate-500" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-mono text-sm text-slate-900 tracking-wide">{c.code}</span>
-                          <button onClick={() => copyCode(c.code)} className="text-slate-400 hover:text-slate-600">
-                            <Copy className="h-3.5 w-3.5" />
-                          </button>
-                          <Badge variant={c.active_flag !== false ? 'default' : 'secondary'} className="text-xs">
-                            {c.active_flag !== false ? 'Active' : 'Inactive'}
-                          </Badge>
-                          <Badge variant="outline" className="text-xs">{c.code_type}</Badge>
-                        </div>
-                        {c.label && <p className="text-sm text-slate-600 mt-0.5">Name: {c.label}</p>}
-                        <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 flex-wrap">
-                          {comp && <span>Company: {comp.name}</span>}
-                          {driver && <span>Driver: {driver.driver_name || driver.id}</span>}
-                          {c.code_type === 'Admin' && (c.allowed_trucks || []).length > 0 && (
-                            <span>Trucks: {c.allowed_trucks.join(', ')}</span>
-                          )}
-                          {c.code_type === 'Admin' && (c.available_views || []).length > 0 && (
-                            <span>Views: {(c.available_views || []).join(', ')}</span>
-                          )}
-                          {c.code_type === 'Admin' && (c.linked_company_ids || []).length > 0 && (
-                            <span>Linked companies: {(c.linked_company_ids || []).length}</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" onClick={() => openEdit(c)} className="h-8 w-8">
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => setAccessCodePendingDelete(c)} className="h-8 w-8 text-red-500 hover:text-red-600">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
+        <div className="space-y-4">
+          <details open className="group rounded-lg border border-slate-200 bg-white">
+            <summary className="cursor-pointer list-none px-4 py-3 select-none">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-slate-600" />
+                  <h3 className="text-sm font-semibold text-slate-900">Admin</h3>
+                </div>
+                <Badge variant="outline" className="text-xs">{groupedCodes.adminCodes.length}</Badge>
+              </div>
+            </summary>
+            <div className="px-3 pb-3 grid gap-3">
+              {groupedCodes.adminCodes.length === 0 ? (
+                <div className="px-2 py-3 text-xs text-slate-500">No Admin codes</div>
+              ) : (
+                groupedCodes.adminCodes.map((code) => renderCodeCard(code))
+              )}
+            </div>
+          </details>
+
+          {groupedCodes.companySections.map((section) => (
+            <details key={section.companyId} className="group rounded-lg border border-slate-200 bg-white">
+              <summary className="cursor-pointer list-none px-4 py-3 select-none">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-slate-600" />
+                    <h3 className="text-sm font-semibold text-slate-900">{section.companyName}</h3>
                   </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge variant="outline" className="text-xs">Owners: {section.ownerCodes.length}</Badge>
+                    <Badge variant="outline" className="text-xs">Drivers: {section.driverCodes.length}</Badge>
+                    <Badge variant="outline" className="text-xs">Total: {section.ownerCodes.length + section.driverCodes.length}</Badge>
+                  </div>
+                </div>
+              </summary>
+
+              <div className="px-3 pb-3 space-y-4">
+                <div className="space-y-2">
+                  <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500 px-1">Owner Codes</h4>
+                  {section.ownerCodes.length === 0 ? (
+                    <div className="px-2 py-2 text-xs text-slate-500">No Owner codes</div>
+                  ) : (
+                    <div className="grid gap-3">
+                      {section.ownerCodes.map((code) => renderCodeCard(code))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500 px-1">Driver Codes</h4>
+                  {section.driverCodes.length === 0 ? (
+                    <div className="px-2 py-2 text-xs text-slate-500">No Driver codes</div>
+                  ) : (
+                    <div className="grid gap-3">
+                      {section.driverCodes.map((code) => renderCodeCard(code))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </details>
+          ))}
         </div>
       )}
 

@@ -285,8 +285,14 @@ export default function AdminAccessCodes() {
   };
 
   const groupedCodes = useMemo(() => {
+    const standardCodeTypes = new Set(['Admin', 'CompanyOwner', 'Driver']);
+
     const adminCodes = codes
       .filter((code) => code.code_type === 'Admin')
+      .sort(sortByLabelThenCode);
+
+    const legacyCodes = codes
+      .filter((code) => !standardCodeTypes.has(code.code_type))
       .sort(sortByLabelThenCode);
 
     const companyCodeMap = new Map();
@@ -319,7 +325,7 @@ export default function AdminAccessCodes() {
       }))
       .sort((a, b) => a.companyName.localeCompare(b.companyName));
 
-    return { adminCodes, companySections };
+    return { adminCodes, companySections, legacyCodes };
   }, [codes, companyById, driverById]);
 
   const renderCodeCard = (c) => {
@@ -528,6 +534,23 @@ export default function AdminAccessCodes() {
               </div>
             </details>
           ))}
+
+          {groupedCodes.legacyCodes.length > 0 && (
+            <details open className="group rounded-lg border border-slate-200 bg-white">
+              <summary className="cursor-pointer list-none px-4 py-3 select-none">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <Key className="h-4 w-4 text-slate-600" />
+                    <h3 className="text-sm font-semibold text-slate-900">Other / Legacy Codes</h3>
+                  </div>
+                  <Badge variant="outline" className="text-xs">{groupedCodes.legacyCodes.length}</Badge>
+                </div>
+              </summary>
+              <div className="px-3 pb-3 grid gap-3">
+                {groupedCodes.legacyCodes.map((code) => renderCodeCard(code))}
+              </div>
+            </details>
+          )}
         </div>
       )}
 

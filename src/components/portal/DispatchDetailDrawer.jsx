@@ -187,38 +187,10 @@ function formatLogTimestampWithActor(prefix, timestamp, actorLabel) {
   return actorLabel ? `${prefix} by ${actorLabel} at ${formattedTimestamp}` : `${prefix} at ${formattedTimestamp}`;
 }
 
-function getTimeEntrySortTimestamp(entry) {
-  if (!entry) return 0;
-  const candidates = [entry.last_updated_at, entry.updated_date, entry.created_date];
-  for (const value of candidates) {
-    if (!value) continue;
-    const parsed = new Date(value).getTime();
-    if (!Number.isNaN(parsed)) return parsed;
-  }
-  return 0;
-}
-
-function buildEffectiveTimeEntryByTruck({ timeEntries, dispatchId, trucks }) {
-  if (!dispatchId || !Array.isArray(trucks) || trucks.length === 0) return {};
-  const allowedTrucks = new Set(trucks.filter(Boolean));
-
-  return (timeEntries || []).
-  filter((entry) =>
-  String(entry?.dispatch_id || '') === String(dispatchId) &&
-  allowedTrucks.has(entry?.truck_number)
-  ).
-  sort((a, b) => getTimeEntrySortTimestamp(b) - getTimeEntrySortTimestamp(a)).
-  reduce((map, entry) => {
-    if (!entry?.truck_number || map[entry.truck_number]) return map;
-    map[entry.truck_number] = entry;
-    return map;
-  }, {});
-}
-
 function TruckTimeRow({
   truck,
   dispatch,
-  effectiveTimeEntryByTruck,
+  timeEntries,
   readOnly,
   draft,
   onChangeDraft,
@@ -228,7 +200,9 @@ function TruckTimeRow({
   isEditing = true,
   onEdit
 }) {
-  const existing = effectiveTimeEntryByTruck[truck];
+  const existing = timeEntries.find((te) =>
+  te.dispatch_id === dispatch.id && te.truck_number === truck
+  );
   const start = draft?.start ?? existing?.start_time ?? '';
   const end = draft?.end ?? existing?.end_time ?? '';
   const workedHours = calculateWorkedHours(existing?.start_time, existing?.end_time);
@@ -331,7 +305,7 @@ export default function DispatchDetailDrawer({
   const { currentAppIdentity } = useAuth();
   const [draftTimeEntries, setDraftTimeEntries] = useState({});
   const [isSavingAll, setIsSavingAll] = useState(false);
-  const [timeLogModeOverride, setTimeLogModeOverride] = useState(null);
+  const [isEditingTimeLogs, setIsEditingTimeLogs] = useState(true);
   const drawerScrollRef = React.useRef(null);
   const timeLogSectionRef = React.useRef(null);
   const [isEditingTrucks, setIsEditingTrucks] = useState(false);
@@ -346,7 +320,7 @@ export default function DispatchDetailDrawer({
 
   useEffect(() => {
     setDraftTimeEntries({});
-    setTimeLogModeOverride(null);
+    setIsEditingTimeLogs(true);
   }, [dispatch?.id]);
 
   useEffect(() => {
@@ -618,23 +592,6 @@ export default function DispatchDetailDrawer({
   const visibleTrucks = getVisibleTrucksForDispatch(session, dispatch, {
     driverAssignedTrucks
   });
-  const timeLogTrucks = isOwner ?
-  myTrucks :
-  isDriverUser ?
-  visibleTrucks :
-  isAdmin ?
-  dispatch.trucks_assigned || [] :
-  [];
-  const effectiveTimeEntryByTruck = buildEffectiveTimeEntryByTruck({
-    timeEntries,
-    dispatchId: dispatch?.id,
-    trucks: timeLogTrucks
-  });
-  const hasSavedTimeEntries = timeLogTrucks.some((truck) => {
-    const existing = effectiveTimeEntryByTruck[truck];
-    return Boolean(existing?.start_time || existing?.end_time);
-  });
-  const isEditingTimeLogs = timeLogTrucks.length > 0 && (!hasSavedTimeEntries || timeLogModeOverride === 'editing');
   const activeAssignmentsByTruck = (isOwner || isAdmin ? activeDriverDispatches : currentDriverAssignments).
   filter((entry) => entry?.active_flag !== false && entry?.truck_number).
   reduce((map, entry) => {
@@ -739,9 +696,17 @@ export default function DispatchDetailDrawer({
     });
   };
 
+  const timeLogTrucks = isOwner ?
+  myTrucks :
+  isDriverUser ?
+  visibleTrucks :
+  isAdmin ?
+  dispatch.trucks_assigned || [] :
+  [];
+
   const entriesToSave = timeLogTrucks.
   map((truck) => {
-    const existing = effectiveTimeEntryByTruck[truck];
+    const existing = timeEntries.find((te) => te.dispatch_id === dispatch.id && te.truck_number === truck);
     const start = draftTimeEntries[truck]?.start ?? existing?.start_time ?? '';
     const end = draftTimeEntries[truck]?.end ?? existing?.end_time ?? '';
     if (!start && !end) return null;
@@ -752,7 +717,7 @@ export default function DispatchDetailDrawer({
   const hasUnsavedChanges = timeLogTrucks.some((truck) => {
     const draft = draftTimeEntries[truck];
     if (!draft) return false;
-    const existing = effectiveTimeEntryByTruck[truck];
+    const existing = timeEntries.find((te) => te.dispatch_id === dispatch.id && te.truck_number === truck);
     const currentStart = existing?.start_time ?? '';
     const currentEnd = existing?.end_time ?? '';
     const nextStart = draft.start ?? currentStart;
@@ -768,7 +733,7 @@ export default function DispatchDetailDrawer({
     try {
       await onTimeEntry(dispatch, entriesToSave);
       setDraftTimeEntries({});
-      setTimeLogModeOverride(null);
+      setIsEditingTimeLogs(false);
       requestAnimationFrame(() => {
         if (typeof previousScrollTop === 'number' && drawerScrollRef.current) {
           drawerScrollRef.current.scrollTop = previousScrollTop;
@@ -1100,13 +1065,13 @@ export default function DispatchDetailDrawer({
                   timeLogTrucks={timeLogTrucks}
                   timeLogSectionRef={timeLogSectionRef}
                   draftTimeEntries={draftTimeEntries}
-                  effectiveTimeEntryByTruck={effectiveTimeEntryByTruck}
+                  timeEntries={timeEntries}
                   dispatch={dispatch}
                   onChangeDraft={handleChangeDraft}
                   onCopyToAll={handleCopyToAll}
                   onSaveAll={handleSaveAll}
                   isEditingTimeLogs={isEditingTimeLogs}
-                  onEditTimeLogs={() => setTimeLogModeOverride('editing')}
+                  onEditTimeLogs={() => setIsEditingTimeLogs(true)}
                   hasUnsavedChanges={hasUnsavedChanges}
                   isSavingAll={isSavingAll}
                   entriesToSave={entriesToSave}

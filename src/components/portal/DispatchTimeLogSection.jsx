@@ -8,7 +8,7 @@ export default function DispatchTimeLogSection({
   timeLogTrucks,
   timeLogSectionRef,
   draftTimeEntries,
-  effectiveTimeEntryByTruck,
+  timeEntries,
   dispatch,
   onChangeDraft,
   onCopyToAll,
@@ -46,7 +46,7 @@ export default function DispatchTimeLogSection({
                 key={truck}
                 truck={truck}
                 dispatch={dispatch}
-                effectiveTimeEntryByTruck={effectiveTimeEntryByTruck}
+                timeEntries={timeEntries}
                 readOnly={false}
                 draft={draftTimeEntries[truck]}
                 onChangeDraft={onChangeDraft}

@@ -18,7 +18,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Truck } from 'lucide-react';
-import { areAllAssignedTrucksTimeComplete } from '@/lib/timeLogs';
 import { getDispatchBucket } from '../components/portal/dispatchBuckets';
 import { sortTemplateNotesForDispatch } from '@/lib/templateNotes';
 import {
@@ -37,7 +36,6 @@ import { getEffectiveView } from '@/components/session/workspaceUtils';
 import {
   buildDriverAssignedTrucksByDispatch,
   canUserSeeDispatch,
-  getVisibleTrucksForDispatch,
   normalizeVisibilityId,
 } from '@/lib/dispatchVisibility';
 import { listDriverDispatchesForDriver } from '@/lib/driverDispatch';
@@ -53,25 +51,7 @@ function getSessionActorMetadata(session) {
 }
 
 const normalizeId = (value) => normalizeVisibilityId(value);
-function myTrucksForHistory(dispatch, timeEntries, session, {
-  driverAssignedTrucks = [],
-  ownerCompanyTrucks = [],
-} = {}) {
-  if (session?.code_type === 'CompanyOwner') {
-    const scopedTrucks = (dispatch?.trucks_assigned || []).filter((truck) => (ownerCompanyTrucks || []).includes(truck));
-    if (scopedTrucks.length === 0) return false;
-    const dispatchEntries = timeEntries.filter(
-      (te) => te.dispatch_id === dispatch.id && scopedTrucks.includes(te.truck_number),
-    );
-    return areAllAssignedTrucksTimeComplete({ trucks_assigned: scopedTrucks }, dispatchEntries);
-  }
-  const trucks = getVisibleTrucksForDispatch(session, dispatch, { driverAssignedTrucks });
-  if (trucks.length === 0) return false;
-  const dispatchEntries = timeEntries.filter(
-    (te) => te.dispatch_id === dispatch.id && trucks.includes(te.truck_number),
-  );
-  return areAllAssignedTrucksTimeComplete({ trucks_assigned: trucks }, dispatchEntries);
-}
+
 
 export default function Portal() {
   const { session } = useSession();
@@ -297,18 +277,9 @@ export default function Portal() {
     }), [filteredDispatches]);
 
   const historyDispatches = useMemo(() => filteredDispatches
-    .filter(d => {
-      if (getDispatchBucket(d) !== 'history') return false;
-      if (!d.archived_flag) {
-        return myTrucksForHistory(d, timeEntries, session, {
-          driverAssignedTrucks: driverAssignedTrucksByDispatch.get(normalizeId(d.id)) || [],
-          ownerCompanyTrucks,
-        });
-      }
-      return true;
-    })
+    .filter(d => getDispatchBucket(d) === 'history')
     .sort((a, b) => b.date.localeCompare(a.date)),
-  [driverAssignedTrucksByDispatch, filteredDispatches, ownerCompanyTrucks, session, timeEntries]);
+  [filteredDispatches]);
 
   const companyMap = {};
   companies.forEach(c => { companyMap[c.id] = c.name; });
